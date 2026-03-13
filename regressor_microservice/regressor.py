@@ -15,7 +15,6 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import traceback
 
-
 MODEL_READ_FILE = './sliced_model/xgboost_model.pkl'
 
 def align_categories(train_df, test_df):
