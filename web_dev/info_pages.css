@@ -102,6 +102,32 @@ h5 {
   padding: 40px 20px;  
 }
 
+#features-demo {
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  margin-top: 20px;
+}
+
+#features-list {
+  flex: 1;
+}
+
+#features-list li {
+  margin-bottom: 10px;;
+}
+
+#demo-video {
+  margin-left: 100px;
+  flex: 2;
+}
+
+#demo-video video {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 10px;
+}
+
 .headshot {
   width: 120px;
   height: 140px;
