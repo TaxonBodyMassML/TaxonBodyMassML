@@ -2,10 +2,10 @@
 .nav-bar {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   margin: 0;
   list-style: none;
-  gap: 2rem;
+  gap: 1.5rem;
   padding: 0;
   background: white;
   border: 5px solid #28278c;
@@ -61,6 +61,19 @@
 .dropdown:hover .dropdown-content {
   display: block;
   z-index: 1000;
+}
+
+#nav-text {
+  height: 40px;  
+  width: auto;  
+  display: block;
+}
+
+#nav-text-spot {
+  display: flex;
+  align-items: center;  
+  justify-content: center; 
+  flex: 1;                
 }
 
 /* Intro Box */
@@ -131,10 +144,12 @@
   border: 4px solid black;
   border-radius: 5px;
   position: fixed;
-  top: 25%;
+  top: 20%;
   left: 25%;
   width: 50%;
   padding: 40px 20px;
+  z-index: 100;
+  background-color: white;
 }
 
 #input-box.moved {
@@ -217,10 +232,12 @@
   border: 4px solid black;
   border-radius: 5px;
   position: fixed;
-  top: 25%;
+  top: 20%;
   padding: 40px 20px;
   right: 10%;
   width: 35%;
+  z-index: 100;
+  background-color: white;
 }
 
 #output-box.moved {
@@ -241,12 +258,27 @@
   padding: 10px;
 }
 
+#output-box-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
 #learn-more-arrow {
   margin-top: 10px;
   background: white;
   border: 2px solid #28278c;
-  height: 40px;
-  width: 120px;
+  height: 45px;
+  width: 140px;
+  font-size: 16px;
+}
+
+#session-history-arrow {
+  margin-top: 10px;
+  background: white;
+  border: 2px solid #28278c;
+  height: 45px;
+  width: 140px;
   font-size: 16px;
 }
 
@@ -270,7 +302,40 @@
   position: fixed;
   top: 15%;
   right: 11.5%;
+  z-index: 100;
+  background-color: white;
+
 }
+
+/* Session History Modal */
+
+#session-history-modal {
+  text-align: center;
+  border: 4px solid black;
+  border-radius: 5px;
+  height: 70%;
+  width: 35%;
+  position: fixed;
+  top: 15%;
+  right: 11.5%;
+  z-index: 100;
+  background-color: white;
+
+}
+
+#bottom-container {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+}
+
+#bottom-taxon-graphic {
+  max-width: 100%;
+  width: 1100px;
+  z-index: 1;
+}
+
 
 
 /* Small-screen friendly css */
@@ -341,6 +406,4 @@
     padding-bottom: 20px;
   }
 }
-
-
 

@@ -14,18 +14,24 @@ const goBackButton = document.getElementById('go-back-button')
 const introBox = document.getElementById('intro-box')
 const closeIntro = document.getElementById('close-intro')
 const beginTutorialButton = document.getElementById('begin-tutorial-button')
+const sessionHistoryArrow = document.getElementById('session-history-arrow')
+const sessionHistoryModal = document.getElementById('session-history-modal')
+const bottomTaxonGraphic = document.getElementById('bottom-taxon-graphic')
 
 //handling session details (refreshing versus changing tabs)
 
-const navigationType = performance.getEntriesByType("navigation")[0].type;
+const navEntries = performance.getEntriesByType("navigation");
+const navigationType = navEntries.length > 0 ? navEntries[0].type : null;
 
 if (navigationType === "reload") {
   sessionStorage.removeItem('introSeen');
+  sessionStorage.removeItem('history');
 }
 
 if (sessionStorage.getItem('introSeen') === 'true') {
   introBox.classList.add('hidden');
   inputBox.classList.remove('hidden');
+  bottomTaxonGraphic.classList.remove('hidden');
 }
 
 // function definitions
@@ -39,9 +45,11 @@ const handleGoClick = async (event) => {
   }
   if (singleButton.classList.contains('clicked')) {
     learnMoreArrow.classList.remove('hidden')
+    sessionHistoryArrow.classList.remove('hidden')
   }
   if (listButton.classList.contains('clicked')) {
     learnMoreArrow.classList.add('hidden')
+    sessionHistoryArrow.classList.add('hidden')
   }
   
   // if the user clicks go without typing any input
@@ -59,15 +67,48 @@ const handleGoClick = async (event) => {
     const data = await myLookupMicroservice(userInput)
 
     if (data.status === 'success') {
-      massOutput.textContent = `success: ${data.message}`
+      massOutput.textContent = `${data.message}`
+      addToSessionHistory(userInput, data.message)
     } else {
-      massOutput.textContent = `not success: ${data.error}`
+      massOutput.textContent = `${data.error}`
     }
   } catch (error) {
     console.error(error)
     massOutput.textContent = 'Error'
   }
+
 }
+
+ const addToSessionHistory = (input, output) => {
+  let history = JSON.parse(sessionStorage.getItem('history')) || []
+  history = history.filter(
+    item => item.input.toLowerCase() !== input.toLowerCase()
+  )
+
+  history.unshift({ input, output })
+
+  sessionStorage.setItem('history', JSON.stringify(history))
+}
+
+const renderSessionHistory = () => {
+  const history = JSON.parse(sessionStorage.getItem('history')) || []
+
+  sessionHistoryModal.innerHTML = "<p>Session History</p>"
+
+  history.forEach(item => {
+    const entry = document.createElement('div')
+    entry.style.marginBottom = "10px"
+
+    entry.innerHTML = `
+      <strong>${item.input}</strong><br/>
+      ${item.output}
+    `
+
+    sessionHistoryModal.appendChild(entry)
+  })
+}
+
+
 
 // uses render to interact with the microservice
 const myLookupMicroservice = async (query) => {
@@ -78,9 +119,9 @@ const myLookupMicroservice = async (query) => {
     const lookupResponse = await fetch(lookupURL)
     const lookupData = await lookupResponse.json()
 
-    /*if (!lookupResponse.ok || !lookupData.taxonomy) {
+    if (!lookupResponse.ok || !lookupData.taxonomy) {
       return { status: "error", error: lookupData.error || "Species not found" }
-    }*/
+    }
 
     const taxonomy = lookupData.taxonomy
     /* const predictionURL = "https://regression-model.onrender.com/xgb_pred_single"
@@ -162,18 +203,36 @@ const handleSingleClick = (event) => {
 const handleLearnMoreClick = (event) => {
   outputBox.classList.add('moved')
   learnMoreArrow.classList.toggle('hidden')
+  sessionHistoryArrow.classList.toggle('hidden')
   explanationModal.classList.toggle('hidden')
   inputBox.classList.add('hidden')
   goBackButton.classList.toggle('hidden')
 }
+
+const handleSessionHistoryClick = (event) => {
+  renderSessionHistory() 
+  outputBox.classList.add('moved')
+  learnMoreArrow.classList.toggle('hidden')
+  sessionHistoryArrow.classList.toggle('hidden')
+  sessionHistoryModal.classList.toggle('hidden')
+  inputBox.classList.add('hidden')
+  goBackButton.classList.toggle('hidden')
+}
+
 
 // hides the explanation modal and reveals the input box
 const handleGoBackClick = (event) => {
   goBackButton.classList.toggle('hidden')
   outputBox.classList.remove('moved')
   inputBox.classList.toggle('hidden')
-  explanationModal.classList.toggle('hidden')
+  if (explanationModal.classList.contains('hidden')) {
+	  sessionHistoryModal.classList.toggle('hidden')
+  }
+  else if (sessionHistoryModal.classList.contains('hidden')) {
+  	explanationModal.classList.toggle('hidden')
+  }
   learnMoreArrow.classList.toggle('hidden')
+  sessionHistoryArrow.classList.toggle('hidden')
 }
 
 // hides the introduction modal
@@ -181,6 +240,7 @@ const handleCloseIntro = (event) => {
   introBox.classList.add('hidden')
   inputBox.classList.remove('hidden')
   beginTutorialButton.classList.remove('hidden')
+  bottomTaxonGraphic.classList.remove('hidden')
   sessionStorage.setItem('introSeen', 'true')
 }
 
@@ -205,6 +265,7 @@ inputBar.addEventListener('keypress', (e) => {
 listButton.addEventListener('click', handleListClick)
 singleButton.addEventListener('click', handleSingleClick)
 learnMoreArrow.addEventListener('click', handleLearnMoreClick)
+sessionHistoryArrow.addEventListener('click', handleSessionHistoryClick)
 goBackButton.addEventListener('click', handleGoBackClick)
 closeIntro.addEventListener('click', handleCloseIntro)
 makeVisibilityIndependent()
