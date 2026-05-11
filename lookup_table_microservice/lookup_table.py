@@ -138,10 +138,16 @@ def single_species():
                 taxonomy.update(ncbi_taxonomy)
                 
         taxonomy = {field: taxonomy.get(field) or "UNK" for field in taxonomy_fields}
-
-        return jsonify({
-            "taxonomy": taxonomy
-        }), 200
+        
+        all_unk = all(value == 'UNK' for value in taxonomy.values())
+        if all_unk:
+            return jsonify({
+                "error": "Could not find a valid taxonomy for this species."
+            }), 512
+        else:
+            return jsonify({
+                "taxonomy": taxonomy
+            }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -182,8 +188,10 @@ def multi_species():
                     taxonomy.update(ncbi_taxonomy)
 
             taxonomy = {f: taxonomy.get(f) or "UNK" for f in taxonomy_fields}
-
-            results[NAME] = taxonomy
+            
+            all_unk = all(value == 'UNK' for value in taxonomy.values())
+            if not all_unk:
+                results[NAME] = taxonomy
 
         return jsonify({"taxonomy": results}), 200
 
