@@ -138,10 +138,62 @@ def single_species():
                 taxonomy.update(ncbi_taxonomy)
                 
         taxonomy = {field: taxonomy.get(field) or "UNK" for field in taxonomy_fields}
+        
+        all_unk = all(value == 'UNK' for value in taxonomy.values())
+        if all_unk:
+            return jsonify({
+                "error": "Could not find a valid taxonomy for this species."
+            }), 512
+        else:
+            return jsonify({
+                "taxonomy": taxonomy
+            }), 200
 
-        return jsonify({
-            "taxonomy": taxonomy
-        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/multi_species", methods=["GET"])
+def multi_species():
+    """ 
+    multi_species() 
+    ------------------- 
+    receive a request for the taxonomy of a list of species 
+    """
+    species_names = request.args.get("species_name")
+
+    if not species_names:
+        return jsonify({"error": "Missing 'species_name' parameter"}), 400
+
+    species_list = [
+        s.strip().lower().replace("_", " ")
+        for s in species_names.split(",")
+        if s.strip()
+    ]
+
+    results = {}
+
+    try:
+        for NAME in species_list:
+            gbif_result = gbif_match(NAME)
+
+            taxonomy = {
+                field: gbif_result.get(field)
+                for field in taxonomy_fields
+            }
+
+            if any(v is None for v in taxonomy.values()):
+                xml_result = ncbi_match(NAME)
+                if xml_result:
+                    ncbi_taxonomy = parse_ncbi_xml(xml_result)
+                    taxonomy.update(ncbi_taxonomy)
+
+            taxonomy = {f: taxonomy.get(f) or "UNK" for f in taxonomy_fields}
+            
+            all_unk = all(value == 'UNK' for value in taxonomy.values())
+            if not all_unk:
+                results[NAME] = taxonomy
+
+        return jsonify({"taxonomy": results}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

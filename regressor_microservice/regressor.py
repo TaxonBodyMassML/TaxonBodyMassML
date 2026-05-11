@@ -1,7 +1,7 @@
 """
 pasquang
 pasquang@oregonstate.edu
-3/12/2026
+4/10/2026
 """
 
 import numpy as np
@@ -65,11 +65,12 @@ def parse_dataset():
     
     return x_train, x_test
 
-def create_app(loaded_model, x_train):
+def create_app(loaded_model, x_train, q):
     app = Flask(__name__)
     CORS(app)
 
     app.config["model"] = loaded_model
+    app.config["q"] = q
     app.config["x_train"] = x_train
     
     @app.route("/xgb_pred_single", methods=["POST"])
@@ -94,7 +95,15 @@ def create_app(loaded_model, x_train):
         
         print(df)
         
-        prediction = model.predict(df)[0]
+        prediction_log = model.predict(df)[0]
+        q = app.config["q"]
+
+        lower_pred = prediction_log - q
+        upper_pred = prediction_log + q
+
+        prediction = float(10 ** prediction_log)
+        lower = float(10 ** lower_pred)
+        upper = float(10 ** upper_pred)
         
         return jsonify({
             "taxonomy": {
@@ -106,16 +115,77 @@ def create_app(loaded_model, x_train):
                 "genus": df["genus"].iloc[0],
                 "species": df["species"].iloc[0],
             },
-            "prediction": float(10 ** prediction)
+            "prediction": prediction,
+            "lower_bound": lower,
+            "upper_bound": upper,
+            "confidence": 0.90
         })
     
-    #@app.route("/xgb_pred_multi", methods=["POST"])
+    @app.route("/xgb_pred_multi", methods=["POST"])
+    def xgb_pred_multi():
+        
+        model = app.config["model"]
+        x_train = app.config["x_train"]
+
+        data = request.json
+        df = pd.DataFrame(data)
+        
+        print("Input query:\n", df)
+        
+        for col in df.columns:
+            if col in x_train.columns and df[col].dtype.name == "object":
+                df[col] = df[col].where(
+                    df[col].isin(x_train[col].cat.categories),
+                    other="UNK"
+                )
+
+        _, df = align_categories(x_train.copy(), df)
+        
+        for col in df.select_dtypes(include="object").columns:
+            df[col] = df[col].astype("category")
+        
+        print(df)
+        
+        predictions = model.predict(df)
+        results = []
+        for row, pred in zip(df.to_dict(orient="records"), predictions):
+            
+            q = app.config["q"]
+
+            lower_pred = pred - q
+            upper_pred = pred + q
+
+            prediction = float(10 ** pred)
+            lower = float(10 ** lower_pred)
+            upper = float(10 ** upper_pred)
+        
+            
+            results.append({
+                "taxonomy": {
+                    "kingdom": row.get("kingdom"),
+                    "phylum": row.get("phylum"),
+                    "class": row.get("class"),
+                    "order": row.get("order"),
+                    "family": row.get("family"),
+                    "genus": row.get("genus"),
+                    "species": row.get("species"),
+                },
+                "prediction": prediction,
+                "lower_bound": lower,
+                "upper_bound": upper,
+                "confidence": 0.90
+            })
+            
+        return jsonify({"items" : results})
     
     return app
 
 def main():
     
-    loaded_model = pickleslicer.load(MODEL_READ_FILE) 
+    loaded_bundle = pickleslicer.load(MODEL_READ_FILE)
+    
+    loaded_model = loaded_bundle["model"]
+    q = loaded_bundle["q"]
         
     if not loaded_model:
         print("Model not loaded successfully.")
@@ -126,7 +196,7 @@ def main():
     x_train, x_test = parse_dataset()
     x_train, x_test = align_categories(x_train, x_test)
     
-    app = create_app(loaded_model, x_train)
+    app = create_app(loaded_model, x_train, q)
     print("App running...")
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)
