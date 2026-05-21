@@ -10,7 +10,7 @@ x_test = test.drop(["mass_g"], axis=1)
 for INDEX in range(0, 5):
     print("Expected mass:", test["mass_g"].iloc[INDEX])
 
-    URL = "http://marxism-smolder-crispy.ngrok-free.dev/xgb_pred_single"
+    URL = "https://gasoline-tribunal-bowl-consider.trycloudflare.com/xgb_pred_single"
     payload = {
         "kingdom": x_test["kingdom"].iloc[INDEX],
         "phylum": x_test["phylum"].iloc[INDEX],

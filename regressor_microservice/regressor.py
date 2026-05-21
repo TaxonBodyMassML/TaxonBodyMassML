@@ -4,7 +4,7 @@ pasquang@oregonstate.edu
 4/10/2026
 """
 
-#run using: gunicorn -w 1 -b 127.0.0.1:8000 'regressor_microservice.regressor:create_wsgi_app()'
+#run using: gunicorn -w 1 -b 127.0.0.1:8000 'regressor:create_wsgi_app()'
 
 import numpy as np
 import pandas as pd

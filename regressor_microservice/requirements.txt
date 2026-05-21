@@ -1,3 +1,4 @@
+
 Flask
 flask-cors
 pandas
@@ -6,3 +7,5 @@ gunicorn
 requests
 xgboost
 pickleslicer
+flask
+numpy
