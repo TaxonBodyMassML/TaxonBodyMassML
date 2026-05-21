@@ -4,6 +4,8 @@ pasquang@oregonstate.edu
 4/10/2026
 """
 
+#run using: gunicorn -w 1 -b 127.0.0.1:8000 'regressor_microservice.regressor:create_wsgi_app()'
+
 import numpy as np
 import pandas as pd
 import xgboost as xgb
@@ -11,6 +13,8 @@ import pickleslicer
 import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import traceback
+
 
 MODEL_READ_FILE = './sliced_model/xgboost_model.pkl'
 
@@ -76,50 +80,56 @@ def create_app(loaded_model, x_train, q):
     @app.route("/xgb_pred_single", methods=["POST"])
     def xgb_pred_single():
         
-        model = app.config["model"]
-        x_train = app.config["x_train"]
+        try:
+            model = app.config["model"]
+            x_train = app.config["x_train"]
 
-        data = request.json
-        df = pd.DataFrame([data])
-        
-        print("Input query:\n", df)
-        
-        for col in df.columns:
-            if col in x_train.columns and df[col].dtype.name == "object":
-                df[col] = df[col].where(df[col].isin(x_train[col].cat.categories), other="UNK")
+            data = request.json
+            df = pd.DataFrame([data])
+            
+            print("Input query:\n", df)
+            print(df["species"].isin(x_train["species"].cat.categories))
+            for col in df.columns:
+                if col in x_train.columns and (df[col].dtype.name == "object" or df[col].dtype.name == "str"):
+                    df[col] = df[col].where(df[col].isin(x_train[col].cat.categories), other="UNK")
 
-        _, df = align_categories(x_train.copy(), df)
-        
-        for col in df.select_dtypes(include="object").columns:
-            df[col] = df[col].astype("category")
-        
-        print(df)
-        
-        prediction_log = model.predict(df)[0]
-        q = app.config["q"]
+            _, df = align_categories(x_train.copy(), df)
+            
+            for col in df.select_dtypes(include="object").columns:
+                df[col] = df[col].astype("category")
+            
+            print(df)
+            
+            prediction_log = model.predict(df)[0]
+            q = app.config["q"]
 
-        lower_pred = prediction_log - q
-        upper_pred = prediction_log + q
+            lower_pred = prediction_log - q
+            upper_pred = prediction_log + q
 
-        prediction = float(10 ** prediction_log)
-        lower = float(10 ** lower_pred)
-        upper = float(10 ** upper_pred)
-        
-        return jsonify({
-            "taxonomy": {
-                "kingdom": df["kingdom"].iloc[0],
-                "phylum": df["phylum"].iloc[0],
-                "class": df["class"].iloc[0],
-                "order": df["order"].iloc[0],
-                "family": df["family"].iloc[0],
-                "genus": df["genus"].iloc[0],
-                "species": df["species"].iloc[0],
-            },
-            "prediction": prediction,
-            "lower_bound": lower,
-            "upper_bound": upper,
-            "confidence": 0.90
-        })
+            prediction = float(10 ** prediction_log)
+            lower = float(10 ** lower_pred)
+            upper = float(10 ** upper_pred)
+            
+            return jsonify({
+                "taxonomy": {
+                    "kingdom": df["kingdom"].iloc[0],
+                    "phylum": df["phylum"].iloc[0],
+                    "class": df["class"].iloc[0],
+                    "order": df["order"].iloc[0],
+                    "family": df["family"].iloc[0],
+                    "genus": df["genus"].iloc[0],
+                    "species": df["species"].iloc[0],
+                },
+                "prediction": prediction,
+                "lower_bound": lower,
+                "upper_bound": upper,
+                "confidence": 0.90
+            })
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({
+                "error": str(e)
+            }), 500
     
     @app.route("/xgb_pred_multi", methods=["POST"])
     def xgb_pred_multi():
@@ -133,7 +143,7 @@ def create_app(loaded_model, x_train, q):
         print("Input query:\n", df)
         
         for col in df.columns:
-            if col in x_train.columns and df[col].dtype.name == "object":
+            if col in x_train.columns and (df[col].dtype.name == "object" or df[col].dtype.name == "str"):
                 df[col] = df[col].where(
                     df[col].isin(x_train[col].cat.categories),
                     other="UNK"
@@ -177,7 +187,23 @@ def create_app(loaded_model, x_train, q):
             })
             
         return jsonify({"items" : results})
+
+    @app.route("/", methods=["GET"])
+    def home():
+        return """
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>Model API</title>
+        </head>
+        <body>
+            <h1>Model server is running!</h1>\
+        </body>
+    </html>
     
+    """
+    
+    print(app.url_map)
     return app
 
 def main():
@@ -200,6 +226,26 @@ def main():
     print("App running...")
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)
+
+
+def create_wsgi_app():
+    
+    loaded_bundle = pickleslicer.load(MODEL_READ_FILE)
+    
+    loaded_model = loaded_bundle["model"]
+    q = loaded_bundle["q"]
+        
+    if not loaded_model:
+        print("Model not loaded successfully.")
+        exit(1)
+    else:
+        print("Model loaded successfully.")
+        
+    x_train, x_test = parse_dataset()
+    x_train, x_test = align_categories(x_train, x_test)
+    
+    return create_app(loaded_model, x_train, q)
+    
 
 if __name__ == "__main__":
     main()
