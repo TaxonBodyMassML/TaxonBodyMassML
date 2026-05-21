@@ -6,7 +6,7 @@ import json
 test = pd.read_csv("./data/test.csv")
 x_test = test.drop(["mass_g"], axis=1)
 
-URL = "http://marxism-smolder-crispy.ngrok-free.dev/xgb_pred_multi"
+URL = "https://gasoline-tribunal-bowl-consider.trycloudflare.com/xgb_pred_multi"
 #URL = "http://127.0.0.1:8000/xgb_pred_multi"
 payload = []
 for INDEX in range(0, 5):

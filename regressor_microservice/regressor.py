@@ -4,7 +4,7 @@ pasquang@oregonstate.edu
 4/10/2026
 """
 
-#run using: gunicorn -w 1 -b 127.0.0.1:8000 'regressor_microservice.regressor:create_wsgi_app()'
+#run using: gunicorn -w 1 -b 127.0.0.1:8000 'regressor:create_wsgi_app()'
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,7 @@ from flask_cors import CORS
 import traceback
 
 
-MODEL_READ_FILE = './regressor_microservice/sliced_model/xgboost_model.pkl'
+MODEL_READ_FILE = './sliced_model/xgboost_model.pkl'
 
 def align_categories(train_df, test_df):
     """
