@@ -2,10 +2,10 @@
 <html>
   <head>
     <title>TaxonBodyMassML</title>
-    <link rel="stylesheet" href="style.css?v=10" />
+    <link rel="stylesheet" href="style.css?v=11" />
     <link rel="stylesheet" href="tutorial.css?v=1" />
   </head>
-  <script src="index.js?v=9" charset="utf-8" defer></script>
+  <script src="index.js?v=10" charset="utf-8" defer></script>
   <script src="tutorial.js" charset="utf-8" defer></script>
   <body>
     <!-- jscpd:ignore-start -->
@@ -68,7 +68,7 @@
 	      </div>
       </div>
       <div id = "input-bar-tutorial" class = "tool-tip hidden">
-              <p>At this point, you will go ahead and enter the name or list of names (each species separated by a semicolon (?)) in the input bar where it says "Input species name(s)". In this tutorial, we will input just one species.</p>
+              <p>At this point, you will go ahead and enter the name or list of names (each species separated by a comma) in the input bar where it says "Input species name(s)". In this tutorial, we will input just one species.</p>
               <div class="button-row">
 	      <button class = "prev-button" id = "input-bar-prev">Previous</button>
 	      <button class = "next-button" id = "input-bar-next">Next</button>
@@ -169,7 +169,7 @@
           <input id = "csv-checkbox" type="checkbox" />
           Convert output to .csv file?
           <p id="note">
-            note: any input with more than x species will be automatically
+            note: any input with more than 5 species will be automatically
             converted to a .csv file
           </p>
         </label>
@@ -182,12 +182,16 @@
     <!-- Main box containing output: mass and confidence interval -->
     <!-- Is only visible after user clicks go -->
     <div id="output-box" class="hidden">
-      <div id="mass-output"></div>
-
-      <div id="confidence-output">
-        <p>Confidence Output</p>
+      
+      <div id="mass-output">
+  	<h3 class="output-heading">Predicted Mass:</h3>
+  	<p id="mass-text"></p>
       </div>
 
+      <div id="confidence-output">
+  	<h3 class="output-heading">90% Confidence Interval:</h3>
+  	<p id="confidence-text"></p>
+      </div>
 
       <div id = "output-box-buttons">
       

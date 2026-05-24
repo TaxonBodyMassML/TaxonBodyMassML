@@ -251,12 +251,29 @@
   align-items: center;
 }
 
-#mass-output, #confidence-output {
+.output-heading {
+  margin-top: 0;
+  margin-bottom: 2px;
+  color: #28278c;
+  font-size: 18px;
+}
+
+#mass-section,
+#confidence-section {
   width: 90%;
   margin: 6px 0;
-  border: 2px solid black;
-  padding: 10px;
 }
+
+#mass-output, #confidence-output {
+  width: 90%;
+  margin: 3px 0;
+  border: 2px solid black;
+  padding: 3px;
+}
+
+#confidence-output {
+  margin-top: 5px !important;
+}	
 
 #output-box-buttons {
   display: flex;
@@ -320,7 +337,9 @@
   right: 11.5%;
   z-index: 100;
   background-color: white;
-
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
 }
 
 #bottom-container {

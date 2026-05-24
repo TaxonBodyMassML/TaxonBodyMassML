@@ -6,6 +6,7 @@ const singleOrList = document.getElementById('single-or-list')
 const singleButton = document.getElementById('single-button')
 const listButton = document.getElementById('list-button')
 const csvCheck = document.getElementById('csv-check')
+const csvCheckbox = document.getElementById('csv-checkbox')
 const outputBox = document.getElementById('output-box')
 const massOutput = document.getElementById('mass-output')
 const learnMoreArrow = document.getElementById('learn-more-arrow')
@@ -17,6 +18,11 @@ const beginTutorialButton = document.getElementById('begin-tutorial-button')
 const sessionHistoryArrow = document.getElementById('session-history-arrow')
 const sessionHistoryModal = document.getElementById('session-history-modal')
 const bottomTaxonGraphic = document.getElementById('bottom-taxon-graphic')
+const confidenceOutput = document.getElementById('confidence-output')
+const confidenceText = document.getElementById('confidence-text')
+const massText = document.getElementById('mass-text')
+
+
 
 //handling session details (refreshing versus changing tabs)
 
@@ -55,27 +61,107 @@ const handleGoClick = async (event) => {
   // if the user clicks go without typing any input
   const userInput = inputBar.value.trim()
   if (!userInput) {
-    massOutput.textContent = 'no input'
+    massText.textContent = 'no input'
+    confidenceText.textContent = 'no input'
     return
   }
 
   // while waiting for response
-  massOutput.textContent = 'Checking species name...'
+  massText.textContent = 'Checking species name...'
+  confidenceText.textContent = 'Waiting for mass prediction...'
 
   // interacting with the microservice (prototype_lookup.py)
   try {
-    const data = await myLookupMicroservice(userInput)
 
-    if (data.status === 'success') {
-      massOutput.textContent = `${data.message}`
-      addToSessionHistory(userInput, data.message)
-    } else {
-      massOutput.textContent = `${data.error}`
-    }
-  } catch (error) {
-    console.error(error)
-    massOutput.textContent = 'Error'
+  let data
+
+  if (singleButton.classList.contains('clicked')) {
+    data = await myLookupMicroservice(userInput)
+  } else {
+    data = await myMultiLookupMicroservice(userInput)
   }
+
+  if (data.status === 'success') {
+
+    // single species
+    if (singleButton.classList.contains('clicked')) {
+
+      massText.textContent = `${data.message}`
+      confidenceText.textContent = `${data.confidence}`
+
+      addToSessionHistory(userInput, data.message)
+
+    }
+
+    // multiple species
+    else {
+
+      let massResults = ''
+      let confidenceResults = ''
+
+      data.results.forEach(item => {
+
+        massResults +=
+          `${item.taxonomy.species}: ${item.prediction.toFixed(2)} g;\n`
+
+        confidenceResults +=
+          `${item.taxonomy.species}: ${item.lower_bound.toFixed(2)} g - ${item.upper_bound.toFixed(2)} g;\n`
+
+      })
+
+      massText.textContent = massResults
+      confidenceText.textContent = confidenceResults
+      
+      if (csvCheckbox.checked || data.results.length > 5) {
+
+  let csvContent =
+    "Species,Predicted Mass (g),Lower Bound (g),Upper Bound (g)\n"
+
+  data.results.forEach(item => {
+
+    csvContent +=
+      `"${item.taxonomy.species}",` +
+      `${item.prediction.toFixed(2)},` +
+      `${item.lower_bound.toFixed(2)},` +
+      `${item.upper_bound.toFixed(2)}\n`
+
+  })
+
+  const blob = new Blob([csvContent], {
+    type: "text/csv"
+  })
+
+  const url = URL.createObjectURL(blob)
+
+  const link = document.createElement("a")
+
+  link.href = url
+  link.download = "taxonbodymassml_species_prediction.csv"
+
+  document.body.appendChild(link)
+
+  link.click()
+
+  document.body.removeChild(link)
+
+  URL.revokeObjectURL(url)
+}
+    }
+
+  } else {
+
+    massText.textContent = `${data.error}`
+    confidenceText.textContent = 'Error'
+  }
+
+} catch (error) {
+
+  console.error(error)
+
+  massText.textContent = 'Error'
+  confidenceText.textContent = 'Error'
+}
+
 
 }
 
@@ -113,18 +199,43 @@ const renderSessionHistory = () => {
 // uses render to interact with the microservice
 const myLookupMicroservice = async (query) => {
 
-  const lookupURL = `https://look-up-service.onrender.com/single_species?species_name=${encodeURIComponent(query)}`
+  const lookupURL =
+    `https://look-up-service.onrender.com/single_species?species_name=${encodeURIComponent(query)}`
 
   try {
     const lookupResponse = await fetch(lookupURL)
     const lookupData = await lookupResponse.json()
 
     if (!lookupResponse.ok || !lookupData.taxonomy) {
-      return { status: "error", error: lookupData.error || "Species not found" }
+      return {
+        status: "error",
+        error: lookupData.error || "Species not found"
+      }
     }
 
-    const taxonomy = lookupData.taxonomy
-    /* const predictionURL = "https://regression-model.onrender.com/xgb_pred_single"
+    const rawTaxonomy = lookupData.taxonomy
+
+if (rawTaxonomy.species === "UNK") {
+  return {
+    status: "error",
+    error: "Species not found"
+  }
+}
+
+    //making sure the order is correct
+    const taxonomy = {
+  	kingdom: rawTaxonomy.kingdom,
+  	phylum: rawTaxonomy.phylum,
+  	class: rawTaxonomy.class,
+  	order: rawTaxonomy.order,
+  	family: rawTaxonomy.family,
+  	genus: rawTaxonomy.genus,
+  	species: rawTaxonomy.species
+    }
+
+    console.log("Sending taxonomy:", taxonomy)
+
+    const predictionURL = "https://characteristics-productivity-refurbished-air.trycloudflare.com/xgb_pred_single"
 
     const predictionResponse = await fetch(predictionURL, {
       method: "POST",
@@ -136,33 +247,115 @@ const myLookupMicroservice = async (query) => {
 
     const predictionData = await predictionResponse.json()
 
+    console.log("Prediction response:", predictionData)
+
     if (!predictionResponse.ok) {
-      return { status: "error", error: "Prediction failed" }
+  	return {
+    	status: "error",
+    	error: "Prediction failed"
+  	}
     }
 
     return {
       status: "success",
-      message:
-        `${predictionData.taxonomy.species} predicted mass = ${predictionData.prediction.toFixed(2)} g`
-    } */
-
-    if (lookupResponse.ok && lookupData.taxonomy) {
-
-      const t = lookupData.taxonomy
-      return {
-        status: "success",
-        message:`Kingdom: ${t.kingdom}; Phylum: ${t.phylum}; Class: ${t.class}; Order: ${t.order}; Family: ${t.family}`
-      }
-
-    } 
-    else {
-      return { status: "error", error: lookupData.error || "Species not found" }
+      message: `${predictionData.prediction.toFixed(2)} g`,
+      confidence: `${predictionData.lower_bound.toFixed(2)} g - ${predictionData.upper_bound.toFixed(2)} g`
     }
 
-  } 
+  }
   catch (error) {
+
     console.error("Network error:", error)
-    return { status: "error", error: "Network error" }
+
+    return {
+      status: "error",
+      error: "Network error"
+    }
+  }
+}
+
+//for multi-species queries
+const myMultiLookupMicroservice = async (query) => {
+
+  const speciesList = query
+    .split(/\n|,/)
+    .map(item => item.trim())
+    .filter(item => item.length > 0)
+
+  try {
+    const taxonomyList = []
+
+    for (const species of speciesList) {
+
+      const lookupURL =
+        `https://look-up-service.onrender.com/single_species?species_name=${encodeURIComponent(species)}`
+
+      const lookupResponse = await fetch(lookupURL)
+      const lookupData = await lookupResponse.json()
+
+      // skip invalid species
+      if (!lookupResponse.ok || !lookupData.taxonomy) {
+        console.log(`Skipping invalid species: ${species}`)
+        continue
+      }
+
+      const rawTaxonomy = lookupData.taxonomy
+
+if (rawTaxonomy.species === "UNK") {
+  console.log(`Skipping unknown species: ${species}`)
+  continue
+}
+
+      taxonomyList.push({
+        kingdom: rawTaxonomy.kingdom,
+        phylum: rawTaxonomy.phylum,
+        class: rawTaxonomy.class,
+        order: rawTaxonomy.order,
+        family: rawTaxonomy.family,
+        genus: rawTaxonomy.genus,
+        species: rawTaxonomy.species
+      })
+    }
+
+    // if everything failed
+    if (taxonomyList.length === 0) {
+      return {
+        status: "error",
+        error: "No valid species found"
+      }
+    }
+    const response = await fetch(
+      "https://characteristics-productivity-refurbished-air.trycloudflare.com/xgb_pred_multi",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(taxonomyList)
+      }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return {
+        status: "error",
+        error: "Prediction failed"
+      }
+    }
+    return {
+      status: "success",
+      results: data.items
+    }
+
+  } catch (error) {
+
+    console.error(error)
+
+    return {
+      status: "error",
+      error: "Network error"
+    }
   }
 }
 
