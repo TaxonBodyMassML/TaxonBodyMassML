@@ -6,85 +6,197 @@ operations in the web development module.
 """
 
 import os
-from more_questions_db import init_db
-from routes.more_questions import questions_bp
-import pandas as pd
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import pandas as pd
+import requests
+import xml.etree.ElementTree as ET
 
 app = Flask(__name__)
 CORS(app)
 
-# added functionality for help page question permanence
-init_db()
-app.register_blueprint(questions_bp)
+GBIF_MATCH_URL = "https://api.gbif.org/v2/species/match"
 
+NCBI_ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+NCBI_EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 
-# read the raw bodymass data into a dataframe
-df = pd.read_csv("../data/BodyMass.csv")
-print(df)
+taxonomy_fields = [
+    "kingdom",
+    "phylum",
+    "class",
+    "order",
+    "family",
+    "genus",
+    "species",
+]
 
-
-# print and remove any data with missing values
-print("Number of missing values in each column:\n", df.isna().sum())
-df = df.dropna()
-print(df)
-
-
-def parse_dataset(dataframe):
+def ncbi_match(input_name):
     """
-    parse_dataset()
-    -------------------
-    isolate species name from genus, remove all unnecessary
-    underscores, and make every species name lowercase
+    Get taxonomy lineage from NCBI
     """
-    # save taxon column as a list and parse it such that it's only the species name
-    taxon = dataframe["taxon"].to_list()
-    taxon_len = len(taxon)
-    for i in range(taxon_len):
-        # print(taxon[i])
-        taxon[i] = taxon[i].lower()  # convert species name to lowercase
-        for j in range(len(taxon[i])):
-            if taxon[i][j] == "_":
-                taxon[i] = taxon[i][j + 1 :]
-                # print(taxon[i])
-                break
-    # save this updated list as a new column
-    dataframe["species_name"] = taxon
-    return dataframe
+
+    params = {"db": "taxonomy", "term": input_name, "retmode": "json"}
+
+    r = requests.get(NCBI_ESEARCH, params=params, timeout=10)
+
+    if r.status_code != 200:
+        return {}
+
+    data = r.json()
+
+    id_list = data.get("esearchresult", {}).get("idlist", [])
+
+    if not id_list:
+        return {}
+
+    tax_id = id_list[0]
+
+    params = {"db": "taxonomy", "id": tax_id, "retmode": "xml"}
+
+    r = requests.get(NCBI_EFETCH, params=params, timeout=10)
+
+    if r.status_code != 200:
+        return {}
+
+    return r.text
 
 
-# prepare species data for lookup operations
-df = parse_dataset(df)
-print(df)
+def parse_ncbi_xml(xml_text):
+    """
+    parse_ncbi_xml()
+    inputs: xml_text is an xml object that must be parsed for taxonomy data
+    output: returns taxonomy
+    """
 
+    taxons = {}
+
+    root = ET.fromstring(xml_text)
+
+    lineage = root.find(".//LineageEx")
+
+    if lineage is not None:
+        for taxon in lineage.findall("Taxon"):
+
+            rank = taxon.find("Rank").text.lower()
+            name = taxon.find("ScientificName").text
+
+            taxons[rank] = name
+
+    species_ = root.find(".//ScientificName")
+    if species_ is not None:
+        taxons["species"] = species_.text
+
+    return taxons
+
+
+def gbif_match(input_name):
+    """
+    gbif_match()
+    inputs: input_name is a string which represents
+            the scientific name of target species
+    output: returns JSON response from fuzzy match API
+    """
+    params = {
+        "scientificName": input_name,
+    }
+    r = requests.get(GBIF_MATCH_URL, params=params, timeout=10)
+    if r.status_code != 200:
+        return None
+    return r.json()
 
 @app.route("/single_species", methods=["GET"])
 def single_species():
     """
     single_species()
     -------------------
-    receive a request for a mass of a single species from webapp backend
+    receive a request for the taxonomy of a single species
     """
-    species_name = request.args.get("species_name").lower()
+    species_name = request.args.get("species_name")
 
     # if there is no input species name, then return an error
     if not species_name:
         return jsonify({"error": "Missing 'species_name' parameter"}), 400
+    
+    species_name = species_name.lower()
+    
+     # clean existing taxonomy data for request
+    NAME = str(species_name).strip().replace("_", " ")
 
-    # filter for a row in the database which matches this species name exactly
-    row = df[df["species_name"] == species_name]
+    try:
+        gbif_result = gbif_match(NAME)
+        print(NAME)
+        
+        taxonomy = {
+            field: gbif_result.get(field)
+            for field in taxonomy_fields
+        }
 
-    # if nothing matched, return a not found error
-    if row.empty:
-        return jsonify({"error": f"Species '{species_name}' not found"}), 404
+        if any(taxon_field is None for taxon_field in taxonomy.values()):
+            xml_result = ncbi_match(NAME)
+            if xml_result:
+                ncbi_taxonomy = parse_ncbi_xml(xml_result)
+                taxonomy.update(ncbi_taxonomy)
+                
+        taxonomy = {field: taxonomy.get(field) or "UNK" for field in taxonomy_fields}
+        
+        all_unk = all(value == 'UNK' for value in taxonomy.values())
+        if all_unk:
+            return jsonify({
+                "error": "Could not find a valid taxonomy for this species."
+            }), 512
+        else:
+            return jsonify({
+                "taxonomy": taxonomy
+            }), 200
 
-    # isolate the mass from the species row
-    species_mass = row.iloc[0]["mass_g"]
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/multi_species", methods=["GET"])
+def multi_species():
+    """ 
+    multi_species() 
+    ------------------- 
+    receive a request for the taxonomy of a list of species 
+    """
+    species_names = request.args.get("species_name")
 
-    # return a json object with the species name and mass
-    return jsonify({"species_name": species_name, "mass_g": species_mass})
+    if not species_names:
+        return jsonify({"error": "Missing 'species_name' parameter"}), 400
 
+    species_list = [
+        s.strip().lower().replace("_", " ")
+        for s in species_names.split(",")
+        if s.strip()
+    ]
+
+    results = {}
+
+    try:
+        for NAME in species_list:
+            gbif_result = gbif_match(NAME)
+
+            taxonomy = {
+                field: gbif_result.get(field)
+                for field in taxonomy_fields
+            }
+
+            if any(v is None for v in taxonomy.values()):
+                xml_result = ncbi_match(NAME)
+                if xml_result:
+                    ncbi_taxonomy = parse_ncbi_xml(xml_result)
+                    taxonomy.update(ncbi_taxonomy)
+
+            taxonomy = {f: taxonomy.get(f) or "UNK" for f in taxonomy_fields}
+            
+            all_unk = all(value == 'UNK' for value in taxonomy.values())
+            if not all_unk:
+                results[NAME] = taxonomy
+
+        return jsonify({"taxonomy": results}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # use Render's assigned port

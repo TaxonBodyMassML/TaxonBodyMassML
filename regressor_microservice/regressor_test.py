@@ -1,19 +1,16 @@
 import numpy as np
 import pandas as pd
-import xgboost as xgb
-import pickle
-import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import requests
 import json
 
-test = pd.read_csv("../data/test.csv")
+test = pd.read_csv("./data/test.csv")
 x_test = test.drop(["mass_g"], axis=1)
 for INDEX in range(0, 5):
     print("Expected mass:", test["mass_g"].iloc[INDEX])
 
-    URL = "http://127.0.0.1:8000/xgb_pred_single"
+    URL = "https://gasoline-tribunal-bowl-consider.trycloudflare.com/xgb_pred_single"
     payload = {
         "kingdom": x_test["kingdom"].iloc[INDEX],
         "phylum": x_test["phylum"].iloc[INDEX],

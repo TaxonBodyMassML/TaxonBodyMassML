@@ -1,7 +1,7 @@
 """
 pasquang
 pasquang@oregonstate.edu
-3/12/2026
+4/10/2026
 """
 
 import matplotlib.pyplot as plt
@@ -10,6 +10,7 @@ import pandas as pd
 import xgboost as xgb
 import pickleslicer
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
 
 MODEL_WRITE_FILE = './regressor_microservice/sliced_model/xgboost_model.pkl'
 
@@ -66,8 +67,8 @@ x_train, x_test = align_categories(x_train, x_test)
 # define model hyperparameters
 model = xgb.XGBRegressor(
     objective="reg:absoluteerror",
-    n_estimators=1000,
-    max_depth=50,
+    n_estimators=600,
+    max_depth=40,
     learning_rate=0.05,
     subsample=0.8,
     colsample_bytree=0.8,
@@ -103,8 +104,25 @@ plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "--")
 plt.savefig("xgboost_mass_prediction.png")
 plt.show()
 
-# Save the model using pickleslicer
-pickleslicer.dump(model, MODEL_WRITE_FILE, max_size=100*1024*1024)
+x_train2, x_calib, y_train2, y_calib = train_test_split(
+    x_train, y_train, test_size=0.2, random_state=42
+)
+
+model.fit(x_train2, y_train2)
+
+# compute calibration residuals
+y_calib_pred = model.predict(x_calib)
+calib_residuals = np.abs(y_calib - y_calib_pred)
+
+# 90% interval
+q = np.quantile(calib_residuals, 0.90)
+
+# save BOTH model + q
+pickleslicer.dump({
+    "model": model,
+    "q": float(q)
+}, MODEL_WRITE_FILE, max_size=100*1024*1024)
+#pickleslicer.dump(model, MODEL_WRITE_FILE, max_size=100*1024*1024)
 
 # Test if unknown values will cause the model to crash in eval
 print("\n")
