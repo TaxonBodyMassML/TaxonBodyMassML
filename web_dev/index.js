@@ -114,6 +114,10 @@ const handleGoClick = async (event) => {
       
       if (csvCheckbox.checked || data.results.length > 5) {
 
+      massText.textContent = 'Output written to csv file'
+      confidenceText.textContent = 'Output written to csv file'
+
+
   let csvContent =
     "Species,Predicted Mass (g),Lower Bound (g),Upper Bound (g)\n"
 
