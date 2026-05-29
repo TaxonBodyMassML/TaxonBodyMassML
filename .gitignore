@@ -201,6 +201,9 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Private project maintainer secrets (local only)
+private/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
