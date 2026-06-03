@@ -76,6 +76,10 @@
   flex: 1;
 }
 
+body {
+margin: 15px;
+}
+
 /* Help Page */
 
 h5 {
