@@ -10,7 +10,9 @@ All project interactions should allign with the guidelines described in the Oreg
 
 List prerequisites, setup steps, environment variables/secrets handling, and how to run the app locally.
 
-In order to use our application, there are no prerequisite installations or set-up steps. The site is hosted publically at: https://praterh.github.io/HaileysTaxonBodyMassML/web_dev/index.html
+In order to use our application, there are no prerequisite installations or set-up steps. The organization-owned site target is: [https://taxonbodymassml.github.io/](https://taxonbodymassml.github.io/)
+
+Migration boundary: the collaborator-owned site at [https://praterh.github.io/HaileysTaxonBodyMassML/](https://praterh.github.io/HaileysTaxonBodyMassML/) is treated as read-only source content and must not be modified during migration.
 
 ## Branching & Workflow
 

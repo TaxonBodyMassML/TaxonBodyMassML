@@ -14,6 +14,9 @@ const goBackButton = document.getElementById('go-back-button')
 const introBox = document.getElementById('intro-box')
 const closeIntro = document.getElementById('close-intro')
 const beginTutorialButton = document.getElementById('begin-tutorial-button')
+const API_BASE =
+  window.TAXON_CONFIG?.API_BASE_URL ||
+  'https://haileystaxonbodymassml.onrender.com'
 
 //handling session details (refreshing versus changing tabs)
 
@@ -71,7 +74,7 @@ const handleGoClick = async (event) => {
 
 // uses render to interact with the microservice
 const myLookupMicroservice = async (query) => {
-  const url = `https://haileystaxonbodymassml.onrender.com/single_species?species_name=${encodeURIComponent(query)}`
+  const url = `${API_BASE}/single_species?species_name=${encodeURIComponent(query)}`
 
   try {
     const response = await fetch(url)

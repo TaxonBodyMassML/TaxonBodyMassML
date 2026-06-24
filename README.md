@@ -21,3 +21,13 @@ Ecologists regard body mass as a master trait because it scales predictably with
 [FracFeed: Global database of the fraction of feeding predators](https://github.com/marknovak/FracFeed_DB)
 
 [Open Tree of Life APIs](https://github.com/OpenTreeOfLife/germinator/wiki/Open-Tree-of-Life-Web-APIs)
+
+## Organization Hosting Migration
+
+The project is migrating to organization-owned repositories and website hosting.
+
+1. Target organization: [TaxonBodyMassML organization](https://github.com/TaxonBodyMassML)
+2. Target website URL: [taxonbodymassml.github.io](https://taxonbodymassml.github.io/)
+3. Collaborator-hosted site remains unchanged and is treated as read-only source content.
+
+Operational migration steps are documented in [documentation/ORG_MIGRATION_RUNBOOK.md](documentation/ORG_MIGRATION_RUNBOOK.md).

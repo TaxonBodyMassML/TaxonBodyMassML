@@ -4,7 +4,9 @@ const questionBar = document.getElementById('question-bar');
 const submitQuestion = document.getElementById('submit-question');
 const questionsContent = document.getElementById('questions-content');
 
-const API_BASE = "https://haileystaxonbodymassml.onrender.com";
+const API_BASE =
+    window.TAXON_CONFIG?.API_BASE_URL ||
+    "https://haileystaxonbodymassml.onrender.com";
 
 async function loadQuestions() {
     try {
