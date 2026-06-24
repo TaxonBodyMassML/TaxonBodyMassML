@@ -2,10 +2,10 @@
 .nav-bar {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   margin: 0;
   list-style: none;
-  gap: 2rem;
+  gap: 1.5rem;
   padding: 0;
   background: white;
   border: 5px solid #28278c;
@@ -63,6 +63,22 @@
   z-index: 1000;
 }
 
+#nav-text {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+
+#nav-text-spot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+body {
+margin: 15px;
+}
 
 /* Help Page */
 
@@ -81,3 +97,68 @@ h5 {
   font-weight: bold;
   margin-left: 8px; 
 }
+
+/* Landing Page */
+
+.page-container {
+  max-width: 1400px;   
+  margin: 0 auto;       
+  padding: 40px 20px;  
+}
+
+#features-demo {
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  margin-top: 20px;
+}
+
+#features-list {
+  flex: 1;
+}
+
+#features-list li {
+  margin-bottom: 10px;;
+}
+
+#demo-video {
+  margin-left: 100px;
+  flex: 2;
+}
+
+#demo-video video {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 10px;
+}
+
+.headshot {
+  width: 120px;
+  height: 140px;
+  object-fit: cover;
+  border: 3px solid #28278c;
+  margin-bottom: 10px;
+}
+
+#team-photos {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+
+#team-photos > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 180px;
+  text-align: center;
+}
+
+#team-photos p {
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0;
+}
+

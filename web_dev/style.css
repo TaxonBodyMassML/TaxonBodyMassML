@@ -2,10 +2,10 @@
 .nav-bar {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   margin: 0;
   list-style: none;
-  gap: 2rem;
+  gap: 1.5rem;
   padding: 0;
   background: white;
   border: 5px solid #28278c;
@@ -61,6 +61,19 @@
 .dropdown:hover .dropdown-content {
   display: block;
   z-index: 1000;
+}
+
+#nav-text {
+  height: 40px;  
+  width: auto;  
+  display: block;
+}
+
+#nav-text-spot {
+  display: flex;
+  align-items: center;  
+  justify-content: center; 
+  flex: 1;                
 }
 
 /* Intro Box */
@@ -131,48 +144,63 @@
   border: 4px solid black;
   border-radius: 5px;
   position: fixed;
-  top: 35%;
-  left: 35%;
-  width: 30%;
-  height: 30%;
+  top: 20%;
+  left: 25%;
+  width: 50%;
+  padding: 40px 20px;
+  z-index: 100;
+  background-color: white;
 }
 
 #input-box.moved {
-  left: 17.5%;
+  left: 10%;
+  width: 35%;
 }
 
 #csv-check {
-  margin-top: 5px;
+  position: relative;
+  bottom: 10%;
+  margin-top: 10px;
 }
 
 #note {
-  font-size: 12.5px;
+  font-size: 15px;
   margin: 2px;
 }
 
 #input-bar {
-  margin: 10px;
-  border: 2px solid #28278c;
+  margin: 20px auto;
+  border: 3px solid #28278c;
+  height: 50px;
+  width: 60%;
+  font-size: 20px;
+  display: block;
 }
 
 #input-bar.moved {
-  position: relative;
   top: 15%;
+}
+
+#input-bar:focus {
+  outline: none;
+  box-shadow: 0 0 5px #28278c;
 }
 
 #go-button {
-  margin: 10px;
+  margin-top: 20px;
   background: white;
+  border: 2px solid #28278c;
+  height: 40px;
+  width: 120px;
+  font-size: 16px;
 }
 
 #go-button.moved {
-  position: relative;
-  top: 15%;
+  bottom: 10%;
 }
 
-#single-or-list.moved {
-  position: relative;
-  top: 15%;
+#single-or-list {
+  margin-top: 20px;
 }
 
 #single-button {
@@ -201,42 +229,83 @@
 
 #output-box {
   text-align: center;
-  width: 30%;
-  height: 30%;
   border: 4px solid black;
   border-radius: 5px;
   position: fixed;
-  top: 35%;
-  right: 17.5%;
+  top: 20%;
+  padding: 40px 20px;
+  right: 10%;
+  width: 35%;
+  z-index: 100;
+  background-color: white;
 }
 
 #output-box.moved {
-  left: 17.5%;
+  left: 11.5%;
+  right: auto;
 }
 
-#mass-output {
-  height: 50%;
-  width: 46.75%;
-  margin: 3.5px;
-  float: left;
-  border: 2px solid black;
+#output-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.output-heading {
+  margin-top: 0;
+  margin-bottom: 2px;
+  color: #28278c;
   font-size: 18px;
 }
 
-#confidence-output {
-  height: 50%;
-  width: 46.75%;
-  margin: 3.5px;
-  float: left;
+#mass-section,
+#confidence-section {
+  width: 90%;
+  margin: 6px 0;
+}
+
+#mass-output, #confidence-output {
+  width: 90%;
+  margin: 3px 0;
   border: 2px solid black;
+  padding: 3px;
+}
+
+#confidence-output {
+  margin-top: 5px !important;
+}	
+
+#output-box-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
 }
 
 #learn-more-arrow {
-  margin: 10px;
+  margin-top: 10px;
+  background: white;
+  border: 2px solid #28278c;
+  height: 45px;
+  width: 140px;
+  font-size: 16px;
+}
+
+#session-history-arrow {
+  margin-top: 10px;
+  background: white;
+  border: 2px solid #28278c;
+  height: 45px;
+  width: 140px;
+  font-size: 16px;
 }
 
 #go-back-button {
-  margin: 10px;
+  margin-top: 10px;
+  background: white;
+  border: 2px solid #28278c;
+  height: 40px;
+  width: 120px;
+  font-size: 16px;
 }
 
 /* Explanation Modal */
@@ -246,11 +315,46 @@
   border: 4px solid black;
   border-radius: 5px;
   height: 70%;
-  width: 30%;
+  width: 35%;
   position: fixed;
   top: 15%;
-  right: 17.5%;
+  right: 11.5%;
+  z-index: 100;
+  background-color: white;
+
 }
+
+/* Session History Modal */
+
+#session-history-modal {
+  text-align: center;
+  border: 4px solid black;
+  border-radius: 5px;
+  height: 70%;
+  width: 35%;
+  position: fixed;
+  top: 15%;
+  right: 11.5%;
+  z-index: 100;
+  background-color: white;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+#bottom-container {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+}
+
+#bottom-taxon-graphic {
+  max-width: 100%;
+  width: 1100px;
+  z-index: 1;
+}
+
 
 
 /* Small-screen friendly css */
@@ -270,7 +374,7 @@
     font-size: 12.5px;
   }
 
-  #on-right {
+  .on-right {
 	margin-left: 0%;
   }
 
@@ -321,6 +425,4 @@
     padding-bottom: 20px;
   }
 }
-
-
 

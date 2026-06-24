@@ -5,36 +5,57 @@
     <link rel="stylesheet" href="info_pages.css?v=2" />
   </head>
   <style>
-    img {
-      display: inline-block;
-      margin: 20px;
-      max-width: 35%;
-      height: auto;
+    .image-container {
+	margin-top: 20px;
+  	display: flex;
+  	justify-content: center;
+ 	gap: 30px;
+  	flex-wrap: wrap;
+	align-items: center;
     }
+
+    .graph {
+  	width: 35%;
+  	height: auto;
+	padding: 5px;
+	border: 3px solid #28278c;
+    }
+
+    .diagram {
+  	width: 40%;
+  	height: auto;
+  	border: 3px solid #28278c;
+    }
+    
     body {
       text-align: center;
     }
+
   </style>
   <body>
     <!-- jscpd:ignore-start -->
     <ul class="nav-bar">
       <li><a href="./index.html">Home</a></li>
-      <li><a href="./data_visualization.html">Data Visualization</a></li>
+      <li><a href="./data_visualization.html">Visualization</a></li>
 
       <li class="dropdown">
         <a href="#">More Information</a>
         <ul class="dropdown-content">
+	  <li><a href="./project.html">The TaxonBodyMassML Project</a></li>
           <li><a href="./alg.html">The Algorithm</a></li>
           <li><a href="./citations.html">Resources</a></li>
         </ul>
       </li>
 
+	<li id = "nav-text-spot"> <img id = "nav-text" src="navText.png"></img></li>
+
       <li class ="on-right"><a href="./help_page.html">Help</a></li>
      </ul>
     <!-- jscpd:ignore-end -->
 
-    <!-- this is just a way for us to see the data histograms on a UI -->
-    <img src="znorm_yeo-johnson.png" alt="z normalization" />
-    <img src="mass_log1p.png" alt="log-scaled" />
+    <div class="image-container">
+    <img class = "graph" src="graph.png" alt = "predicted vs real masses" />
+    <img class = "diagram" src="arch_diagram.png" alt="architecture diagram" />
+    </div>
   </body>
 </html>

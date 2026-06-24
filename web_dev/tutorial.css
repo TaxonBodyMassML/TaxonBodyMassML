@@ -16,112 +16,63 @@
 }
 
 .tool-tip {
+  position: absolute;
+  width: 240px;
+  max-width: 90%;
+  padding: 20px;
   background-color: white;
-  margin: 5px;
-  text-align: center;
-  width: 20%;
-  height: 50%;
-  padding: 15px;
-  border: 2px, solid, black;
-  font-size: 20px;
+  border: 2px solid black;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 15px;
+  font-size: 18px;
   z-index: 100000;
 }
 
 .tool-tip button {
+  flex: 1;
+  padding: 8px;
   background-color: white;
-  border: 2px, solid, black;
+  border: 2px solid black;
+}
+
+.tool-tip .button-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .tool-tip > button:hover {
   background-color: #dadef7 !important;
 }
 
-.next-button {
-  position: absolute;
-  width: 20%;
-  left: 16.5%;
-  bottom: 5%;
-}
-
-.cancel {
-  position: absolute;
-  width: 45%;
-  right: 16.5%;
-  bottom: 5%;
-}
-
-.final {
- left: 27.5% !important;
-}
-
-#single-tutorial {
-  position: absolute;
-  left: 6.25%;
-  top: 25%;
-}
-
-#list-tutorial {
-  position: absolute;
-  left: 6.25%;
-  top: 25%;
-}
-
-#csv-check-tutorial {
-  position: absolute;
-  left: 6.25%;
-  top: 25%;
-}
-
-#input-bar-tutorial {
-  position: absolute;
-  left: 6.25%;
-  top: 25%;
-}
-
+#single-tutorial,
+#list-tutorial,
+#csv-check-tutorial,
+#input-bar-tutorial,
 #go-tutorial {
-  position: absolute;
-  left: 6.25%;
-  top: 25%;
+  left: 0.5%;
+  top: 20%;
 }
 
-#output-tutorial {
-  position: absolute;
-  width: 50%;
-  height: 22%;
-  right: 23%;
-  bottom: 2%;
+#output-tutorial,
+#change-input-tutorial,
+#go-again-tutorial,
+#session-history-tutorial {
+  left: 0.5%;
+  bottom: 0.5%;
+  width: 533px !important;
 }
 
-#change-input-tutorial {
-  position: absolute;
-  width: 50%;
-  height: 22%;
-  right: 23%;
-  bottom: 2%;
-}
-
-#go-again-tutorial {
-  position: absolute;
-  width: 50%;
-  height: 22%;
-  right: 23%;
-  bottom: 2%;
-}
-
-#learn-more-tutorial {
-  position: absolute;
-  width: 50%;
-  height: 22%;
-  right: 23%;
-  bottom: 2%;
-}
-
-#data-tutorial {
-  position: absolute;
-  width: 50%;
-  height: 22%;
-  right: 23%;
-  bottom: 2%;
+#learn-more-tutorial,
+#data-tutorial,
+#information-tutorial,
+#help-page-tutorial {
+  left: 25%;
+  bottom: 0.5%;
+  width: 533px !important;
 }
 
 .tutorial-clicked {
@@ -131,20 +82,3 @@
   border-top: none !important;
   border-bottom: none !important;
 }
-
-#information-tutorial {
-  position: absolute;
-  width: 50%;
-  height: 22%;
-  right: 23%;
-  bottom: 2%;
-}
-
-#help-page-tutorial {
-  position: absolute;
-  width: 50%;
-  height: 22%;
-  right: 23%;
-  bottom: 2%;
-}
-

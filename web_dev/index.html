@@ -2,25 +2,27 @@
 <html>
   <head>
     <title>TaxonBodyMassML</title>
-    <link rel="stylesheet" href="style.css?v=8" />
+    <link rel="stylesheet" href="style.css?v=11" />
     <link rel="stylesheet" href="tutorial.css?v=1" />
   </head>
-  <script src="site_config.js?v=1" charset="utf-8" defer></script>
-  <script src="index.js?v=7" charset="utf-8" defer></script>
+  <script src="index.js?v=10" charset="utf-8" defer></script>
   <script src="tutorial.js" charset="utf-8" defer></script>
   <body>
     <!-- jscpd:ignore-start -->
     <ul class="nav-bar">
       <li><a id = "home-button" href="./index.html">Home</a></li>
-      <li id = "data-button"><a href="./data_visualization.html">Data Visualization</a></li>
+      <li id = "data-button"><a href="./data_visualization.html">Visualization</a></li>
 
       <li id = "info-button" class="dropdown">
         <a href="#">More Information</a>
         <ul class="dropdown-content">
+	  <li><a href="./project.html">The TaxonBodyMassML Project</a></li>
           <li><a href="./alg.html">The Algorithm</a></li>
-          <li><a href="./citations.html">Resources</a></li>
+	  <li><a href="./citations.html">Resources</a></li>
         </ul>
       </li>
+
+      <li id = "nav-text-spot"> <img id = "nav-text" src="navText.png"></img></li>
 
       <li id = "help-button" class="on-right"><a href="./help_page.html">Help</a></li>
      </ul>
@@ -44,62 +46,107 @@
       </div>
       <div id = "single-tutorial" class = "tool-tip hidden">
 	      <p>First, you will select whether you are inputting a single species, or a list of species. If you are inputting just one species, you will click the 'Single' button below the input bar. If this option is selected, it will turn blue. (It is selected by default!)</p>
+	      <div class="button-row">
 	      <button class = "next-button" id = "single-next">Next</button>
 	      <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
       <div id = "list-tutorial" class = "tool-tip hidden">
               <p>If you are inputting a list of species names, you will instead select the 'List' button under the input bar. If this option is selected, it will turn blue.</p>
-              <button class = "next-button" id = "list-next">Next</button>
+              <div class="button-row">
+	      <button class = "prev-button" id = "list-prev">Previous</button>
+	      <button class = "next-button" id = "list-next">Next</button>
               <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
       <div id = "csv-check-tutorial" class = "tool-tip hidden">
               <p>After clicking the 'List' button, you have an option to convert your output to a CSV file deliverable. If you would like to opt in to this feature, you will click the checkbox. (If your list contains more than 5 species, this conversion will be done automatically.)</p>
-              <button class = "next-button" id = "csv-check-next">Next</button>
+              <div class="button-row">
+	      <button class = "prev-button" id = "csv-check-prev">Previous</button>
+	      <button class = "next-button" id = "csv-check-next">Next</button>
               <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
       <div id = "input-bar-tutorial" class = "tool-tip hidden">
-              <p>At this point, you will go ahead and enter the name or list of names (each species separated by a semicolon (?)) in the input bar where it says "Input species name(s)". In this tutorial, we will input just one species.</p>
-              <button class = "next-button" id = "input-bar-next">Next</button>
+              <p>At this point, you will go ahead and enter the name or list of names (each species separated by a comma) in the input bar where it says "Input species name(s)". In this tutorial, we will input just one species.</p>
+              <div class="button-row">
+	      <button class = "prev-button" id = "input-bar-prev">Previous</button>
+	      <button class = "next-button" id = "input-bar-next">Next</button>
               <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
       <div id = "go-tutorial" class = "tool-tip hidden">
               <p>After you are satisfied with your input, you will simply select the "Go!" button located underneath the "Single" and "List" buttons.</p>
-              <button class = "next-button" id = "go-next">Next</button>
+              <div class="button-row">
+	      <button class = "prev-button" id = "go-prev">Previous</button>
+	      <button class = "next-button" id = "go-next">Next</button>
               <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
       <div id = "output-tutorial" class = "tool-tip hidden">
               <p>After clicking "Go!", your output will generate in a new modal on the right half of the screen. The generation may take a moment, but if you have entered a valid species name, the mass will be displayed. </p>
-              <button class = "next-button" id = "output-next">Next</button>
+              <div class="button-row">
+	      <button class = "prev-button" id = "output-prev">Previous</button>
+	      <button class = "next-button" id = "output-next">Next</button>
               <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
       <div id = "change-input-tutorial" class = "tool-tip hidden">
               <p>If you need to change your input, or you want to get the mass for a different species, you will change the input you typed originally by simply altering the text in the input bar.</p>
-              <button class = "next-button" id = "change-input-next">Next</button>
+              <div class="button-row">
+	      <button class = "prev-button" id = "change-input-prev">Previous</button>
+	      <button class = "next-button" id = "change-input-next">Next</button>
               <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
       <div id = "go-again-tutorial" class = "tool-tip hidden">
               <p>After you are ready, you will then click the "Go Again!" button for your new output. (You are also welcome to change your selection from "Single" to "List", or vice versa.)</p>
-              <button class = "next-button" id = "go-again-next">Next</button>
+              <div class="button-row">
+	      <button class = "prev-button" id = "go-again-prev">Previous</button>
+	      <button class = "next-button" id = "go-again-next">Next</button>
               <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
+      <div id = "session-history-tutorial" class = "tool-tip hidden">
+		<p>To view all of the masses you have generated, you will click the "Session History" button under the output.</p>
+		<div class="button-row">
+		<button class = "prev-button" id = "session-history-prev">Previous</button>
+		<button class = "next-button" id = "session-history-next">Next</button>
+		<button class = "cancel">Exit Tutorial</button>
+		</div>
+      </div>
+
+
       <div id = "learn-more-tutorial" class = "tool-tip hidden">
               <p>If you want to learn more about how your output was generated, you will click the "Learn More" button under the output.</p>
-              <button class = "next-button" id = "learn-more-next">Next</button>
+              <div class="button-row">
+	      <button class = "prev-button" id = "learn-more-prev">Previous</button>
+	      <button class = "next-button" id = "learn-more-next">Next</button>
               <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
       <div id = "data-tutorial" class = "tool-tip hidden">
               <p>If you are interested in learning more about the data used to make this website, you will click the "Data" tab in the navigation bar at the top of the screen.</p>
-              <button class = "next-button" id = "data-next">Next</button>
+              <div class="button-row">
+	      <button class = "prev-button" id = "data-prev">Previous</button>
+	      <button class = "next-button" id = "data-next">Next</button>
               <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
       <div id = "information-tutorial" class = "tool-tip hidden">
               <p>If you are interested in learning more about our process, algorithm, or sources, you will investigate the "More Information" tab in the navigation bar at the top of the screen.</p>
-              <button class = "next-button" id = "information-next">Next</button>
+              <div class="button-row">
+	      <button class = "prev-button" id = "information-prev">Previous</button>
+	      <button class = "next-button" id = "information-next">Next</button>
               <button class = "cancel">Exit Tutorial</button>
+	      </div>
       </div>
       <div id = "help-page-tutorial" class = "tool-tip hidden">
               <p>And finally, if you need more help beyond the scope of this tutorial, or if you have a question to ask us, you will click the "Help" button in the navigation bar at the top of the screen. </p>
-              <button class = "final cancel">Exit Tutorial</button>
+              <div class="button-row">
+	      <button class = "prev-button" id = "help-prev">Previous</button>
+	      <button class = "final cancel">Exit Tutorial</button>
+	      </div>
       </div>
 
 
@@ -122,7 +169,7 @@
           <input id = "csv-checkbox" type="checkbox" />
           Convert output to .csv file?
           <p id="note">
-            note: any input with more than x species will be automatically
+            note: any input with more than 5 species will be automatically
             converted to a .csv file
           </p>
         </label>
@@ -135,24 +182,48 @@
     <!-- Main box containing output: mass and confidence interval -->
     <!-- Is only visible after user clicks go -->
     <div id="output-box" class="hidden">
-      <div id="mass-output"></div>
+      
+      <div id="mass-output">
+  	<h3 class="output-heading">Predicted Mass:</h3>
+  	<p id="mass-text"></p>
+      </div>
 
       <div id="confidence-output">
-        <p>Confidence Output</p>
+  	<h3 class="output-heading">90% Confidence Interval:</h3>
+  	<p id="confidence-text"></p>
       </div>
+
+      <div id = "output-box-buttons">
+      
+      <!-- expands session history -->
+      <!-- clicking this button hides input box -->
+      <button id="session-history-arrow" class="hidden">View Session History</button>
 
       <!-- expands explanation modal -->
       <!-- clicking this button hides input box -->
       <button id="learn-more-arrow" class="hidden">Learn More?</button>
 
+      </div>
+
       <!-- Only visible after explanation modal is expanded -->
       <button id="go-back-button" class="hidden">Go Back</button>
     </div>
+
+    <!-- Box with body masses from this session -->
+    <!-- Is only visible after session history arrow is clicked -->
+    <div id="session-history-modal" class="hidden">
+      <p>Session History</p>
+    </div>	
 
     <!-- Box with information about how mass was reached -->
     <!-- Is only visible after learn more arrow is clicked -->
     <div id="explanation-modal" class="hidden">
       <p>Explanation Modal</p>
     </div>
+
+    <div id = "bottom-container">
+    <img id="bottom-taxon-graphic" class="hidden" src="bottomGraphic.png" alt= "longer animal silhouettes graphic"></img>
+    </div>
+
   </body>
 </html>
