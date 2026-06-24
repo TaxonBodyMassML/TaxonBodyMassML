@@ -30,6 +30,7 @@ taxonomy_fields = [
     "species",
 ]
 
+
 def ncbi_match(input_name):
     """
     Get taxonomy lineage from NCBI
@@ -104,6 +105,7 @@ def gbif_match(input_name):
         return None
     return r.json()
 
+
 @app.route("/single_species", methods=["GET"])
 def single_species():
     """
@@ -116,48 +118,45 @@ def single_species():
     # if there is no input species name, then return an error
     if not species_name:
         return jsonify({"error": "Missing 'species_name' parameter"}), 400
-    
+
     species_name = species_name.lower()
-    
-     # clean existing taxonomy data for request
+
+    # clean existing taxonomy data for request
     NAME = str(species_name).strip().replace("_", " ")
 
     try:
         gbif_result = gbif_match(NAME)
         print(NAME)
-        
-        taxonomy = {
-            field: gbif_result.get(field)
-            for field in taxonomy_fields
-        }
+
+        taxonomy = {field: gbif_result.get(field) for field in taxonomy_fields}
 
         if any(taxon_field is None for taxon_field in taxonomy.values()):
             xml_result = ncbi_match(NAME)
             if xml_result:
                 ncbi_taxonomy = parse_ncbi_xml(xml_result)
                 taxonomy.update(ncbi_taxonomy)
-                
+
         taxonomy = {field: taxonomy.get(field) or "UNK" for field in taxonomy_fields}
-        
-        all_unk = all(value == 'UNK' for value in taxonomy.values())
+
+        all_unk = all(value == "UNK" for value in taxonomy.values())
         if all_unk:
-            return jsonify({
-                "error": "Could not find a valid taxonomy for this species."
-            }), 512
+            return (
+                jsonify({"error": "Could not find a valid taxonomy for this species."}),
+                512,
+            )
         else:
-            return jsonify({
-                "taxonomy": taxonomy
-            }), 200
+            return jsonify({"taxonomy": taxonomy}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
+
 @app.route("/multi_species", methods=["GET"])
 def multi_species():
-    """ 
-    multi_species() 
-    ------------------- 
-    receive a request for the taxonomy of a list of species 
+    """
+    multi_species()
+    -------------------
+    receive a request for the taxonomy of a list of species
     """
     species_names = request.args.get("species_name")
 
@@ -176,10 +175,7 @@ def multi_species():
         for NAME in species_list:
             gbif_result = gbif_match(NAME)
 
-            taxonomy = {
-                field: gbif_result.get(field)
-                for field in taxonomy_fields
-            }
+            taxonomy = {field: gbif_result.get(field) for field in taxonomy_fields}
 
             if any(v is None for v in taxonomy.values()):
                 xml_result = ncbi_match(NAME)
@@ -188,8 +184,8 @@ def multi_species():
                     taxonomy.update(ncbi_taxonomy)
 
             taxonomy = {f: taxonomy.get(f) or "UNK" for f in taxonomy_fields}
-            
-            all_unk = all(value == 'UNK' for value in taxonomy.values())
+
+            all_unk = all(value == "UNK" for value in taxonomy.values())
             if not all_unk:
                 results[NAME] = taxonomy
 
@@ -197,6 +193,7 @@ def multi_species():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # use Render's assigned port
