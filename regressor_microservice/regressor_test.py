@@ -18,7 +18,7 @@ for INDEX in range(0, 5):
         "order": x_test["order"].iloc[INDEX],
         "family": x_test["family"].iloc[INDEX],
         "genus": x_test["genus"].iloc[INDEX],
-        "species": x_test["species"].iloc[INDEX]
+        "species": x_test["species"].iloc[INDEX],
     }
 
     response = requests.post(URL, json=payload)
