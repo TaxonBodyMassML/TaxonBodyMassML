@@ -205,3 +205,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# TaxonBodyMassML model artifacts (large files; hosted on Hugging Face Hub)
+artifacts/

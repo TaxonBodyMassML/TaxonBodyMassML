@@ -1,0 +1,39 @@
+Package: TaxonBodyMassML
+Title: Predict Species Body Mass Using the TaxonBodyMassML XGBoost Model
+Version: 0.1.0
+Authors@R: c(
+    person("Grant", "Pasquantonio", role = "aut"),
+    person("Anish Chowdary", "Pendurti", role = "aut"),
+    person("Hailey", "Prater", role = "aut"),
+    person("Mark", "Novak", role = c("aut", "cre"),
+           email = "mark.novak@oregonstate.edu"))
+Description: Predicts body mass for species from taxonomic identity using an
+    XGBoost machine learning model trained on published and unpublished body
+    mass data spanning the tree of life. Taxonomy is resolved automatically
+    via the GBIF fuzzy-match API with an NCBI Entrez fallback. Model artifacts
+    (~2 GB) are downloaded from Hugging Face Hub on first use and cached
+    locally. Internet access is required on first use for artifact download and
+    for taxonomy lookups.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends: R (>= 4.1)
+Imports:
+    xgboost (>= 1.7),
+    httr2 (>= 0.2),
+    jsonlite (>= 1.8),
+    openssl (>= 2.0),
+    xml2 (>= 1.3),
+    parallel,
+    stats,
+    tools,
+    utils
+Suggests:
+    cli (>= 3.0),
+    testthat (>= 3.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+URL: https://taxonbodymassml.github.io, https://github.com/marknovak/TaxonBodyMassML
+BugReports: https://github.com/marknovak/TaxonBodyMassML/issues

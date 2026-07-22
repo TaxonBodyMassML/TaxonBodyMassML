@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "TaxonBodyMassML"
+abstract: >
+  A machine-learning package for predicting species body mass from taxonomic
+  identity, using an XGBoost model trained on published and unpublished data
+  from across the tree of life.
+note: "A manuscript describing this work is in preparation."
+repository-code: "https://github.com/marknovak/TaxonBodyMassML"
+url: "https://taxonbodymassml.github.io"
+license: MIT
+authors:
+  - family-names: Pasquantonio
+    given-names: Grant
+  - family-names: Pendurti
+    given-names: Anish Chowdary
+  - family-names: Prater
+    given-names: Hailey
+  - family-names: Novak
+    given-names: Mark
+    affiliation: Oregon State University
