@@ -17,6 +17,27 @@ Ecologists regard body mass as a master trait because it scales predictably with
 3. A responsive web application (frontend + backend) that accepts single or comma‑delimited species lists, queries the model, and displays and exports results with clear provenance and uncertainty.  
 4. A technical report detailing model architecture, training procedure, validation results, and guidance for future extensions.  
 
+## Packages
+
+The model is available as both R and Python packages. The pre-trained model (~2 GB) and associated artifacts are automatically downloaded from [Hugging Face](https://huggingface.co/marknovak/TaxonBodyMassML) on first use; internet access is also required for taxonomy lookups via the GBIF fuzzy-match API and NCBI Entrez.
+
+### R
+
+```r
+# install.packages("pak")
+pak::pkg_install("marknovak/TaxonBodyMassML/packages/r")
+```
+
+See the [Getting Started vignette](packages/r/vignettes/getting-started.Rmd) for full usage including confidence intervals, taxonomy lookup, disk caching, and citation instructions.
+
+### Python
+
+```bash
+pip install git+https://github.com/marknovak/TaxonBodyMassML.git#subdirectory=packages/python
+```
+
+See the [Python package README](packages/python/README.md) for the full API reference.
+
 ## Data Sources
 [FracFeed: Global database of the fraction of feeding predators](https://github.com/marknovak/FracFeed_DB)
 
