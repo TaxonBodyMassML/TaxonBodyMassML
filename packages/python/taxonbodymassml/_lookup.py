@@ -148,6 +148,8 @@ def _parse_ncbi_xml(xml_text: str) -> dict:
             name_el = taxon.find("ScientificName")
             if rank_el is None or name_el is None:
                 continue
+            if rank_el.text is None:
+                continue
             taxons[rank_el.text.lower()] = name_el.text
     sp = root.find(".//ScientificName")
     if sp is not None:
@@ -253,7 +255,11 @@ def lookup_taxonomy(species) -> pd.DataFrame:
         if tax is None:
             unresolvable.append(n)
             rows.append(
-                {"species": n, **{c: None for c in TAXONOMY_COLS[:-1]}, "species_resolved": None}
+                {
+                    "species": n,
+                    **{c: None for c in TAXONOMY_COLS[:-1]},
+                    "species_resolved": None,
+                }
             )
         else:
             rows.append(

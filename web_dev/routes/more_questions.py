@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request
 from more_questions_db import get_db_connection
 
 questions_bp = Blueprint("questions", __name__)

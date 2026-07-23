@@ -130,8 +130,7 @@ for feat_idx, fname in enumerate(feature_names_model):
     offsets = e["offsets"]
     values = e["values"]
     strings = [
-        bytes(values[offsets[i]:offsets[i + 1]]).decode("utf-8")
-        for i in range(len(offsets) - 1)
+        bytes(values[offsets[i] : offsets[i + 1]]).decode("utf-8") for i in range(len(offsets) - 1)
     ]
     categories[fname] = strings  # index == training-time integer code
     print(f"  {fname}: {len(strings)} categories (incl. UNK)")

@@ -6,11 +6,12 @@ operations in the web development module.
 """
 
 import os
-from more_questions_db import init_db
-from routes.more_questions import questions_bp
+
 import pandas as pd
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from more_questions_db import init_db
+from routes.more_questions import questions_bp
 
 app = Flask(__name__)
 CORS(app)

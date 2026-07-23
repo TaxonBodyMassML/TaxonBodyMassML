@@ -192,7 +192,11 @@ def predict_mass(
         if level is not None:
             for r in nan_rows:
                 r.update(
-                    {"lower_bound": float("nan"), "upper_bound": float("nan"), "confidence": level}
+                    {
+                        "lower_bound": float("nan"),
+                        "upper_bound": float("nan"),
+                        "confidence": level,
+                    }
                 )
         if include_taxonomy:
             for r in nan_rows:

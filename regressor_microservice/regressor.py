@@ -6,14 +6,15 @@ pasquang@oregonstate.edu
 
 # run using: gunicorn -w 1 -b 127.0.0.1:8000 'regressor:create_wsgi_app()'
 
+import os
+import traceback
+
 import numpy as np
 import pandas as pd
-import xgboost as xgb
 import pickleslicer
-import os
+import xgboost as xgb
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import traceback
 
 MODEL_READ_FILE = "./sliced_model/xgboost_model.pkl"
 
@@ -37,9 +38,7 @@ def align_categories(train_df, test_df):
 
         # adds the UNK category and both train and test categories
         categories = list(
-            set(train_df[col].cat.categories)
-            | set(list(test_df[col].cat.categories))
-            | {"UNK"}
+            set(train_df[col].cat.categories) | set(list(test_df[col].cat.categories)) | {"UNK"}
         )
 
         train_df[col] = train_df[col].cat.set_categories(categories)
@@ -97,9 +96,7 @@ def create_app(loaded_model, x_train, q):
                 if col in x_train.columns and (
                     df[col].dtype.name == "object" or df[col].dtype.name == "str"
                 ):
-                    df[col] = df[col].where(
-                        df[col].isin(x_train[col].cat.categories), other="UNK"
-                    )
+                    df[col] = df[col].where(df[col].isin(x_train[col].cat.categories), other="UNK")
 
             _, df = align_categories(x_train.copy(), df)
 
@@ -154,9 +151,7 @@ def create_app(loaded_model, x_train, q):
             if col in x_train.columns and (
                 df[col].dtype.name == "object" or df[col].dtype.name == "str"
             ):
-                df[col] = df[col].where(
-                    df[col].isin(x_train[col].cat.categories), other="UNK"
-                )
+                df[col] = df[col].where(df[col].isin(x_train[col].cat.categories), other="UNK")
 
         _, df = align_categories(x_train.copy(), df)
 

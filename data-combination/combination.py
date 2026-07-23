@@ -41,9 +41,7 @@ ott_ids = resolve_to_ott(species_names)
 df_csv["ott_id"] = df_csv["species_name"].map(ott_ids)
 
 # Save the merged data to a new CSV file in the 'data-combination' folder
-merged_file_path = os.path.join(
-    "data-combination", "merged_data.csv"
-)  # Output file path
+merged_file_path = os.path.join("data-combination", "merged_data.csv")  # Output file path
 df_csv.to_csv(merged_file_path, index=False)
 
 # Output a success message

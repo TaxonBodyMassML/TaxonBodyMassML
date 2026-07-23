@@ -95,16 +95,16 @@ missed_species = []
 
 
 def _fetch_row(args):
-    i, NAME = args
+    idx, name = args
     try:
-        result = gbif_match(NAME)
+        result = gbif_match(name)
         classification = result.get("classification") or []
-        ranks = {r["rank"].lower(): r["name"] for r in classification}
-        confidence = (result.get("diagnostics") or {}).get("confidence")
-        return i, ranks, confidence, None
-    except Exception as e:
-        print(f"Failed on {NAME}: {e}")
-        return i, {}, None, NAME
+        rank_map = {r["rank"].lower(): r["name"] for r in classification}
+        confidence_score = (result.get("diagnostics") or {}).get("confidence")
+        return idx, rank_map, confidence_score, None
+    except (requests.RequestException, KeyError, AttributeError) as e:
+        print(f"Failed on {name}: {e}")
+        return idx, {}, None, name
 
 
 # build the work list, skipping already-processed rows
@@ -119,14 +119,14 @@ CHUNK_SIZE = 100
 with ThreadPoolExecutor(max_workers=8) as pool:
     for chunk_start in range(0, len(work), CHUNK_SIZE):
         chunk = work[chunk_start : chunk_start + CHUNK_SIZE]
-        for i, ranks, confidence, missed in pool.map(_fetch_row, chunk):
+        for idx, rank_map, confidence_score, missed in pool.map(_fetch_row, chunk):
             if missed:
                 missed_species.append(missed)
             else:
-                for rank, name in ranks.items():
-                    df.at[i, rank] = name
-                df.at[i, "confidence"] = confidence
-                print(df.at[i, "taxon"] if "taxon" in df.columns else i)
+                for rank, rank_name in rank_map.items():
+                    df.at[idx, rank] = rank_name
+                df.at[idx, "confidence"] = confidence_score
+                print(df.at[idx, "taxon"] if "taxon" in df.columns else idx)
         print(f"Saving checkpoint at index {chunk[-1][0]}")
         df.to_csv(OUTPUT_CSV, index=False)
 

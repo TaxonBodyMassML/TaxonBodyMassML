@@ -26,7 +26,7 @@ See the [Getting Started vignette](packages/r/vignettes/getting-started.Rmd) for
 pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.1.0/taxonbodymassml-0.1.0-py3-none-any.whl"
 ```
 
-See the [Python package README](packages/python/README.md) for the full API reference.
+See the [Python package readme](packages/python/README.md) for the full API reference.
 
 ## Data Sources
 See the data sources used to train the model in the [Data Sources](docs/data-sources.md) document, which includes the [FracFeed: Global database of the fraction of feeding predators](https://github.com/marknovak/FracFeed_DB), which motivated the compilation of the body mass data.

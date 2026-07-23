@@ -13,7 +13,8 @@ import pytest
 
 INTEGRATION = os.environ.get("TAXONBODYMASSML_RUN_INTEGRATION", "0") == "1"
 skip_without_artifacts = pytest.mark.skipif(
-    not INTEGRATION, reason="Requires model artifacts; set TAXONBODYMASSML_RUN_INTEGRATION=1"
+    not INTEGRATION,
+    reason="Requires model artifacts; set TAXONBODYMASSML_RUN_INTEGRATION=1",
 )
 
 

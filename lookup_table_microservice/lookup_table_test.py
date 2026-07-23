@@ -1,7 +1,8 @@
+import json
+
+import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import requests
-import json
 
 URL = "http://127.0.0.1:5000/single_species"
 payload = {"species_name": "Pseudotsuga menziesii"}

@@ -74,6 +74,7 @@ def test_lookup_list():
 @skip_without_network
 def test_lookup_unresolvable():
     import warnings
+
     import taxonbodymassml as tbm
 
     with warnings.catch_warnings(record=True) as w:

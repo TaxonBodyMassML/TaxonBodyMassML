@@ -10,7 +10,7 @@ Quick start::
 
 __version__ = "0.1.0"
 
-from ._lookup import tbm_clear_cache, lookup_taxonomy, tbm_options
+from ._lookup import lookup_taxonomy, tbm_clear_cache, tbm_options
 from ._model import download_model
 from ._predict import predict_mass
 

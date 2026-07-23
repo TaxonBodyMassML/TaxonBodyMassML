@@ -77,9 +77,7 @@ def main():
     # plt.xlabel("Z-Normalized Mass")
     # plt.show(block=True)
 
-    df = df.drop(
-        ["taxon", "source_mass", "n", "confidence", "subspecies", "form"], axis=1
-    )
+    df = df.drop(["taxon", "source_mass", "n", "confidence", "subspecies", "form"], axis=1)
     print("Number of missing values in each column:\n", df.isna().sum())
     df = df.dropna()
     print(df)

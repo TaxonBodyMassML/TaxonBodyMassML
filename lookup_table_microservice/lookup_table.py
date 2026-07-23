@@ -8,13 +8,12 @@ operations in the web development module.
 import os
 import threading
 import time
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 
+import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import pandas as pd
-import requests
-import xml.etree.ElementTree as ET
 
 app = Flask(__name__)
 CORS(app)
@@ -46,12 +45,11 @@ def _ncbi_rate() -> float:
 
 
 def _ncbi_wait() -> None:
-    global _NCBI_NEXT_SLOT
+    global _NCBI_NEXT_SLOT  # pylint: disable=global-statement
     with _NCBI_LOCK:
         now = time.monotonic()
         rate = _ncbi_rate()
-        if _NCBI_NEXT_SLOT < now:
-            _NCBI_NEXT_SLOT = now
+        _NCBI_NEXT_SLOT = max(_NCBI_NEXT_SLOT, now)
         wait_until = _NCBI_NEXT_SLOT
         _NCBI_NEXT_SLOT += 1.0 / rate
     sleep_for = wait_until - time.monotonic()
@@ -67,7 +65,7 @@ _TRANSIENT = {429, 500, 502, 503, 504}
 
 
 def _http_get(url, params, *, ncbi=False, timeout=10):
-    for attempt, delay in enumerate((*_RETRY_DELAYS, None)):
+    for delay in (*_RETRY_DELAYS, None):
         if ncbi:
             _ncbi_wait()
             api_key = os.environ.get("NCBI_API_KEY")
@@ -83,6 +81,7 @@ def _http_get(url, params, *, ncbi=False, timeout=10):
         if delay is not None:
             time.sleep(delay)
     return resp
+
 
 taxonomy_fields = [
     "kingdom",
@@ -187,16 +186,16 @@ def single_species():
     species_name = species_name.lower()
 
     # clean existing taxonomy data for request
-    NAME = str(species_name).strip().replace("_", " ")
+    name = str(species_name).strip().replace("_", " ")
 
     try:
-        gbif_result = gbif_match(NAME)
-        print(NAME)
+        gbif_result = gbif_match(name)
+        print(name)
 
         taxonomy = {field: gbif_result.get(field) for field in taxonomy_fields}
 
         if any(taxon_field is None for taxon_field in taxonomy.values()):
-            xml_result = ncbi_match(NAME)
+            xml_result = ncbi_match(name)
             if xml_result:
                 ncbi_taxonomy = parse_ncbi_xml(xml_result)
                 taxonomy.update(ncbi_taxonomy)
@@ -209,20 +208,19 @@ def single_species():
                 jsonify({"error": "Could not find a valid taxonomy for this species."}),
                 512,
             )
-        else:
-            return jsonify({"taxonomy": taxonomy}), 200
+        return jsonify({"taxonomy": taxonomy}), 200
 
-    except Exception as e:
+    except (requests.RequestException, ET.ParseError, AttributeError, KeyError) as e:
         return jsonify({"error": str(e)}), 500
 
 
-def _resolve_species(NAME):
-    gbif_result = gbif_match(NAME)
+def _resolve_species(name):
+    gbif_result = gbif_match(name)
 
     taxonomy = {field: gbif_result.get(field) for field in taxonomy_fields}
 
     if any(v is None for v in taxonomy.values()):
-        xml_result = ncbi_match(NAME)
+        xml_result = ncbi_match(name)
         if xml_result:
             ncbi_taxonomy = parse_ncbi_xml(xml_result)
             taxonomy.update(ncbi_taxonomy)
@@ -230,8 +228,8 @@ def _resolve_species(NAME):
     taxonomy = {f: taxonomy.get(f) or "UNK" for f in taxonomy_fields}
 
     if all(value == "UNK" for value in taxonomy.values()):
-        return NAME, None
-    return NAME, taxonomy
+        return name, None
+    return name, taxonomy
 
 
 @app.route("/multi_species", methods=["GET"])
@@ -247,9 +245,7 @@ def multi_species():
         return jsonify({"error": "Missing 'species_name' parameter"}), 400
 
     species_list = [
-        s.strip().lower().replace("_", " ")
-        for s in species_names.split(",")
-        if s.strip()
+        s.strip().lower().replace("_", " ") for s in species_names.split(",") if s.strip()
     ]
 
     results = {}
@@ -263,7 +259,7 @@ def multi_species():
 
         return jsonify({"taxonomy": results}), 200
 
-    except Exception as e:
+    except (requests.RequestException, ET.ParseError, AttributeError, KeyError) as e:
         return jsonify({"error": str(e)}), 500
 
 
