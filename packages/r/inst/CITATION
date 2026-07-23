@@ -9,5 +9,5 @@ bibentry(
   ),
   year   = "2026",
   note   = "A manuscript describing this work is in preparation.",
-  url    = "https://github.com/marknovak/TaxonBodyMassML"
+  url    = "https://github.com/TaxonBodyMassML/TaxonBodyMassML"
 )

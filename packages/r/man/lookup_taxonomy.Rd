@@ -24,6 +24,11 @@ on disk when \code{tbm_options(disk_cache = TRUE)}.
 Resolves species names via the GBIF fuzzy-match API with an NCBI Entrez
 fallback. Results are cached in memory for the current R session.
 }
+\details{
+When looking up more than one name, GBIF queries are run in parallel
+(Unix/macOS only). Any names GBIF cannot fully resolve are then passed to
+NCBI Entrez serially so that NCBI rate limits are respected.
+}
 \examples{
 \dontrun{
 lookup_taxonomy("Homo sapiens")

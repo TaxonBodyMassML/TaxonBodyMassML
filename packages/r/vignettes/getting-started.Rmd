@@ -171,7 +171,7 @@ TAXONBODYMASSML_EMAIL=your.email@example.com
 ### NCBI_API_KEY
 
 NCBI rate-limits unauthenticated requests to 3 per second. Register for a
-free API key at <https://www.ncbi.nlm.nih.gov/account/> to increase the
+free API key at <https://account.ncbi.nlm.nih.gov/> to increase the
 limit to 10 requests per second:
 
 ```{r ncbi-key}

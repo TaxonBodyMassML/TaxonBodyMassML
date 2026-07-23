@@ -7,7 +7,7 @@
 .artifacts_cached()
 }
 \value{
-Logical \code{TRUE} if all artifacts are present and pass verification.
+Logical \code{TRUE} if all artifacts are present and pass SHA256 verification.
 }
 \description{
 Check whether all model artifacts are present and valid in the local cache

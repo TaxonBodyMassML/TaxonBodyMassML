@@ -1,14 +1,3 @@
-#' Predict species body mass using TaxonBodyMassML
-#'
-#' @description
-#' Predicts body mass (in grams) for one or more species using the
-#' TaxonBodyMassML XGBoost model. When `species` is a character vector,
-#' taxonomy is resolved automatically via `lookup_taxonomy()`. Pass a
-#' pre-resolved `data.frame` to skip the lookup step.
-#'
-#' @name predict_mass
-NULL
-
 # ---------------------------------------------------------------------------
 # CI level resolver
 # ---------------------------------------------------------------------------
