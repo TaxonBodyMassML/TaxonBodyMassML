@@ -61,3 +61,43 @@ jobs:
           else
             echo "No tests implemented yet."
           fi
+
+  deploy:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Clone Pages repo
+        run: |
+          git clone https://x-access-token:${{ secrets.PAGES_DEPLOY_TOKEN }}@github.com/taxonbodymassml/taxonbodymassml.github.io.git pages_repo
+
+      - name: Sync web_dev to Pages repo
+        run: |
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='Procfile' \
+            --exclude='requirements.txt' \
+            --exclude='prototype_lookup.py' \
+            --exclude='routes/' \
+            --exclude='more_questions.db' \
+            --exclude='more_questions_db.py' \
+            --exclude='package.json' \
+            --exclude='package-lock.json' \
+            --exclude='__pycache__/' \
+            --exclude='.stylelintrc.json' \
+            web_dev/ pages_repo/
+
+      - name: Commit and push if changed
+        run: |
+          cd pages_repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to deploy."
+          else
+            git commit -m "deploy: sync web_dev from TaxonBodyMassML@${{ github.sha }}"
+            git push
+          fi
