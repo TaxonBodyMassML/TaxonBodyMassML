@@ -251,7 +251,7 @@ def multi_species():
     results = {}
 
     try:
-        workers = min(len(species_list), 8)
+        workers = min(max(len(species_list), 1), 8)
         with ThreadPoolExecutor(max_workers=workers) as pool:
             for name, taxonomy in pool.map(_resolve_species, species_list):
                 if taxonomy is not None:
