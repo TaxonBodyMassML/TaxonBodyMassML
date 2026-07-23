@@ -37,8 +37,8 @@ dev = ["black==26.5.1", "flake8", "pytest", "tqdm>=4.65"]
 
 [project.urls]
 Homepage = "https://taxonbodymassml.github.io"
-Repository = "https://github.com/marknovak/TaxonBodyMassML"
-"Bug Tracker" = "https://github.com/marknovak/TaxonBodyMassML/issues"
+Repository = "https://github.com/TaxonBodyMassML/TaxonBodyMassML"
+"Bug Tracker" = "https://github.com/TaxonBodyMassML/TaxonBodyMassML/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
