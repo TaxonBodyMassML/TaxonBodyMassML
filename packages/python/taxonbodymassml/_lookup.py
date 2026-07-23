@@ -84,6 +84,7 @@ def _cache_db_path() -> str:
         import pathlib
 
         base = str(pathlib.Path.home() / ".cache" / "TaxonBodyMassML")
+    os.makedirs(base, exist_ok=True)
     return os.path.join(base, "taxonomy_cache")
 
 
