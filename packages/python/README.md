@@ -5,7 +5,7 @@ Predict species body mass from taxonomic identity using the TaxonBodyMassML XGBo
 ## Installation
 
 ```bash
-pip install git+https://github.com/marknovak/TaxonBodyMassML.git#subdirectory=packages/python
+pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.1.0/taxonbodymassml-0.1.0-py3-none-any.whl"
 ```
 
 Optional progress bars:

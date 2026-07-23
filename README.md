@@ -15,7 +15,7 @@ The pre-trained XGBoost model (~2 GB) is automatically downloaded from [Hugging 
 
 ```r
 # install.packages("pak")
-pak::pkg_install("marknovak/TaxonBodyMassML/packages/r")
+pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/r-v0.1.0/TaxonBodyMassML_0.1.0.tar.gz")
 ```
 
 See the [Getting Started vignette](packages/r/vignettes/getting-started.Rmd) for full usage including confidence intervals, taxonomy lookup, disk caching, and citation instructions.
@@ -23,7 +23,7 @@ See the [Getting Started vignette](packages/r/vignettes/getting-started.Rmd) for
 ### Python
 
 ```bash
-pip install git+https://github.com/marknovak/TaxonBodyMassML.git#subdirectory=packages/python
+pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.1.0/taxonbodymassml-0.1.0-py3-none-any.whl"
 ```
 
 See the [Python package README](packages/python/README.md) for the full API reference.

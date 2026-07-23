@@ -39,3 +39,36 @@ jobs:
         run: pytest -v
         env:
           TAXONBODYMASSML_RUN_INTEGRATION: "0"
+
+  release:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Get version
+        id: version
+        run: |
+          v=$(python -c "import tomllib; f=open('packages/python/pyproject.toml','rb'); print(tomllib.load(f)['project']['version'])")
+          echo "version=$v" >> $GITHUB_OUTPUT
+
+      - name: Build wheel and sdist
+        run: |
+          pip install build
+          python -m build packages/python/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: python-v${{ steps.version.outputs.version }}
+          name: "Python package v${{ steps.version.outputs.version }}"
+          files: |
+            packages/python/dist/taxonbodymassml-*.whl
+            packages/python/dist/taxonbodymassml-*.tar.gz
