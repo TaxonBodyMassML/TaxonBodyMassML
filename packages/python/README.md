@@ -61,7 +61,7 @@ Resolve scientific names to 7-rank taxonomy (kingdom → species) using the GBIF
 
 ### `download_model(version="latest", force=False)`
 
-Download model artifacts from Hugging Face Hub to the local cache directory. Called automatically on first use of `predict_mass()` or `lookup_taxonomy()`.
+Download model artifacts from Hugging Face Hub to the local cache directory. Called automatically when needed by `predict_mass()`.
 
 ### `get_citations()`
 
