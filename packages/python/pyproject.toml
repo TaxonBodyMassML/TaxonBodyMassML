@@ -33,7 +33,7 @@ dependencies = [
 
 [project.optional-dependencies]
 progress = ["tqdm>=4.65"]
-dev = ["black", "flake8", "pytest", "tqdm>=4.65"]
+dev = ["black==26.5.1", "flake8", "pytest", "tqdm>=4.65"]
 
 [project.urls]
 Homepage = "https://taxonbodymassml.github.io"
