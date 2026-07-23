@@ -7,6 +7,7 @@ concurrent lookups via ThreadPoolExecutor, and optional tqdm progress bar.
 
 import os
 import shelve
+import threading
 import warnings
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -37,6 +38,7 @@ except ImportError:
 # Session cache
 # ---------------------------------------------------------------------------
 _SESSION_CACHE: dict[str, dict] = {}
+_DISK_CACHE_LOCK = threading.Lock()
 
 # ---------------------------------------------------------------------------
 # Options (set via tbm_options())
@@ -69,8 +71,9 @@ def tbm_clear_cache(disk: bool = True, session: bool = True) -> None:
     if session:
         _SESSION_CACHE = {}
     if disk:
-        with _open_disk_cache() as db:
-            db.clear()
+        with _DISK_CACHE_LOCK:
+            with _open_disk_cache() as db:
+                db.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -170,11 +173,12 @@ def _resolve_one(name: str) -> Optional[dict]:
         return _SESSION_CACHE[key]
 
     if _OPTIONS["disk_cache"]:
-        with _open_disk_cache() as db:
-            if key in db:
-                result = db[key]
-                _SESSION_CACHE[key] = result
-                return result
+        with _DISK_CACHE_LOCK:
+            with _open_disk_cache() as db:
+                if key in db:
+                    result = db[key]
+                    _SESSION_CACHE[key] = result
+                    return result
 
     taxonomy = _gbif_lookup(name)
 
@@ -191,8 +195,9 @@ def _resolve_one(name: str) -> Optional[dict]:
 
     _SESSION_CACHE[key] = taxonomy
     if _OPTIONS["disk_cache"]:
-        with _open_disk_cache() as db:
-            db[key] = taxonomy
+        with _DISK_CACHE_LOCK:
+            with _open_disk_cache() as db:
+                db[key] = taxonomy
 
     return taxonomy
 

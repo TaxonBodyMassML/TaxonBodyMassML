@@ -210,7 +210,7 @@ def single_species():
         if all_unk:
             return (
                 jsonify({"error": "Could not find a valid taxonomy for this species."}),
-                512,
+                422,
             )
         return jsonify({"taxonomy": taxonomy}), 200
 

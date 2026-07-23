@@ -91,7 +91,7 @@ NULL
 
     # Species from top-level ScientificName
     sp_node <- xml2::xml_find_first(doc, ".//ScientificName")
-    if (!is.na(sp_node)) {
+    if (!inherits(sp_node, "xml_missing")) {
       taxons[["species"]] <- xml2::xml_text(sp_node)
     }
 
@@ -281,8 +281,7 @@ lookup_taxonomy <- function(species) {
     # writes are invisible to the parent.
     for (i in seq_len(n)) {
       if (!is.null(results[[i]])) {
-        assign(.normalise_name(names_vec[[i]]), results[[i]],
-               envir = .tbm_cache)
+        .cache_store(.normalise_name(names_vec[[i]]), results[[i]])
       }
     }
 
