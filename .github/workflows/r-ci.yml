@@ -1,0 +1,71 @@
+name: R package CI
+
+on:
+  push:
+    branches: [main, packages]
+    paths:
+      - "packages/r/**"
+      - ".github/workflows/r-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/r/**"
+
+jobs:
+  r-cmd-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.4"
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: packages/r
+          extra-packages: |
+            any::rcmdcheck
+            any::openssl
+
+      - name: Setup TinyTeX
+        uses: r-lib/actions/setup-tinytex@v2
+
+      - name: Add TinyTeX to PATH
+        run: echo "$(Rscript -e 'cat(Sys.glob(file.path(tinytex::tinytex_root(), "bin", "*")))')" >> $GITHUB_PATH
+
+      - name: R CMD check
+        run: rcmdcheck::rcmdcheck("packages/r", args = "--as-cran", error_on = "warning")
+        shell: Rscript {0}
+
+  release:
+    needs: r-cmd-check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.4"
+          use-public-rspm: true
+
+      - name: Get version
+        id: version
+        run: |
+          v=$(grep "^Version:" packages/r/DESCRIPTION | sed 's/Version: *//')
+          echo "version=$v" >> $GITHUB_OUTPUT
+          echo "tarball=TaxonBodyMassML_${v}.tar.gz" >> $GITHUB_OUTPUT
+
+      - name: Build source tarball
+        run: R CMD build --no-build-vignettes packages/r
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: r-v${{ steps.version.outputs.version }}
+          name: "R package v${{ steps.version.outputs.version }}"
+          files: ${{ steps.version.outputs.tarball }}

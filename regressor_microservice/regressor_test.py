@@ -1,9 +1,7 @@
-import numpy as np
-import pandas as pd
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-import requests
 import json
+
+import pandas as pd
+import requests
 
 test = pd.read_csv("./data/test.csv")
 x_test = test.drop(["mass_g"], axis=1)

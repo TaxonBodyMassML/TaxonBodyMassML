@@ -9,6 +9,10 @@ purpose: use gbif taxonomy API to fuzzy match species taxonomy
 
 # pylint: disable=duplicate-code
 
+import os
+import time
+from concurrent.futures import ThreadPoolExecutor
+
 import pandas as pd
 import requests
 
@@ -22,6 +26,40 @@ GBIF_MATCH_URL = "https://api.gbif.org/v2/species/match"
 STARTING_INDEX = 0
 MISSED_SPECIES_PATH = "./data/missed_species.txt"
 
+# ---------------------------------------------------------------------------
+# Session (connection reuse)
+# ---------------------------------------------------------------------------
+_APP_VERSION = "1.0.0"
+_EMAIL = os.environ.get("TAXONBODYMASSML_EMAIL", "")
+_USER_AGENT = (
+    f"TaxonBodyMassML/{_APP_VERSION} (contact: {_EMAIL})"
+    if _EMAIL
+    else f"TaxonBodyMassML/{_APP_VERSION}"
+)
+
+_SESSION = requests.Session()
+_SESSION.headers.update({"User-Agent": _USER_AGENT})
+
+# ---------------------------------------------------------------------------
+# Retry helper
+# ---------------------------------------------------------------------------
+_RETRY_DELAYS = (1.0, 2.0, 4.0)
+_TRANSIENT = {429, 500, 502, 503, 504}
+
+
+def _http_get(url, params, *, timeout=10):
+    for attempt, delay in enumerate((*_RETRY_DELAYS, None)):
+        try:
+            resp = _SESSION.get(url, params=params, timeout=timeout)
+            if resp.status_code not in _TRANSIENT:
+                return resp
+        except (requests.ConnectionError, requests.Timeout):
+            if delay is None:
+                raise
+        if delay is not None:
+            time.sleep(delay)
+    return resp
+
 
 def gbif_match(input_name):
     """
@@ -30,10 +68,7 @@ def gbif_match(input_name):
             the scientific name of target species
     output: returns JSON response from fuzzy match API
     """
-    params = {
-        "scientificName": input_name,
-    }
-    r = requests.get(GBIF_MATCH_URL, params=params, timeout=10)
+    r = _http_get(GBIF_MATCH_URL, {"scientificName": input_name})
     if r.status_code != 200:
         return {}
     return r.json()
@@ -62,44 +97,42 @@ for field in taxonomy_fields:
 # resulted in error upon request to the API
 missed_species = []
 
-# iterate over each species and get its full taxonomy
-for i, row in df.iterrows():
-    # if not starting from the first entry, skip over already found taxons
-    if i < STARTING_INDEX:
-        print("skipped:", i)
-        continue
 
-    # to prevent data loss, save results to csv every 100 iterations
-    if i % 100 == 0:
-        print("Saving from index:", i)
-        df.to_csv(OUTPUT_CSV, index=False)
-
-    # clean existing taxonomy data for request
-    NAME = str(row["taxon"]).strip().replace("_", " ")
-    if not NAME or NAME == "nan":
-        continue
-
+def _fetch_row(args):
+    idx, name = args
     try:
-        result = gbif_match(NAME)
-        print(NAME)
-        # print(result)
+        result = gbif_match(name)
+        classification = result.get("classification") or []
+        rank_map = {r["rank"].lower(): r["name"] for r in classification}
+        confidence_score = (result.get("diagnostics") or {}).get("confidence")
+        return idx, rank_map, confidence_score, None
+    except (requests.RequestException, KeyError, AttributeError) as e:
+        print(f"Failed on {name}: {e}")
+        return idx, {}, None, name
 
-        # store each classification to the dataframe
-        classification = result.get("classification")
-        for rank in classification:
-            df.at[i, rank["rank"].lower()] = rank["name"]
 
-        # store the confidence result for each fuzzy match
-        diagnostics = result.get("diagnostics")
-        df.at[i, "confidence"] = diagnostics["confidence"]
+# build the work list, skipping already-processed rows
+work = [
+    (i, str(row["taxon"]).strip().replace("_", " "))
+    for i, row in df.iterrows()
+    if i >= STARTING_INDEX and str(row["taxon"]).strip() not in ("", "nan")
+]
 
-    # upon failure, add the missed species to the record
-    except FileNotFoundError as e:
-        print(f"Failed on {NAME}: {e}")
-        missed_species.append(NAME)
-    except PermissionError:
-        print("You do not have permission to read the file.")
-        missed_species.append(NAME)
+# process in chunks of 100 (preserves checkpoint saves); parallelize within each chunk
+CHUNK_SIZE = 100
+with ThreadPoolExecutor(max_workers=8) as pool:
+    for chunk_start in range(0, len(work), CHUNK_SIZE):
+        chunk = work[chunk_start : chunk_start + CHUNK_SIZE]
+        for idx, rank_map, confidence_score, missed in pool.map(_fetch_row, chunk):
+            if missed:
+                missed_species.append(missed)
+            else:
+                for rank, rank_name in rank_map.items():
+                    df.at[idx, rank] = rank_name
+                df.at[idx, "confidence"] = confidence_score
+                print(df.at[idx, "taxon"] if "taxon" in df.columns else idx)
+        print(f"Saving checkpoint at index {chunk[-1][0]}")
+        df.to_csv(OUTPUT_CSV, index=False)
 
 # final save of results to the output csv
 df.to_csv(OUTPUT_CSV, index=False)

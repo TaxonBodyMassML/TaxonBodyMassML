@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+  <head>
+    <title>TaxonBodyMassML Packages</title>
+    <link rel="stylesheet" href="info_pages.css?v=2" />
+    <style>
+      pre {
+        background: #f4f4f4;
+        border: 1px solid #d0d0d0;
+        border-radius: 4px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        font-size: 0.9em;
+        line-height: 1.5;
+      }
+      code {
+        font-family: "Courier New", Courier, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- jscpd:ignore-start -->
+    <ul class="nav-bar">
+      <li><a href="./index.html">Home</a></li>
+      <li><a href="./data_visualization.html">Visualization</a></li>
+
+      <li class="dropdown">
+        <a href="#">More Information</a>
+        <ul class="dropdown-content">
+          <li><a href="./project.html">The TaxonBodyMassML Project</a></li>
+          <li><a href="./alg.html">The Algorithm</a></li>
+          <li><a href="./citations.html">Resources</a></li>
+          <li><a href="./download.html">R &amp; Python Packages</a></li>
+        </ul>
+      </li>
+
+      <li id="nav-text-spot"><img id="nav-text" src="navText.png" alt="TaxonBodyMassML" /></li>
+
+      <li class="on-right"><a href="./help_page.html">Help</a></li>
+     </ul>
+    <!-- jscpd:ignore-end -->
+
+    <div class="page-container">
+
+      <h2>R &amp; Python Packages</h2>
+
+      <p>The TaxonBodyMassML model is available as standalone R and Python packages for programmatic access to body mass predictions. The packages resolve species names automatically via the GBIF fuzzy-match API (with NCBI Entrez as a fallback), download the XGBoost model from Hugging Face Hub on first use (~2 GB, cached locally), and run inference entirely on your machine.</p>
+
+      <h3>R Package</h3>
+
+      <p>Install using devtools:</p>
+      <pre><code># install.packages("devtools")
+devtools::install_github("TaxonBodyMassML/TaxonBodyMassML", subdir = "packages/r")</code></pre>
+
+      <p>Download model artifacts (once):</p>
+      <pre><code>TaxonBodyMassML::download_model()</code></pre>
+
+      <p>Quick start:</p>
+      <pre><code># Single species
+TaxonBodyMassML::predict_mass("Haustrum scobina")
+
+# Multiple species with 90% confidence interval
+TaxonBodyMassML::predict_mass(c("Haustrum scobina", "Mus musculus"),
+                          confidence_interval = TRUE)</code></pre>
+
+      <p>See the <a href="https://github.com/marknovak/TaxonBodyMassML/tree/main/packages/r">package vignette</a> for complete documentation.</p>
+
+      <h3>Python Package</h3>
+
+      <p>Install using pip:</p>
+      <pre><code>pip install git+https://github.com/marknovak/TaxonBodyMassML.git#subdirectory=packages/python</code></pre>
+
+      <p>Quick start:</p>
+      <pre><code>import taxonbodymassml as tbm
+
+# Single species
+tbm.predict_mass("Haustrum scobina")
+
+# Multiple species with 90% confidence interval
+tbm.predict_mass(["Haustrum scobina", "Mus musculus"], confidence_interval=True)</code></pre>
+
+      <p>Model artifacts (~2 GB) are downloaded automatically on first use and cached in your local application data directory. An internet connection is required for the initial download and for each species name lookup. See the README for API compliance setup (NCBI User-Agent and API key configuration).</p>
+
+      <p>Source code and full documentation: <a href="https://github.com/marknovak/TaxonBodyMassML">github.com/marknovak/TaxonBodyMassML</a></p>
+
+    </div>
+
+  </body>
+</html>

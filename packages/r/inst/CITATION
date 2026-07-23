@@ -1,0 +1,13 @@
+bibentry(
+  "Misc",
+  title  = "TaxonBodyMassML: Predict Species Body Mass Using Machine Learning",
+  author = c(
+    person("Grant", "Pasquantonio"),
+    person("Anish Chowdary", "Pendurti"),
+    person("Hailey", "Prater"),
+    person("Mark", "Novak")
+  ),
+  year   = "2026",
+  note   = "A manuscript describing this work is in preparation.",
+  url    = "https://github.com/TaxonBodyMassML/TaxonBodyMassML"
+)

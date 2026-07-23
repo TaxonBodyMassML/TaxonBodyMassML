@@ -1,7 +1,7 @@
-import numpy as np
+import json
+
 import pandas as pd
 import requests
-import json
 
 test = pd.read_csv("./data/test.csv")
 x_test = test.drop(["mass_g"], axis=1)

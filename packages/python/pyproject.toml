@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taxonbodymassml"
+version = "0.1.0"
+description = "Predict species body mass using the TaxonBodyMassML XGBoost model"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Grant Pasquantonio" },
+  { name = "Anish Chowdary Pendurti" },
+  { name = "Hailey Prater" },
+  { name = "Mark Novak", email = "mark.novak@oregonstate.edu" },
+]
+keywords = ["ecology", "body mass", "machine learning", "taxonomy", "XGBoost"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+  "Intended Audience :: Science/Research",
+]
+dependencies = [
+  "xgboost>=1.7",
+  "pandas>=1.5",
+  "numpy>=1.24",
+  "requests>=2.31",
+  "platformdirs>=3.0",
+  "huggingface_hub>=0.20",
+]
+
+[project.optional-dependencies]
+progress = ["tqdm>=4.65"]
+dev = ["black==26.5.1", "flake8", "pytest", "tqdm>=4.65"]
+
+[project.urls]
+Homepage = "https://taxonbodymassml.github.io"
+Repository = "https://github.com/TaxonBodyMassML/TaxonBodyMassML"
+"Bug Tracker" = "https://github.com/TaxonBodyMassML/TaxonBodyMassML/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["taxonbodymassml*"]
+
+[tool.setuptools.package-data]
+taxonbodymassml = ["data/*.bib"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -7,8 +7,8 @@ pasquang@oregonstate.edu
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import xgboost as xgb
 import pickleslicer
+import xgboost as xgb
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
@@ -55,9 +55,7 @@ def align_categories(train_df, test_df):
 
         # adds the UNK category and both train and test categories
         categories = list(
-            set(train_df[col].cat.categories)
-            | set(list(test_df[col].cat.categories))
-            | {"UNK"}
+            set(train_df[col].cat.categories) | set(list(test_df[col].cat.categories)) | {"UNK"}
         )
 
         train_df[col] = train_df[col].cat.set_categories(categories)
@@ -122,9 +120,7 @@ calib_residuals = np.abs(y_calib - y_calib_pred)
 q = np.quantile(calib_residuals, 0.90)
 
 # save BOTH model + q
-pickleslicer.dump(
-    {"model": model, "q": float(q)}, MODEL_WRITE_FILE, max_size=100 * 1024 * 1024
-)
+pickleslicer.dump({"model": model, "q": float(q)}, MODEL_WRITE_FILE, max_size=100 * 1024 * 1024)
 # pickleslicer.dump(model, MODEL_WRITE_FILE, max_size=100*1024*1024)
 
 # Test if unknown values will cause the model to crash in eval
@@ -134,9 +130,7 @@ print("\n")
 for col in x_train.select_dtypes(include="category").columns:
     unk_test = x_test.iloc[[0]].copy()
     unk_test[col] = "UNK"
-    unk_test[col] = pd.Categorical(
-        unk_test[col], categories=x_train[col].cat.categories
-    )
+    unk_test[col] = pd.Categorical(unk_test[col], categories=x_train[col].cat.categories)
     print(unk_test)
     print("Ground Truth Mass:", y_test.iloc[0])
     pred = model.predict(unk_test)
