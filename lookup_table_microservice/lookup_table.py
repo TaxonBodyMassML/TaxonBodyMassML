@@ -166,7 +166,7 @@ def gbif_match(input_name):
     """
     r = _http_get(GBIF_MATCH_URL, {"scientificName": input_name})
     if r.status_code != 200:
-        return None
+        return {}
     return r.json()
 
 
