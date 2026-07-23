@@ -169,5 +169,5 @@ Done. Upload the four files in artifacts/ to Hugging Face:
     huggingface-cli upload marknovak/TaxonBodyMassML artifacts/ . --repo-type model
 
 Then copy the checksums from artifacts/checksums.json into the package
-source files (Python: taxonbodymassml/_checksums.py; R: R/checksums.R).
+source files (Python: packages/python/taxonbodymassml/_checksums.py; R: packages/r/R/model.R).
 """)
