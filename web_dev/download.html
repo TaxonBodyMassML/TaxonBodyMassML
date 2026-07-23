@@ -57,10 +57,10 @@ devtools::install_github("TaxonBodyMassML/TaxonBodyMassML", subdir = "packages/r
 
       <p>Quick start:</p>
       <pre><code># Single species
-TaxonBodyMassML::predict("Haustrum scobina")
+TaxonBodyMassML::predict_mass("Haustrum scobina")
 
 # Multiple species with 90% confidence interval
-TaxonBodyMassML::predict(c("Haustrum scobina", "Mus musculus"),
+TaxonBodyMassML::predict_mass(c("Haustrum scobina", "Mus musculus"),
                           confidence_interval = TRUE)</code></pre>
 
       <p>See the <a href="https://github.com/marknovak/TaxonBodyMassML/tree/main/packages/r">package vignette</a> for complete documentation.</p>
@@ -74,10 +74,10 @@ TaxonBodyMassML::predict(c("Haustrum scobina", "Mus musculus"),
       <pre><code>import taxonbodymassml as tbm
 
 # Single species
-tbm.predict("Haustrum scobina")
+tbm.predict_mass("Haustrum scobina")
 
 # Multiple species with 90% confidence interval
-tbm.predict(["Haustrum scobina", "Mus musculus"], confidence_interval=True)</code></pre>
+tbm.predict_mass(["Haustrum scobina", "Mus musculus"], confidence_interval=True)</code></pre>
 
       <p>Model artifacts (~2 GB) are downloaded automatically on first use and cached in your local application data directory. An internet connection is required for the initial download and for each species name lookup. See the README for API compliance setup (NCBI User-Agent and API key configuration).</p>
 

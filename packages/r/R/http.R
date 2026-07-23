@@ -39,8 +39,12 @@ NULL
 #' @keywords internal
 .tbm_req <- function(url) {
   email <- Sys.getenv("TAXONBODYMASSML_EMAIL", "")
-  ua <- paste0("TaxonBodyMassML/", utils::packageVersion("TaxonBodyMassML"),
-               " (contact: ", email, ")")
+  ua <- if (nzchar(email)) {
+    paste0("TaxonBodyMassML/", utils::packageVersion("TaxonBodyMassML"),
+           " (contact: ", email, ")")
+  } else {
+    paste0("TaxonBodyMassML/", utils::packageVersion("TaxonBodyMassML"))
+  }
   httr2::request(url) |>
     httr2::req_user_agent(ua) |>
     httr2::req_retry(

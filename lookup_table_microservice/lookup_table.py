@@ -28,7 +28,11 @@ NCBI_EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 # ---------------------------------------------------------------------------
 APP_VERSION = "1.0.0"
 _EMAIL = os.environ.get("TAXONBODYMASSML_EMAIL", "")
-_USER_AGENT = f"TaxonBodyMassML/{APP_VERSION} (contact: {_EMAIL})"
+_USER_AGENT = (
+    f"TaxonBodyMassML/{APP_VERSION} (contact: {_EMAIL})"
+    if _EMAIL
+    else f"TaxonBodyMassML/{APP_VERSION}"
+)
 
 _SESSION = requests.Session()
 _SESSION.headers.update({"User-Agent": _USER_AGENT})

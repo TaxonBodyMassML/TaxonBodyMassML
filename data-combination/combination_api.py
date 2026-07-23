@@ -31,7 +31,11 @@ MISSED_SPECIES_PATH = "./data/missed_species.txt"
 # ---------------------------------------------------------------------------
 _APP_VERSION = "1.0.0"
 _EMAIL = os.environ.get("TAXONBODYMASSML_EMAIL", "")
-_USER_AGENT = f"TaxonBodyMassML/{_APP_VERSION} (contact: {_EMAIL})"
+_USER_AGENT = (
+    f"TaxonBodyMassML/{_APP_VERSION} (contact: {_EMAIL})"
+    if _EMAIL
+    else f"TaxonBodyMassML/{_APP_VERSION}"
+)
 
 _SESSION = requests.Session()
 _SESSION.headers.update({"User-Agent": _USER_AGENT})

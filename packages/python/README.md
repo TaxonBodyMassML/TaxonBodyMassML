@@ -72,7 +72,7 @@ path = tbm.get_citations()
 # /path/to/taxonbodymassml/data/Citations_BodyMass.bib
 ```
 
-### `set_options(**kwargs)`
+### `tbm_options(**kwargs)`
 
 Configure package behaviour:
 
@@ -81,7 +81,7 @@ Configure package behaviour:
 | `disk_cache` | `False` | Persist resolved taxonomy to disk across sessions. |
 | `progress` | `True` | Show a tqdm progress bar when looking up > 10 species (requires `tqdm`). |
 
-### `clear_cache(disk=True, session=True)`
+### `tbm_clear_cache(disk=True, session=True)`
 
 Clear the taxonomy cache (in-memory and/or on-disk).
 
