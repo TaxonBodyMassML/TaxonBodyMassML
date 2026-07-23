@@ -37,4 +37,5 @@ def get_citations():
         Absolute path to ``taxonbodymassml/data/Citations_BodyMass.bib``.
     """
     from pathlib import Path
+
     return Path(__file__).parent / "data" / "Citations_BodyMass.bib"

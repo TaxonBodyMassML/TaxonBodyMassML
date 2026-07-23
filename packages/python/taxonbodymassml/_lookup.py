@@ -27,6 +27,7 @@ TAXONOMY_COLS = ["kingdom", "phylum", "class", "order", "family", "genus", "spec
 # ---------------------------------------------------------------------------
 try:
     from tqdm import tqdm as _tqdm
+
     _have_tqdm = True
 except ImportError:
     _tqdm = None
@@ -77,9 +78,11 @@ def tbm_clear_cache(disk: bool = True, session: bool = True) -> None:
 def _cache_db_path() -> str:
     try:
         from platformdirs import user_cache_dir
+
         base = user_cache_dir("TaxonBodyMassML")
     except ImportError:
         import pathlib
+
         base = str(pathlib.Path.home() / ".cache" / "TaxonBodyMassML")
     return os.path.join(base, "taxonomy_cache")
 
@@ -225,7 +228,9 @@ def lookup_taxonomy(species) -> pd.DataFrame:
     workers = min(len(names), 8) if len(names) > 1 else 1
 
     if workers == 1:
-        iter_names = _tqdm(names, desc="Resolving taxonomy") if (show_progress and _have_tqdm) else names
+        iter_names = (
+            _tqdm(names, desc="Resolving taxonomy") if (show_progress and _have_tqdm) else names
+        )
         for n in iter_names:
             results[n] = _resolve_one(n)
     else:
@@ -247,18 +252,22 @@ def lookup_taxonomy(species) -> pd.DataFrame:
         tax = results.get(n)
         if tax is None:
             unresolvable.append(n)
-            rows.append({"species": n, **{c: None for c in TAXONOMY_COLS[:-1]}, "species_resolved": None})
+            rows.append(
+                {"species": n, **{c: None for c in TAXONOMY_COLS[:-1]}, "species_resolved": None}
+            )
         else:
-            rows.append({
-                "species": n,
-                "kingdom": tax["kingdom"],
-                "phylum": tax["phylum"],
-                "class": tax["class"],
-                "order": tax["order"],
-                "family": tax["family"],
-                "genus": tax["genus"],
-                "species_resolved": tax["species"],
-            })
+            rows.append(
+                {
+                    "species": n,
+                    "kingdom": tax["kingdom"],
+                    "phylum": tax["phylum"],
+                    "class": tax["class"],
+                    "order": tax["order"],
+                    "family": tax["family"],
+                    "genus": tax["genus"],
+                    "species_resolved": tax["species"],
+                }
+            )
 
     if unresolvable:
         warnings.warn(

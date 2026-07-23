@@ -17,6 +17,7 @@ from ._checksums import CHECKSUMS, HF_REPO_ID
 # ---------------------------------------------------------------------------
 try:
     from platformdirs import user_cache_dir
+
     _CACHE_DIR = Path(user_cache_dir("TaxonBodyMassML"))
 except ImportError:  # pragma: no cover — platformdirs is a required dep
     _CACHE_DIR = Path.home() / ".cache" / "TaxonBodyMassML"
@@ -74,13 +75,15 @@ def download_model(version: str = "latest", force: bool = False) -> None:
             UserWarning,
             stacklevel=2,
         )
-        local_path = Path(hf_hub_download(
-            repo_id=HF_REPO_ID,
-            filename=filename,
-            repo_type="model",
-            revision=revision,
-            local_dir=str(_CACHE_DIR),
-        ))
+        local_path = Path(
+            hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=filename,
+                repo_type="model",
+                revision=revision,
+                local_dir=str(_CACHE_DIR),
+            )
+        )
         if not _verify(local_path, filename):
             raise RuntimeError(
                 f"SHA256 mismatch for {filename}. The downloaded file may be "

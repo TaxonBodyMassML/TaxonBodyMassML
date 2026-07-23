@@ -14,7 +14,15 @@ import xgboost as xgb
 from ._lookup import TAXONOMY_COLS, lookup_taxonomy
 from ._model import _ensure_artifacts, load_calibration, load_categories, load_model
 
-_TAXONOMY_INPUT_COLS = ["kingdom", "phylum", "class", "order", "family", "genus", "species_resolved"]
+_TAXONOMY_INPUT_COLS = [
+    "kingdom",
+    "phylum",
+    "class",
+    "order",
+    "family",
+    "genus",
+    "species_resolved",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -40,8 +48,12 @@ def _resolve_ci_level(confidence_interval) -> Optional[float]:
 def _apply_unk_mapping(df: pd.DataFrame, categories: dict[str, list[str]]) -> pd.DataFrame:
     """Replace unknown category values with 'UNK' and set category dtype."""
     col_map = {
-        "kingdom": "kingdom", "phylum": "phylum", "class": "class",
-        "order": "order", "family": "family", "genus": "genus",
+        "kingdom": "kingdom",
+        "phylum": "phylum",
+        "class": "class",
+        "order": "order",
+        "family": "family",
+        "genus": "genus",
         "species_resolved": "species",
     }
     # Select only the taxonomy input columns to avoid duplicate column names
@@ -136,9 +148,7 @@ def predict_mass(
         Rows for unresolvable species have ``NaN`` for numeric columns.
     """
     if method not in _METHODS:
-        raise ValueError(
-            f"Unknown method {method!r}. Available: {list(_METHODS)}"
-        )
+        raise ValueError(f"Unknown method {method!r}. Available: {list(_METHODS)}")
     level = _resolve_ci_level(confidence_interval)
 
     # ---- Input handling ------------------------------------------------
@@ -146,9 +156,7 @@ def predict_mass(
         required = set(_TAXONOMY_INPUT_COLS)
         missing = required - set(species.columns)
         if missing:
-            raise ValueError(
-                f"Input DataFrame is missing taxonomy columns: {sorted(missing)}"
-            )
+            raise ValueError(f"Input DataFrame is missing taxonomy columns: {sorted(missing)}")
         taxonomy_df = species.reset_index(drop=True)
         input_names = taxonomy_df.get("species", taxonomy_df["species_resolved"]).tolist()
     else:
@@ -183,7 +191,9 @@ def predict_mass(
         nan_rows = [{"species": n, "mass_g": float("nan")} for n in nan_names]
         if level is not None:
             for r in nan_rows:
-                r.update({"lower_bound": float("nan"), "upper_bound": float("nan"), "confidence": level})
+                r.update(
+                    {"lower_bound": float("nan"), "upper_bound": float("nan"), "confidence": level}
+                )
         if include_taxonomy:
             for r in nan_rows:
                 r.update({c: None for c in _TAXONOMY_INPUT_COLS})
