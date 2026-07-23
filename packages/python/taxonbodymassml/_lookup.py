@@ -69,8 +69,8 @@ def tbm_clear_cache(disk: bool = True, session: bool = True) -> None:
     if session:
         _SESSION_CACHE = {}
     if disk:
-        _open_disk_cache().clear()
-
+        with _open_disk_cache() as db:
+            db.clear()
 
 # ---------------------------------------------------------------------------
 # Disk cache helpers
