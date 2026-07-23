@@ -19,8 +19,8 @@ from . import __version__
 # Session (connection reuse across all GBIF + NCBI calls)
 # ---------------------------------------------------------------------------
 _SESSION = requests.Session()
-_EMAIL = os.environ.get("TAXONBODYMASSML_EMAIL", "")
-_USER_AGENT = f"TaxonBodyMassML/{__version__} (contact: {_EMAIL})"
+_EMAIL = os.environ.get("TAXONBODYMASSML_EMAIL", "").strip()
+_USER_AGENT = f"TaxonBodyMassML/{__version__}" + (f" (contact: {_EMAIL})" if _EMAIL else "")
 _SESSION.headers.update({"User-Agent": _USER_AGENT})
 
 # ---------------------------------------------------------------------------
