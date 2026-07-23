@@ -12,7 +12,6 @@ import traceback
 import numpy as np
 import pandas as pd
 import pickleslicer
-import xgboost as xgb
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
