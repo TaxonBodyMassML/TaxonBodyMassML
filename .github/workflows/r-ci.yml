@@ -64,7 +64,7 @@ jobs:
         run: R CMD build --no-build-vignettes packages/r
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: r-v${{ steps.version.outputs.version }}
           name: "R package v${{ steps.version.outputs.version }}"
