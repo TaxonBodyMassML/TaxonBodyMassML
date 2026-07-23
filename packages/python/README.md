@@ -20,27 +20,27 @@ pip install "taxonbodymassml[progress]"
 import taxonbodymassml as tbm
 
 # Single species — model artifacts are downloaded automatically on first use (~2 GB, once only)
-tbm.predict("Haustrum scobina")
+tbm.predict_mass("Haustrum scobina")
 #   species     mass_g
 # 0  Haustrum scobina  0.382...
 
 # Multiple species with 90% conformal prediction interval
-tbm.predict(["Haustrum scobina", "Mus musculus"], confidence_interval=True)
+tbm.predict_mass(["Haustrum scobina", "Mus musculus"], confidence_interval=True)
 
 # Custom interval level
-tbm.predict("Panthera leo", confidence_interval=0.80)
+tbm.predict_mass("Panthera leo", confidence_interval=0.80)
 
 # Include resolved taxonomy in output
-tbm.predict("Panthera leo", include_taxonomy=True)
+tbm.predict_mass("Panthera leo", include_taxonomy=True)
 
 # Skip taxonomy lookup by passing a pre-resolved DataFrame
 tax = tbm.lookup_taxonomy("Mus musculus")
-tbm.predict(tax)
+tbm.predict_mass(tax)
 ```
 
 ## API
 
-### `predict(species, confidence_interval=False, method="XGBoost", include_taxonomy=False)`
+### `predict_mass(species, confidence_interval=False, method="XGBoost", include_taxonomy=False)`
 
 Predict body mass for one or more species.
 
@@ -61,7 +61,7 @@ Resolve scientific names to 7-rank taxonomy (kingdom → species) using the GBIF
 
 ### `download_model(version="latest", force=False)`
 
-Download model artifacts from Hugging Face Hub to the local cache directory. Called automatically on first use of `predict()` or `lookup_taxonomy()`.
+Download model artifacts from Hugging Face Hub to the local cache directory. Called automatically on first use of `predict_mass()` or `lookup_taxonomy()`.
 
 ### `get_citations()`
 

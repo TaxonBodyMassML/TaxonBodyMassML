@@ -1,5 +1,5 @@
 """
-Tests for taxonbodymassml.predict().
+Tests for taxonbodymassml.predict_mass().
 
 Tests that require model artifacts (the ~2 GB download) are skipped
 unless TAXONBODYMASSML_RUN_INTEGRATION=1 is set in the environment.
