@@ -4,7 +4,6 @@ Artifact management: download, cache, load model/calibration/categories.
 
 import hashlib
 import json
-import os
 import warnings
 from pathlib import Path
 

@@ -5,7 +5,7 @@ Prediction logic: UNK mapping, XGBoost inference, conformal intervals.
 from __future__ import annotations
 
 import warnings
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 import pandas as pd
