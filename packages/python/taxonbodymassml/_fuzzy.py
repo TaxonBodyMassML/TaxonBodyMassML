@@ -22,6 +22,7 @@ _MATCH_ACCEPTED = {"EXACT", "FUZZY"}
 # Internal: GBIF canonical name for one species
 # ---------------------------------------------------------------------------
 
+
 def _gbif_fuzzy_name(name: str) -> Optional[str]:
     """Return GBIF's canonical species name for *name*, or None."""
     try:
@@ -40,6 +41,7 @@ def _gbif_fuzzy_name(name: str) -> Optional[str]:
 # ---------------------------------------------------------------------------
 # Public: correct_species_names()
 # ---------------------------------------------------------------------------
+
 
 def correct_species_names(species) -> pd.DataFrame:
     """Suggest corrected species names via GBIF fuzzy matching.
@@ -82,15 +84,18 @@ def correct_species_names(species) -> pd.DataFrame:
                 except Exception:
                     matched[n] = None
 
-    return pd.DataFrame({
-        "input_name": names,
-        "matched_name": [matched[n] for n in names],
-    })
+    return pd.DataFrame(
+        {
+            "input_name": names,
+            "matched_name": [matched[n] for n in names],
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # Public: fuzzy_lookup_taxonomy()
 # ---------------------------------------------------------------------------
+
 
 def fuzzy_lookup_taxonomy(species) -> pd.DataFrame:
     """Look up taxonomy for potentially misspelled species names.
@@ -113,17 +118,18 @@ def fuzzy_lookup_taxonomy(species) -> pd.DataFrame:
     corrections = correct_species_names(species)
 
     # Use matched_name where GBIF found one; fall back to input_name
-    lookup_names = corrections["matched_name"].where(
-        corrections["matched_name"].notna(), corrections["input_name"]
-    ).tolist()
+    lookup_names = (
+        corrections["matched_name"]
+        .where(corrections["matched_name"].notna(), corrections["input_name"])
+        .tolist()
+    )
 
     changed = corrections["matched_name"].notna() & (
         corrections["matched_name"] != corrections["input_name"]
     )
     if changed.any():
         pairs = "; ".join(
-            f"{r.input_name!r} -> {r.matched_name!r}"
-            for r in corrections[changed].itertuples()
+            f"{r.input_name!r} -> {r.matched_name!r}" for r in corrections[changed].itertuples()
         )
         warnings.warn(
             f"Fuzzy-matched {changed.sum()} name(s): {pairs}",
@@ -139,6 +145,7 @@ def fuzzy_lookup_taxonomy(species) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Public: fuzzy_predict_mass()
 # ---------------------------------------------------------------------------
+
 
 def fuzzy_predict_mass(species, **kwargs) -> pd.DataFrame:
     """Predict body mass for potentially misspelled species names.

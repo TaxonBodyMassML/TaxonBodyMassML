@@ -11,6 +11,8 @@ on:
     paths:
       - "packages/r/**"
 
+permissions: read-all
+
 jobs:
   r-cmd-check:
     runs-on: ubuntu-latest
