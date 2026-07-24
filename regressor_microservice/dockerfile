@@ -7,6 +7,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN useradd --no-create-home --shell /bin/false appuser
+USER appuser
+
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
 CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "regressor:create_wsgi_app()"]

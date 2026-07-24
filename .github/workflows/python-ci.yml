@@ -11,6 +11,8 @@ on:
     paths:
       - "packages/python/**"
 
+permissions: read-all
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
