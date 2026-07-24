@@ -5,7 +5,7 @@ Predict species body mass from taxonomic identity using the TaxonBodyMassML XGBo
 ## Installation
 
 ```bash
-pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.1.0/taxonbodymassml-0.1.0-py3-none-any.whl"
+pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.2.0/taxonbodymassml-0.2.0-py3-none-any.whl"
 ```
 
 Optional progress bars:
@@ -96,7 +96,7 @@ export TAXONBODYMASSML_EMAIL="your@email.com"
 ```
 
 This is appended to the `User-Agent` header sent with every NCBI request:
-`TaxonBodyMassML/0.1.0 (contact: your@email.com)`.
+`TaxonBodyMassML/0.2.0 (contact: your@email.com)`.
 
 ### NCBI API key
 
