@@ -109,7 +109,7 @@ download_model <- function(version = "latest", force = FALSE) {
     if (!force && file.exists(dest) && isTRUE(.verify_file(dest, filename))) {
       next
     }
-    message("  Downloading ", filename, " from ", .HF_REPO_ID, "...")
+    message("  Downloading ", filename, " from ", .HF_REPO_ID, " on Hugging Face...")
     req <- .tbm_req(.hf_url(filename, revision)) |>
       httr2::req_progress()
     httr2::req_perform(req, path = dest)

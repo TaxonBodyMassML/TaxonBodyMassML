@@ -277,6 +277,10 @@ lookup_taxonomy <- function(species) {
     # Pass 1: parallel GBIF-only
     results <- parallel::mclapply(names_vec, .resolve_gbif_only, mc.cores = workers)
 
+    # Normalise try-error slots from crashed workers to NULL so they are not
+    # cached and do receive NCBI fallback below.
+    results <- lapply(results, function(r) if (inherits(r, "try-error")) NULL else r)
+
     # Backfill session cache: mclapply uses fork(), so child-process cache
     # writes are invisible to the parent.
     for (i in seq_len(n)) {
@@ -286,13 +290,16 @@ lookup_taxonomy <- function(species) {
     }
 
     # Pass 2: serial NCBI fallback for names not resolved by GBIF
-    ncbi_needed <- which(vapply(results, is.null, logical(1L)))
+    ncbi_needed <- which(vapply(results,
+      function(r) is.null(r) || inherits(r, "try-error"), logical(1L)))
     if (length(ncbi_needed) > 0L) {
       if (show_progress) {
         message("  NCBI fallback (serial) for ", length(ncbi_needed), " species...")
       }
       for (i in ncbi_needed) {
-        results[[i]] <- .resolve_one(names_vec[[i]])
+        # Use [i] <- list(...) instead of [[i]] <- ... to preserve NULL without
+        # removing the element from the list (R footgun: [[i]] <- NULL deletes it).
+        results[i] <- list(.resolve_one(names_vec[[i]]))
       }
     }
 

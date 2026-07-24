@@ -217,3 +217,43 @@ predict_mass <- function(species,
   rownames(out) <- NULL
   out
 }
+
+# ---------------------------------------------------------------------------
+# Public: fuzzy_predict_mass()
+# ---------------------------------------------------------------------------
+
+#' Predict body mass for potentially misspelled species names
+#'
+#' Runs `correct_species_names()` to obtain GBIF-canonical names, then calls
+#' `predict_mass()` with the corrected names.  The output `species` column
+#' contains the original input names; a `matched_name` column is appended
+#' showing the corrected name (or `NA` when no correction was found).
+#'
+#' @param species A character vector of scientific names (possibly misspelled).
+#' @param ... Additional arguments passed to `predict_mass()`.
+#'
+#' @return A `data.frame` as returned by `predict_mass()`, with the `species`
+#'   column reflecting the original input names and a `matched_name` column
+#'   appended.
+#'
+#' @examples
+#' \dontrun{
+#' fuzzy_predict_mass(c("Ballanus glandula", "Canis lupus"))
+#' }
+#'
+#' @export
+fuzzy_predict_mass <- function(species, ...) {
+  tax_df <- fuzzy_lookup_taxonomy(as.character(species))
+
+  # Pass a predict_mass-compatible data.frame (drop the extra fuzzy columns)
+  pred_input <- tax_df[
+    , setdiff(names(tax_df), c("input_name", "matched_name")),
+    drop = FALSE
+  ]
+  pred <- predict_mass(pred_input, ...)
+
+  # Restore original input names and expose matched_name
+  pred$species      <- tax_df$input_name
+  pred$matched_name <- tax_df$matched_name
+  pred
+}

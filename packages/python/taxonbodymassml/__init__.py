@@ -10,6 +10,7 @@ Quick start::
 
 __version__ = "0.1.0"
 
+from ._fuzzy import correct_species_names, fuzzy_lookup_taxonomy, fuzzy_predict_mass
 from ._lookup import lookup_taxonomy, tbm_clear_cache, tbm_options
 from ._model import download_model
 from ._predict import predict_mass
@@ -17,6 +18,9 @@ from ._predict import predict_mass
 __all__ = [
     "predict_mass",
     "lookup_taxonomy",
+    "correct_species_names",
+    "fuzzy_lookup_taxonomy",
+    "fuzzy_predict_mass",
     "download_model",
     "get_citations",
     "tbm_options",

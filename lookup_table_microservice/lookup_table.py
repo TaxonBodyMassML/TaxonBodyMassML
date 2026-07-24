@@ -142,7 +142,10 @@ def parse_ncbi_xml(xml_text):
 
     taxons = {}
 
-    root = ET.fromstring(xml_text)
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return taxons
 
     lineage = root.find(".//LineageEx")
 
@@ -258,12 +261,74 @@ def multi_species():
         workers = min(max(len(species_list), 1), 8)
         with ThreadPoolExecutor(max_workers=workers) as pool:
             for name, taxonomy in pool.map(_resolve_species, species_list):
-                if taxonomy is not None:
-                    results[name] = taxonomy
+                results[name] = taxonomy  # null included so callers can detect misses
 
         return jsonify({"taxonomy": results}), 200
 
     except (requests.RequestException, ET.ParseError, AttributeError, KeyError) as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def _gbif_fuzzy_name(name):
+    """Return (input_name, matched_name_or_None) via GBIF fuzzy match."""
+    try:
+        r = _http_get(GBIF_MATCH_URL, {"scientificName": name})
+        if r.status_code != 200:
+            return name, None
+        data = r.json()
+        if data.get("matchType") not in ("EXACT", "FUZZY"):
+            return name, None
+        matched = data.get("species")
+        return name, matched if matched else None
+    except requests.RequestException:
+        return name, None
+
+
+@app.route("/fuzzy_lookup", methods=["GET"])
+def fuzzy_lookup():
+    """
+    fuzzy_lookup()
+    -------------------
+    Like /multi_species but runs GBIF fuzzy name correction first.
+    Returns taxonomy keyed by original input name, plus a matched_name field
+    per species showing the canonical name GBIF resolved to.
+    """
+    species_names = request.args.get("species_name")
+
+    if not species_names:
+        return jsonify({"error": "Missing 'species_name' parameter"}), 400
+
+    species_list = [
+        s.strip().lower().replace("_", " ") for s in species_names.split(",") if s.strip()
+    ]
+
+    try:
+        workers = min(max(len(species_list), 1), 8)
+
+        # Step 1: fuzzy-correct each name via GBIF
+        corrections = {}
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            for original, matched in pool.map(_gbif_fuzzy_name, species_list):
+                corrections[original] = matched
+
+        # Step 2: resolve taxonomy for corrected (or original) names
+        lookup_names = [corrections[n] or n for n in species_list]
+        resolved = {}
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            for name, taxonomy in pool.map(_resolve_species, lookup_names):
+                resolved[name] = taxonomy
+
+        # Step 3: build response keyed by original input name
+        results = {}
+        for original, lookup_name in zip(species_list, lookup_names):
+            results[original] = {
+                "matched_name": corrections[original],
+                "taxonomy": resolved.get(lookup_name),
+            }
+
+        return jsonify({"taxonomy": results}), 200
+
+    except (requests.RequestException, AttributeError, KeyError) as e:
         return jsonify({"error": str(e)}), 500
 
 

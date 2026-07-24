@@ -104,6 +104,10 @@ def _fetch_row(args):
         result = gbif_match(name)
         classification = result.get("classification") or []
         rank_map = {r["rank"].lower(): r["name"] for r in classification}
+        # Empty rank_map means GBIF returned matchType:"NONE" or no classification
+        # data — treat it the same as a failed lookup so it appears in missed_species.
+        if not rank_map:
+            return idx, {}, None, name
         confidence_score = (result.get("diagnostics") or {}).get("confidence")
         return idx, rank_map, confidence_score, None
     except (requests.RequestException, KeyError, AttributeError) as e:

@@ -70,7 +70,7 @@ def download_model(version: str = "latest", force: bool = False) -> None:
         if not force and _verify(cached, filename):
             continue
         warnings.warn(
-            f"TaxonBodyMassML: downloading {filename} from {HF_REPO_ID}...",
+            f"TaxonBodyMassML: downloading {filename} from {HF_REPO_ID} on Hugging Face...",
             UserWarning,
             stacklevel=2,
         )

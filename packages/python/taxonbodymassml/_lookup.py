@@ -252,7 +252,10 @@ def lookup_taxonomy(species) -> pd.DataFrame:
                 done_iter = _tqdm(done_iter, total=len(futures), desc="Resolving taxonomy")
             for fut in done_iter:
                 n = futures[fut]
-                results[n] = fut.result()
+                try:
+                    results[n] = fut.result()
+                except Exception:
+                    results[n] = None  # treated as unresolvable; warning below
 
     # Build output DataFrame
     rows = []
