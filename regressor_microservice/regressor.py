@@ -201,10 +201,11 @@ def create_app(loaded_model, x_train, q):
             <title>Model API</title>
         </head>
         <body>
-            <h1>Model server is running!</h1>\
+            <h1>Model server is running!</h1>
+            <p>The very first prediction request may take a little while to complete.
+               Subsequent requests will be significantly faster.</p>
         </body>
     </html>
-    
     """
 
     print(app.url_map)
@@ -248,6 +249,9 @@ def create_wsgi_app():
 
     x_train, x_test = parse_dataset()
     x_train, x_test = align_categories(x_train, x_test)
+
+    # Warm up XGBoost's OpenMP thread pool so the first real request isn't penalized.
+    loaded_model.predict(x_train.iloc[[0]])
 
     return create_app(loaded_model, x_train, q)
 
