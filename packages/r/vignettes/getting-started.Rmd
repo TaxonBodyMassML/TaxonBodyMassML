@@ -21,7 +21,7 @@ Install the package from the latest release:
 
 ```{r install}
 # install.packages("pak")
-pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/r-v0.1.0/TaxonBodyMassML_0.1.0.tar.gz")
+pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/r-v0.2.0/TaxonBodyMassML_0.2.0.tar.gz")
 ```
 
 Model artifacts (~2 GB) are downloaded automatically the first time you call
