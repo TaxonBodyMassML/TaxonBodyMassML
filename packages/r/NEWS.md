@@ -1,18 +1,30 @@
+# TaxonBodyMassML 0.2.2
+
+## Bug fixes
+
+* Fuzzy name matching now uses the GBIF v1 species-match endpoint (previously
+  the v2 endpoint was called but v1 response fields were parsed, causing
+  `matchType` to always be `NULL` and every fuzzy match to silently return
+  `NA`).
+* GBIF requests now include a `rank = "SPECIES"` hint and reject matches with
+  confidence below 75, reducing spurious results.
+
+## Changes
+
+* `fuzzy_match_name` argument of `predict_mass()` now defaults to `FALSE`.
+  Set it to `TRUE` to enable GBIF name correction.
+
 # TaxonBodyMassML 0.2.1
 
 ## Changes
 
-* `predict_mass()` gains a `fuzzy_match_name` argument (default `FALSE`) that
+* `predict_mass()` gains a `fuzzy_match_name` argument (default `TRUE`) that
   controls whether GBIF name correction is applied before taxonomy lookup. This
-  consolidates fuzzy matching into the primary prediction function. Set to
-  `TRUE` to enable name correction.
+  consolidates fuzzy matching into the primary prediction function.
 * `fuzzy_predict_mass()` is deprecated. Use `predict_mass(..., fuzzy_match_name = TRUE)`
   instead.
 * When `fuzzy_match_name = TRUE`, the output includes a `matched_name` column
   showing the GBIF-canonical name used for each prediction.
-* Fuzzy name matching now uses the GBIF v1 species-match endpoint with a
-  `rank = "SPECIES"` hint and a minimum confidence threshold of 75, improving
-  match accuracy and eliminating spurious results.
 
 # TaxonBodyMassML 0.2.0
 
