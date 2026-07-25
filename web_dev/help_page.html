@@ -44,7 +44,10 @@
     <br>A: When you first open the application, there is an introduction modal welcoming you to the website; if you click 'Get Started!' at the bottom of this modal, it will reveal the input bar for you to type into. This input bar should have placeholder text that reads: "Input species name(s)..."</p>
 
     <p>Q: What sort of input do I supply?
-    <br>A: You will input a scientific species name and, if no match is found, you will be prompted to put in the rest of the creature's taxonomy (domain, kingdom, phylum, class, order, family, genus, and species again)</p>
+    <br>A: You will input a scientific species name. The system will automatically attempt to correct minor misspellings and name variants before looking up the species, so you do not need to enter a perfectly spelled name. If no match can be found at all, you will be prompted to provide the rest of the creature's taxonomy (domain, kingdom, phylum, class, order, family, genus, and species again).</p>
+
+    <p>Q: Does the site handle typos or misspelled species names?
+    <br>A: Yes. Fuzzy name matching is performed automatically on every request. Before looking up a species, the system queries the GBIF species database to find the closest canonical match to what you typed. The matched name will be shown alongside your result so you can confirm the correct species was found. If no close match exists, the original name is used as-is.</p>
 
     <p>Q: What are some examples of inputs I could try?
     <br>A: Here are a list of scientific species names that have direct matches in our dataset:</p>

@@ -20,14 +20,36 @@ NULL
     if (httr2::resp_status(resp) != 200L) return(NA_character_)
     data <- httr2::resp_body_json(resp, simplifyVector = TRUE)
     match_type <- data[["matchType"]]
-    if (is.null(match_type) || !match_type %in% c("EXACT", "FUZZY")) {
-      return(NA_character_)
+    if (is.null(match_type)) return(NA_character_)
+
+    if (match_type %in% c("EXACT", "FUZZY")) {
+      matched <- data[["species"]]
+      if (is.null(matched) || is.na(matched) || nchar(matched) == 0L) return(NA_character_)
+      return(as.character(matched))
     }
-    matched <- data[["species"]]
-    if (is.null(matched) || is.na(matched) || nchar(matched) == 0L) {
-      return(NA_character_)
+
+    if (match_type == "HIGHERRANK") {
+      corrected_genus <- data[["genus"]]
+      parts <- strsplit(trimws(name), "\\s+")[[1]]
+      if (!is.null(corrected_genus) && !is.na(corrected_genus) &&
+          nchar(corrected_genus) > 0L && length(parts) >= 2L) {
+        candidate <- paste(corrected_genus, parts[[2]])
+        if (!identical(candidate, name)) {
+          resp2 <- .tbm_get(.GBIF_URL, list(scientificName = candidate))
+          if (httr2::resp_status(resp2) == 200L) {
+            data2 <- httr2::resp_body_json(resp2, simplifyVector = TRUE)
+            if (!is.null(data2[["matchType"]]) &&
+                data2[["matchType"]] %in% c("EXACT", "FUZZY")) {
+              matched2 <- data2[["species"]]
+              if (!is.null(matched2) && !is.na(matched2) && nchar(matched2) > 0L)
+                return(as.character(matched2))
+            }
+          }
+        }
+      }
     }
-    as.character(matched)
+
+    NA_character_
   }, error = function(e) NA_character_)
 }
 

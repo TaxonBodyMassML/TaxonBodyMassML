@@ -276,10 +276,26 @@ def _gbif_fuzzy_name(name):
         if r.status_code != 200:
             return name, None
         data = r.json()
-        if data.get("matchType") not in ("EXACT", "FUZZY"):
-            return name, None
-        matched = data.get("species")
-        return name, matched if matched else None
+        match_type = data.get("matchType")
+
+        if match_type in ("EXACT", "FUZZY"):
+            matched = data.get("species")
+            return name, matched if matched else None
+
+        if match_type == "HIGHERRANK":
+            corrected_genus = data.get("genus")
+            parts = name.strip().split()
+            if corrected_genus and len(parts) >= 2:
+                candidate = f"{corrected_genus} {parts[1]}"
+                if candidate != name:
+                    r2 = _http_get(GBIF_MATCH_URL, {"scientificName": candidate})
+                    if r2.status_code == 200:
+                        data2 = r2.json()
+                        if data2.get("matchType") in ("EXACT", "FUZZY"):
+                            matched2 = data2.get("species")
+                            return name, matched2 if matched2 else None
+
+        return name, None
     except requests.RequestException:
         return name, None
 

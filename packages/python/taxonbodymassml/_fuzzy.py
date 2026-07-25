@@ -30,10 +30,26 @@ def _gbif_fuzzy_name(name: str) -> Optional[str]:
         if resp.status_code != 200:
             return None
         data = resp.json()
-        if data.get("matchType") not in _MATCH_ACCEPTED:
-            return None
-        matched = data.get("species")
-        return str(matched) if matched else None
+        match_type = data.get("matchType")
+
+        if match_type in _MATCH_ACCEPTED:
+            matched = data.get("species")
+            return str(matched) if matched else None
+
+        if match_type == "HIGHERRANK":
+            corrected_genus = data.get("genus")
+            parts = name.strip().split()
+            if corrected_genus and len(parts) >= 2:
+                candidate = f"{corrected_genus} {parts[1]}"
+                if candidate != name:
+                    resp2 = _get(GBIF_MATCH_URL, {"scientificName": candidate})
+                    if resp2.status_code == 200:
+                        data2 = resp2.json()
+                        if data2.get("matchType") in _MATCH_ACCEPTED:
+                            matched2 = data2.get("species")
+                            return str(matched2) if matched2 else None
+
+        return None
     except Exception:
         return None
 
@@ -150,11 +166,9 @@ def fuzzy_lookup_taxonomy(species) -> pd.DataFrame:
 def fuzzy_predict_mass(species, **kwargs) -> pd.DataFrame:
     """Predict body mass for potentially misspelled species names.
 
-    Runs ``correct_species_names()`` to obtain GBIF-canonical names, then
-    calls ``predict_mass()`` with the corrected names.  The output ``species``
-    column contains the original input names; a ``matched_name`` column is
-    appended showing the corrected name (or ``None`` when no correction was
-    found).
+    .. deprecated::
+        Use ``predict_mass(..., fuzzy_match_name=True)`` instead, which now
+        performs GBIF name correction by default.
 
     Parameters
     ----------
@@ -169,16 +183,16 @@ def fuzzy_predict_mass(species, **kwargs) -> pd.DataFrame:
         Same columns as ``predict_mass()`` with ``matched_name`` appended
         and ``species`` reflecting the original input names.
     """
+    import warnings
+
+    warnings.warn(
+        "'fuzzy_predict_mass()' is deprecated. "
+        "Use 'predict_mass(..., fuzzy_match_name=True)' instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     from ._predict import predict_mass  # local import avoids circular dependency
 
-    tax_df = fuzzy_lookup_taxonomy(species)
-    input_names = tax_df["input_name"].tolist()
-    matched_names = tax_df["matched_name"].tolist()
-
-    # Pass only the predict_mass-compatible columns (drop fuzzy extras)
-    pred_input = tax_df.drop(columns=["input_name", "matched_name"])
-    pred = predict_mass(pred_input, **kwargs)
-
-    pred["species"] = input_names
-    pred["matched_name"] = matched_names
-    return pred
+    if isinstance(species, str):
+        species = [species]
+    return predict_mass(list(species), fuzzy_match_name=True, **kwargs)

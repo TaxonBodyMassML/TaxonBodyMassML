@@ -1,3 +1,15 @@
+# TaxonBodyMassML 0.2.1
+
+## Changes
+
+* `predict_mass()` gains a `fuzzy_match_name` argument (default `TRUE`) that
+  controls whether GBIF name correction is applied before taxonomy lookup. This
+  consolidates fuzzy matching into the primary prediction function.
+* `fuzzy_predict_mass()` is deprecated. Use `predict_mass(..., fuzzy_match_name = TRUE)`
+  instead (which is now the default behaviour).
+* When `fuzzy_match_name = TRUE`, the output includes a `matched_name` column
+  showing the GBIF-canonical name used for each prediction.
+
 # TaxonBodyMassML 0.2.0
 
 ## New features

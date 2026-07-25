@@ -98,6 +98,12 @@
 #'   is supported.
 #' @param include_taxonomy Logical. If `TRUE`, append the resolved taxonomy
 #'   columns to the output. Default `FALSE`.
+#' @param fuzzy_match_name Logical. If `TRUE` (default), species names are
+#'   first corrected via the GBIF species-match API before taxonomy lookup,
+#'   tolerating misspellings and minor name variants. A `matched_name` column
+#'   is appended to the output showing the GBIF-canonical name (or `NA` when
+#'   no match was found). Set to `FALSE` to require exact name matches and
+#'   suppress the correction step. Ignored when `species` is a `data.frame`.
 #'
 #' @return A `data.frame` with at minimum columns `species` and `mass_g`
 #'   (predicted body mass in grams).
@@ -105,11 +111,12 @@
 #'     and `confidence`.
 #'   - When `include_taxonomy = TRUE`: also `kingdom`, `phylum`, `class`,
 #'     `order`, `family`, `genus`, `species_resolved`.
+#'   - When `fuzzy_match_name = TRUE`: also `matched_name`.
 #'   - Rows for unresolvable species contain `NA` for all numeric columns.
 #'
 #' @examples
 #' \dontrun{
-#' # Single species
+#' # Single species (fuzzy name correction on by default)
 #' TaxonBodyMassML::predict_mass("Homo sapiens")
 #'
 #' # Multiple species with 90% confidence interval
@@ -117,6 +124,9 @@
 #'   c("Canis lupus", "Panthera leo"),
 #'   confidence_interval = TRUE
 #' )
+#'
+#' # Disable fuzzy name correction to require exact matches
+#' TaxonBodyMassML::predict_mass("Canis lupus", fuzzy_match_name = FALSE)
 #'
 #' # Skip taxonomy lookup by passing pre-resolved data.frame
 #' tax <- lookup_taxonomy("Mus musculus")
@@ -127,7 +137,8 @@
 predict_mass <- function(species,
                     confidence_interval = FALSE,
                     method = "XGBoost",
-                    include_taxonomy = FALSE) {
+                    include_taxonomy = FALSE,
+                    fuzzy_match_name = TRUE) {
 
   if (!method %in% names(.METHODS)) {
     stop(sprintf(
@@ -156,15 +167,26 @@ predict_mass <- function(species,
 
   # ---- Input handling -----------------------------------------------------
   if (is.data.frame(species)) {
-    taxonomy_df <- species
+    taxonomy_df   <- species
+    matched_names <- NULL
     input_names <- if ("species" %in% names(species)) {
       as.character(species$species)
     } else {
       as.character(species$species_resolved)
     }
   } else {
-    names_vec  <- as.character(species)
-    taxonomy_df <- lookup_taxonomy(names_vec)
+    names_vec <- as.character(species)
+    if (fuzzy_match_name) {
+      tax_full      <- fuzzy_lookup_taxonomy(names_vec)
+      matched_names <- tax_full$matched_name
+      taxonomy_df   <- tax_full[
+        , setdiff(names(tax_full), c("input_name", "matched_name")),
+        drop = FALSE
+      ]
+    } else {
+      taxonomy_df   <- lookup_taxonomy(names_vec)
+      matched_names <- NULL
+    }
     input_names <- as.character(taxonomy_df$species)
   }
 
@@ -215,6 +237,9 @@ predict_mass <- function(species,
   out <- out[order(out$..orig_idx..), , drop = FALSE]
   out$..orig_idx.. <- NULL
   rownames(out) <- NULL
+  if (!is.null(matched_names)) {
+    out$matched_name <- matched_names
+  }
   out
 }
 
@@ -224,10 +249,11 @@ predict_mass <- function(species,
 
 #' Predict body mass for potentially misspelled species names
 #'
-#' Runs `correct_species_names()` to obtain GBIF-canonical names, then calls
-#' `predict_mass()` with the corrected names.  The output `species` column
-#' contains the original input names; a `matched_name` column is appended
-#' showing the corrected name (or `NA` when no correction was found).
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#'
+#' This function is deprecated. Use `predict_mass(..., fuzzy_match_name = TRUE)`
+#' instead, which now performs GBIF name correction by default.
 #'
 #' @param species A character vector of scientific names (possibly misspelled).
 #' @param ... Additional arguments passed to `predict_mass()`.
@@ -238,22 +264,18 @@ predict_mass <- function(species,
 #'
 #' @examples
 #' \dontrun{
-#' fuzzy_predict_mass(c("Ballanus glandula", "Canis lupus"))
+#' # Deprecated — use predict_mass() directly:
+#' predict_mass(c("Ballanus glandula", "Canis lupus"))
 #' }
 #'
 #' @export
 fuzzy_predict_mass <- function(species, ...) {
-  tax_df <- fuzzy_lookup_taxonomy(as.character(species))
-
-  # Pass a predict_mass-compatible data.frame (drop the extra fuzzy columns)
-  pred_input <- tax_df[
-    , setdiff(names(tax_df), c("input_name", "matched_name")),
-    drop = FALSE
-  ]
-  pred <- predict_mass(pred_input, ...)
-
-  # Restore original input names and expose matched_name
-  pred$species      <- tax_df$input_name
-  pred$matched_name <- tax_df$matched_name
-  pred
+  .Deprecated(
+    "predict_mass",
+    msg = paste(
+      "'fuzzy_predict_mass()' is deprecated.",
+      "Use 'predict_mass(..., fuzzy_match_name = TRUE)' instead."
+    )
+  )
+  predict_mass(as.character(species), fuzzy_match_name = TRUE, ...)
 }

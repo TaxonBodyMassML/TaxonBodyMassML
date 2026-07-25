@@ -8,7 +8,7 @@ Quick start::
     tbm.predict_mass(["Haustrum scobina", "Mus musculus"], confidence_interval=True)
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from ._fuzzy import correct_species_names, fuzzy_lookup_taxonomy, fuzzy_predict_mass
 from ._lookup import lookup_taxonomy, tbm_clear_cache, tbm_options

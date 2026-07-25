@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.1] - 2026-07-24
+
+### Changed
+
+- `predict_mass()` gains a `fuzzy_match_name` argument (default `True`) that
+  controls whether GBIF name correction is applied before taxonomy lookup. This
+  consolidates fuzzy matching into the primary prediction function.
+- When `fuzzy_match_name=True`, the output includes a `matched_name` column
+  showing the GBIF-canonical name used for each prediction.
+
+### Deprecated
+
+- `fuzzy_predict_mass()` is deprecated. Use `predict_mass(..., fuzzy_match_name=True)`
+  instead (which is now the default behaviour).
+
 ## [0.2.0] - 2026-07-24
 
 ### Added

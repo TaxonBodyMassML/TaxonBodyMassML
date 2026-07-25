@@ -5,7 +5,7 @@ Predict species body mass from taxonomic identity using the TaxonBodyMassML XGBo
 ## Installation
 
 ```bash
-pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.2.0/taxonbodymassml-0.2.0-py3-none-any.whl"
+pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.2.1/taxonbodymassml-0.2.1-py3-none-any.whl"
 ```
 
 Optional progress bars:
@@ -40,7 +40,7 @@ tbm.predict_mass(tax)
 
 ## API
 
-### `predict_mass(species, confidence_interval=False, method="XGBoost", include_taxonomy=False)`
+### `predict_mass(species, confidence_interval=False, method="XGBoost", include_taxonomy=False, fuzzy_match_name=True)`
 
 Predict body mass for one or more species.
 
@@ -50,10 +50,13 @@ Predict body mass for one or more species.
 | `confidence_interval` | `bool` or `float` | `False`: no interval. `True`: 90% conformal interval. Float in (0, 1): interval at that coverage level. |
 | `method` | `str` | `"XGBoost"` (default). Extensible for future models. |
 | `include_taxonomy` | `bool` | Append resolved taxonomy columns to the output. |
+| `fuzzy_match_name` | `bool` | If `True` (default), correct species names via the GBIF species-match API before lookup, tolerating misspellings and name variants. Appends a `matched_name` column to the output. Set to `False` to require exact matches. Ignored when `species` is a `pd.DataFrame`. |
 
-Returns a `pd.DataFrame` with columns `species`, `mass_g` (grams), and optionally `lower_bound`, `upper_bound`, `confidence`, `kingdom` … `species_resolved`.
+Returns a `pd.DataFrame` with columns `species`, `mass_g` (grams), and optionally `lower_bound`, `upper_bound`, `confidence`, `kingdom` … `species_resolved`, `matched_name`.
 
 Species that cannot be resolved to taxonomy emit a warning and return `NaN`.
+
+> **Note:** `fuzzy_predict_mass()` is deprecated as of v0.2.1. Replace any calls to it with `predict_mass()`, which now performs name correction by default.
 
 ### `lookup_taxonomy(species)`
 
@@ -96,7 +99,7 @@ export TAXONBODYMASSML_EMAIL="your@email.com"
 ```
 
 This is appended to the `User-Agent` header sent with every NCBI request:
-`TaxonBodyMassML/0.2.0 (contact: your@email.com)`.
+`TaxonBodyMassML/0.2.1 (contact: your@email.com)`.
 
 ### NCBI API key
 

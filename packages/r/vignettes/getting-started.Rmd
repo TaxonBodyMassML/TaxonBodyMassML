@@ -21,7 +21,7 @@ Install the package from the latest release:
 
 ```{r install}
 # install.packages("pak")
-pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/r-v0.2.0/TaxonBodyMassML_0.2.0.tar.gz")
+pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/r-v0.2.1/TaxonBodyMassML_0.2.1.tar.gz")
 ```
 
 Model artifacts (~2 GB) are downloaded automatically the first time you call
@@ -69,6 +69,28 @@ TaxonBodyMassML::predict_mass("Canis lupus", confidence_interval = 0.80)
 ```{r tax-output}
 TaxonBodyMassML::predict_mass("Panthera leo", include_taxonomy = TRUE)
 ```
+
+## Fuzzy Name Matching
+
+By default, `predict_mass()` corrects species names via the GBIF species-match
+API before performing the taxonomy lookup. This means minor misspellings and
+name variants are handled automatically, and a `matched_name` column is
+included in the output showing the GBIF-canonical name used.
+
+```{r fuzzy}
+# Misspelled name is corrected automatically
+TaxonBodyMassML::predict_mass("Canis lupuss")
+#>      species   mass_g matched_name
+#> 1 Canis lupuss 31452.21  Canis lupus
+
+# Disable fuzzy correction to require exact name matches
+TaxonBodyMassML::predict_mass("Canis lupus", fuzzy_match_name = FALSE)
+#>      species   mass_g
+#> 1 Canis lupus 31452.21
+```
+
+`fuzzy_predict_mass()` is deprecated as of v0.2.1. Replace any calls to it
+with `predict_mass()`, which now performs name correction by default.
 
 ## Taxonomy Lookup
 

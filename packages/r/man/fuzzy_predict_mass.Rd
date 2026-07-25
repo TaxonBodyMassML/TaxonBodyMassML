@@ -17,14 +17,16 @@ column reflecting the original input names and a \code{matched_name} column
 appended.
 }
 \description{
-Runs \code{correct_species_names()} to obtain GBIF-canonical names, then calls
-\code{predict_mass()} with the corrected names.  The output \code{species} column
-contains the original input names; a \code{matched_name} column is appended
-showing the corrected name (or \code{NA} when no correction was found).
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
+\code{fuzzy_predict_mass()} is deprecated. Use
+\code{predict_mass(..., fuzzy_match_name = TRUE)} instead, which now performs
+GBIF name correction by default.
 }
 \examples{
 \dontrun{
-fuzzy_predict_mass(c("Ballanus glandula", "Canis lupus"))
+# Deprecated -- use predict_mass() directly:
+predict_mass(c("Ballanus glandula", "Canis lupus"))
 }
 
 }

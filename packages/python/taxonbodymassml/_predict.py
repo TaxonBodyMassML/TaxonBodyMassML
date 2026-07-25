@@ -120,6 +120,7 @@ def predict_mass(
     confidence_interval=False,
     method: str = "XGBoost",
     include_taxonomy: bool = False,
+    fuzzy_match_name: bool = True,
 ) -> pd.DataFrame:
     """Predict body mass for one or more species.
 
@@ -137,6 +138,13 @@ def predict_mass(
         Prediction method.  Currently only ``"XGBoost"`` is supported.
     include_taxonomy : bool
         If ``True``, include the resolved taxonomy columns in the output.
+    fuzzy_match_name : bool
+        If ``True`` (default), species names are first corrected via the GBIF
+        species-match API before taxonomy lookup, tolerating misspellings and
+        minor name variants.  A ``matched_name`` column is appended to the
+        output showing the GBIF-canonical name (or ``None`` when no match was
+        found).  Set to ``False`` to require exact name matches and suppress
+        the correction step.  Ignored when ``species`` is a ``pd.DataFrame``.
 
     Returns
     -------
@@ -145,6 +153,7 @@ def predict_mass(
         With ``confidence_interval != False``: also ``lower_bound``,
         ``upper_bound``, ``confidence``.
         With ``include_taxonomy=True``: also ``kingdom`` … ``species_resolved``.
+        With ``fuzzy_match_name=True``: also ``matched_name``.
         Rows for unresolvable species have ``NaN`` for numeric columns.
     """
     if method not in _METHODS:
@@ -159,15 +168,23 @@ def predict_mass(
             raise ValueError(f"Input DataFrame is missing taxonomy columns: {sorted(missing)}")
         taxonomy_df = species.reset_index(drop=True)
         input_names = taxonomy_df.get("species", taxonomy_df["species_resolved"]).tolist()
+        matched_names = None
     else:
         if isinstance(species, str):
             names = [species]
         else:
             names = list(species)
-        lookup_df = lookup_taxonomy(names)
-        # lookup_taxonomy returns species + kingdom..genus + species_resolved
-        taxonomy_df = lookup_df
-        input_names = lookup_df["species"].tolist()
+        if fuzzy_match_name:
+            from ._fuzzy import fuzzy_lookup_taxonomy  # local import avoids circular dep
+
+            tax_full = fuzzy_lookup_taxonomy(names)
+            matched_names = tax_full["matched_name"].tolist()
+            taxonomy_df = tax_full.drop(columns=["input_name", "matched_name"])
+            input_names = tax_full["input_name"].tolist()
+        else:
+            taxonomy_df = lookup_taxonomy(names)
+            input_names = taxonomy_df["species"].tolist()
+            matched_names = None
 
     # ---- Rows with failed lookup (all None) get NaN predictions ----------
     resolved_mask = taxonomy_df["species_resolved"].notna()
@@ -207,5 +224,8 @@ def predict_mass(
 
     out = pd.concat(result_rows, ignore_index=True)
     out = out.sort_values("_orig_idx").drop(columns="_orig_idx").reset_index(drop=True)
+
+    if matched_names is not None:
+        out["matched_name"] = matched_names
 
     return out

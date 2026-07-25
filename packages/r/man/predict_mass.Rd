@@ -8,7 +8,8 @@ predict_mass(
   species,
   confidence_interval = FALSE,
   method = "XGBoost",
-  include_taxonomy = FALSE
+  include_taxonomy = FALSE,
+  fuzzy_match_name = TRUE
 )
 }
 \arguments{
@@ -25,6 +26,13 @@ is supported.}
 
 \item{include_taxonomy}{Logical. If \code{TRUE}, append the resolved taxonomy
 columns to the output. Default \code{FALSE}.}
+
+\item{fuzzy_match_name}{Logical. If \code{TRUE} (default), species names are
+first corrected via the GBIF species-match API before taxonomy lookup,
+tolerating misspellings and minor name variants. A \code{matched_name} column
+is appended to the output showing the GBIF-canonical name (or \code{NA} when
+no match was found). Set to \code{FALSE} to require exact name matches and
+suppress the correction step. Ignored when \code{species} is a \code{data.frame}.}
 }
 \value{
 A \code{data.frame} with at minimum columns \code{species} and \code{mass_g}
@@ -34,6 +42,7 @@ A \code{data.frame} with at minimum columns \code{species} and \code{mass_g}
 and \code{confidence}.
 \item When \code{include_taxonomy = TRUE}: also \code{kingdom}, \code{phylum}, \code{class},
 \code{order}, \code{family}, \code{genus}, \code{species_resolved}.
+\item When \code{fuzzy_match_name = TRUE}: also \code{matched_name}.
 \item Rows for unresolvable species contain \code{NA} for all numeric columns.
 }
 }
@@ -44,7 +53,7 @@ Pass a \code{data.frame} with pre-resolved taxonomy columns to skip lookup.
 }
 \examples{
 \dontrun{
-# Single species
+# Single species (fuzzy name correction on by default)
 TaxonBodyMassML::predict_mass("Homo sapiens")
 
 # Multiple species with 90\% confidence interval
@@ -52,6 +61,9 @@ TaxonBodyMassML::predict_mass(
   c("Canis lupus", "Panthera leo"),
   confidence_interval = TRUE
 )
+
+# Disable fuzzy name correction to require exact matches
+TaxonBodyMassML::predict_mass("Canis lupus", fuzzy_match_name = FALSE)
 
 # Skip taxonomy lookup by passing pre-resolved data.frame
 tax <- lookup_taxonomy("Mus musculus")
