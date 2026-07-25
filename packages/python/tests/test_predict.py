@@ -136,3 +136,41 @@ def test_predict_taxonomy_dataframe_input():
     tax = tbm.lookup_taxonomy("Mus musculus")
     result = tbm.predict_mass(tax)
     assert result["mass_g"].iloc[0] > 0
+
+
+# ---------------------------------------------------------------------------
+# fuzzy_match_name column semantics
+# ---------------------------------------------------------------------------
+
+
+@skip_without_artifacts
+def test_fuzzy_match_corrected_name_in_species_original_in_matched_name():
+    import taxonbodymassml as tbm
+
+    result = tbm.predict_mass("Ballanus glandula", fuzzy_match_name=True)
+    assert result["species"].iloc[0] == "Balanus glandula"
+    assert result["matched_name"].iloc[0] == "Ballanus glandula"
+    assert "matched_name" in result.columns
+
+
+@skip_without_artifacts
+def test_fuzzy_match_matched_name_none_when_no_correction_needed():
+    import taxonbodymassml as tbm
+
+    result = tbm.predict_mass("Balanus glandula", fuzzy_match_name=True)
+    assert result["species"].iloc[0] == "Balanus glandula"
+    assert result["matched_name"].iloc[0] is None
+    assert "matched_name" in result.columns
+
+
+@skip_without_artifacts
+def test_fuzzy_match_species_none_and_matched_name_set_when_gbif_finds_no_match():
+    import math
+    import taxonbodymassml as tbm
+
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always")
+        result = tbm.predict_mass("Xyzzy_definitely_not_a_species_12345", fuzzy_match_name=True)
+    assert result["species"].iloc[0] is None
+    assert result["matched_name"].iloc[0] == "Xyzzy_definitely_not_a_species_12345"
+    assert math.isnan(result["mass_g"].iloc[0])

@@ -142,8 +142,9 @@ def predict_mass(
         If ``True``, species names are first corrected via the GBIF
         species-match API before taxonomy lookup, tolerating misspellings and
         minor name variants.  A ``matched_name`` column is appended to the
-        output showing the GBIF-canonical name (or ``None`` when no match was
-        found).  Default ``False`` (exact name matching).  Ignored when
+        output: it contains the originally entered name when a correction was
+        applied or no GBIF match was found; ``None`` when the name was already
+        canonical.  Default ``False`` (exact name matching).  Ignored when
         ``species`` is a ``pd.DataFrame``.
 
     Returns
@@ -153,7 +154,9 @@ def predict_mass(
         With ``confidence_interval != False``: also ``lower_bound``,
         ``upper_bound``, ``confidence``.
         With ``include_taxonomy=True``: also ``kingdom`` … ``species_resolved``.
-        With ``fuzzy_match_name=True``: also ``matched_name``.
+        With ``fuzzy_match_name=True``: also ``matched_name`` (the originally
+        entered name if corrected or unmatched; ``None`` if no correction was
+        needed).
         Rows for unresolvable species have ``NaN`` for numeric columns.
     """
     if method not in _METHODS:
@@ -178,9 +181,17 @@ def predict_mass(
             from ._fuzzy import fuzzy_lookup_taxonomy  # local import avoids circular dep
 
             tax_full = fuzzy_lookup_taxonomy(names)
-            matched_names = tax_full["matched_name"].tolist()
+            corrected = tax_full["matched_name"].notna() & (
+                tax_full["matched_name"] != tax_full["input_name"]
+            )
+            no_match = tax_full["matched_name"].isna()
+            input_names = (
+                tax_full["matched_name"]
+                .where(corrected, tax_full["input_name"].where(~no_match, other=None))
+                .tolist()
+            )
+            matched_names = tax_full["input_name"].where(corrected | no_match, other=None).tolist()
             taxonomy_df = tax_full.drop(columns=["input_name", "matched_name"])
-            input_names = tax_full["input_name"].tolist()
         else:
             taxonomy_df = lookup_taxonomy(names)
             input_names = taxonomy_df["species"].tolist()

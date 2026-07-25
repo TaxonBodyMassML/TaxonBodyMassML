@@ -101,8 +101,9 @@
 #' @param fuzzy_match_name Logical. If `TRUE`, species names are first
 #'   corrected via the GBIF species-match API before taxonomy lookup,
 #'   tolerating misspellings and minor name variants. A `matched_name` column
-#'   is appended to the output showing the GBIF-canonical name (or `NA` when
-#'   no match was found). Default `FALSE` (exact name matching). Ignored when
+#'   is appended to the output: it contains the originally entered name when a
+#'   correction was applied or no GBIF match was found; `NA` when the name was
+#'   already canonical. Default `FALSE` (exact name matching). Ignored when
 #'   `species` is a `data.frame`.
 #'
 #' @return A `data.frame` with at minimum columns `species` and `mass_g`
@@ -111,7 +112,9 @@
 #'     and `confidence`.
 #'   - When `include_taxonomy = TRUE`: also `kingdom`, `phylum`, `class`,
 #'     `order`, `family`, `genus`, `species_resolved`.
-#'   - When `fuzzy_match_name = TRUE`: also `matched_name`.
+#'   - When `fuzzy_match_name = TRUE`: also `matched_name` (the originally
+#'     entered name if corrected or unmatched; `NA` if no correction was
+#'     needed).
 #'   - Rows for unresolvable species contain `NA` for all numeric columns.
 #'
 #' @examples
@@ -177,17 +180,24 @@ predict_mass <- function(species,
   } else {
     names_vec <- as.character(species)
     if (fuzzy_match_name) {
-      tax_full      <- fuzzy_lookup_taxonomy(names_vec)
-      matched_names <- tax_full$matched_name
-      taxonomy_df   <- tax_full[
+      tax_full    <- fuzzy_lookup_taxonomy(names_vec)
+      corrected   <- !is.na(tax_full$matched_name) &
+                       tax_full$matched_name != tax_full$input_name
+      no_match    <- is.na(tax_full$matched_name)
+      input_names   <- ifelse(corrected,  tax_full$matched_name,
+                       ifelse(no_match,   NA_character_,
+                                          tax_full$input_name))
+      matched_names <- ifelse(corrected | no_match,
+                              tax_full$input_name, NA_character_)
+      taxonomy_df <- tax_full[
         , setdiff(names(tax_full), c("input_name", "matched_name")),
         drop = FALSE
       ]
     } else {
       taxonomy_df   <- lookup_taxonomy(names_vec)
+      input_names   <- as.character(taxonomy_df$species)
       matched_names <- NULL
     }
-    input_names <- as.character(taxonomy_df$species)
   }
 
   # ---- Split resolved / unresolved ----------------------------------------

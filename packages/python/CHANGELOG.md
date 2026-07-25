@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.3] - 2026-07-25
+
+### Changed
+
+- `predict_mass()` with `fuzzy_match_name=True` now reports `species` as the
+  GBIF-canonical name (`None` when GBIF found no match), and `matched_name` as
+  the originally entered name when a correction was applied or no match was
+  found (`None` when the name was already canonical).
+
 ## [0.2.2] - 2026-07-25
 
 ### Fixed

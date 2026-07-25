@@ -1,3 +1,12 @@
+# TaxonBodyMassML 0.2.3
+
+## Changes
+
+* `predict_mass()` with `fuzzy_match_name = TRUE` now reports `species` as the
+  GBIF-canonical name (or `NA` when GBIF found no match), and `matched_name` as
+  the originally entered name when a correction was applied or no match was
+  found (`NA` when the name was already canonical).
+
 # TaxonBodyMassML 0.2.2
 
 ## Bug fixes

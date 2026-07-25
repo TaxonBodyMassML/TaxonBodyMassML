@@ -141,3 +141,45 @@ test_that("predict_mass() returns NA mass_g and warns for unresolvable species",
   expect_equal(nrow(result), 1L)
   expect_true(is.na(result$mass_g))
 })
+
+# ---------------------------------------------------------------------------
+# fuzzy_match_name column semantics
+# ---------------------------------------------------------------------------
+
+test_that("predict_mass() with fuzzy_match_name: corrected name in species, original in matched_name", {
+  testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
+                    "Model artifacts not cached; skipping integration test.")
+  testthat::skip_if_offline()
+
+  result <- TaxonBodyMassML::predict_mass("Ballanus glandula",
+                                          fuzzy_match_name = TRUE)
+  expect_equal(result$species, "Balanus glandula")
+  expect_equal(result$matched_name, "Ballanus glandula")
+  expect_true("matched_name" %in% names(result))
+})
+
+test_that("predict_mass() with fuzzy_match_name: matched_name is NA when no correction needed", {
+  testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
+                    "Model artifacts not cached; skipping integration test.")
+  testthat::skip_if_offline()
+
+  result <- TaxonBodyMassML::predict_mass("Balanus glandula",
+                                          fuzzy_match_name = TRUE)
+  expect_equal(result$species, "Balanus glandula")
+  expect_true(is.na(result$matched_name))
+  expect_true("matched_name" %in% names(result))
+})
+
+test_that("predict_mass() with fuzzy_match_name: species NA and matched_name set when GBIF finds no match", {
+  testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
+                    "Model artifacts not cached; skipping integration test.")
+  testthat::skip_if_offline()
+
+  suppressWarnings(
+    result <- TaxonBodyMassML::predict_mass("Xyzzy_definitely_not_a_species_12345",
+                                            fuzzy_match_name = TRUE)
+  )
+  expect_true(is.na(result$species))
+  expect_equal(result$matched_name, "Xyzzy_definitely_not_a_species_12345")
+  expect_true(is.na(result$mass_g))
+})

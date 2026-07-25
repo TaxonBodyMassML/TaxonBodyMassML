@@ -5,7 +5,7 @@ Predict species body mass from taxonomic identity using the TaxonBodyMassML XGBo
 ## Installation
 
 ```bash
-pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.2.2/taxonbodymassml-0.2.2-py3-none-any.whl"
+pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.2.3/taxonbodymassml-0.2.3-py3-none-any.whl"
 ```
 
 Optional progress bars:
@@ -50,7 +50,7 @@ Predict body mass for one or more species.
 | `confidence_interval` | `bool` or `float` | `False`: no interval. `True`: 90% conformal interval. Float in (0, 1): interval at that coverage level. |
 | `method` | `str` | `"XGBoost"` (default). Extensible for future models. |
 | `include_taxonomy` | `bool` | Append resolved taxonomy columns to the output. |
-| `fuzzy_match_name` | `bool` | If `True`, correct species names via the GBIF species-match API before lookup, tolerating misspellings and name variants. Appends a `matched_name` column to the output. Default `False` (exact matching). Ignored when `species` is a `pd.DataFrame`. |
+| `fuzzy_match_name` | `bool` | If `True`, correct species names via the GBIF species-match API before lookup, tolerating misspellings and name variants. Appends a `matched_name` column: the originally entered name when a correction was applied or no match was found; `None` when the name was already canonical. Default `False` (exact matching). Ignored when `species` is a `pd.DataFrame`. |
 
 Returns a `pd.DataFrame` with columns `species`, `mass_g` (grams), and optionally `lower_bound`, `upper_bound`, `confidence`, `kingdom` … `species_resolved`, `matched_name`.
 
@@ -99,7 +99,7 @@ export TAXONBODYMASSML_EMAIL="your@email.com"
 ```
 
 This is appended to the `User-Agent` header sent with every NCBI request:
-`TaxonBodyMassML/0.2.1 (contact: your@email.com)`.
+`TaxonBodyMassML/0.2.3 (contact: your@email.com)`.
 
 ### NCBI API key
 
