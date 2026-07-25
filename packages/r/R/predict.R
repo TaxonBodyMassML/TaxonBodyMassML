@@ -98,12 +98,12 @@
 #'   is supported.
 #' @param include_taxonomy Logical. If `TRUE`, append the resolved taxonomy
 #'   columns to the output. Default `FALSE`.
-#' @param fuzzy_match_name Logical. If `TRUE` (default), species names are
-#'   first corrected via the GBIF species-match API before taxonomy lookup,
+#' @param fuzzy_match_name Logical. If `TRUE`, species names are first
+#'   corrected via the GBIF species-match API before taxonomy lookup,
 #'   tolerating misspellings and minor name variants. A `matched_name` column
 #'   is appended to the output showing the GBIF-canonical name (or `NA` when
-#'   no match was found). Set to `FALSE` to require exact name matches and
-#'   suppress the correction step. Ignored when `species` is a `data.frame`.
+#'   no match was found). Default `FALSE` (exact name matching). Ignored when
+#'   `species` is a `data.frame`.
 #'
 #' @return A `data.frame` with at minimum columns `species` and `mass_g`
 #'   (predicted body mass in grams).
@@ -116,7 +116,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Single species (fuzzy name correction on by default)
+#' # Single species
 #' TaxonBodyMassML::predict_mass("Homo sapiens")
 #'
 #' # Multiple species with 90% confidence interval
@@ -125,8 +125,8 @@
 #'   confidence_interval = TRUE
 #' )
 #'
-#' # Disable fuzzy name correction to require exact matches
-#' TaxonBodyMassML::predict_mass("Canis lupus", fuzzy_match_name = FALSE)
+#' # Enable fuzzy name correction to tolerate misspellings
+#' TaxonBodyMassML::predict_mass("Canis luupus", fuzzy_match_name = TRUE)
 #'
 #' # Skip taxonomy lookup by passing pre-resolved data.frame
 #' tax <- lookup_taxonomy("Mus musculus")
@@ -138,7 +138,7 @@ predict_mass <- function(species,
                     confidence_interval = FALSE,
                     method = "XGBoost",
                     include_taxonomy = FALSE,
-                    fuzzy_match_name = TRUE) {
+                    fuzzy_match_name = FALSE) {
 
   if (!method %in% names(.METHODS)) {
     stop(sprintf(

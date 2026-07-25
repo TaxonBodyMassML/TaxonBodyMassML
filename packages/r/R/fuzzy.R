@@ -9,6 +9,12 @@
 #' @name fuzzy
 NULL
 
+# v1 endpoint for name correction — returns a flat response structure with
+# matchType, species, genus, and confidence at the top level.  The v2 endpoint
+# used by lookup_taxonomy() has a nested structure and is intentionally kept
+# separate (.GBIF_URL in lookup_taxonomy.R).
+.GBIF_FUZZY_URL <- "https://api.gbif.org/v1/species/match"
+
 # ---------------------------------------------------------------------------
 # Internal: ask GBIF for its canonical match for a single name
 # Returns the matched species string, or NA_character_ on no match.
@@ -16,13 +22,14 @@ NULL
 
 .gbif_fuzzy_name <- function(name) {
   tryCatch({
-    resp <- .tbm_get(.GBIF_URL, list(scientificName = name))
+    resp <- .tbm_get(.GBIF_FUZZY_URL, list(name = name, rank = "SPECIES"))
     if (httr2::resp_status(resp) != 200L) return(NA_character_)
     data <- httr2::resp_body_json(resp, simplifyVector = TRUE)
     match_type <- data[["matchType"]]
     if (is.null(match_type)) return(NA_character_)
 
     if (match_type %in% c("EXACT", "FUZZY")) {
+      if (isTRUE(data[["confidence"]] < 75L)) return(NA_character_)
       matched <- data[["species"]]
       if (is.null(matched) || is.na(matched) || nchar(matched) == 0L) return(NA_character_)
       return(as.character(matched))
@@ -35,11 +42,12 @@ NULL
           nchar(corrected_genus) > 0L && length(parts) >= 2L) {
         candidate <- paste(corrected_genus, parts[[2]])
         if (!identical(candidate, name)) {
-          resp2 <- .tbm_get(.GBIF_URL, list(scientificName = candidate))
+          resp2 <- .tbm_get(.GBIF_FUZZY_URL, list(name = candidate, rank = "SPECIES"))
           if (httr2::resp_status(resp2) == 200L) {
             data2 <- httr2::resp_body_json(resp2, simplifyVector = TRUE)
             if (!is.null(data2[["matchType"]]) &&
-                data2[["matchType"]] %in% c("EXACT", "FUZZY")) {
+                data2[["matchType"]] %in% c("EXACT", "FUZZY") &&
+                isTRUE(data2[["confidence"]] >= 75L)) {
               matched2 <- data2[["species"]]
               if (!is.null(matched2) && !is.na(matched2) && nchar(matched2) > 0L)
                 return(as.character(matched2))

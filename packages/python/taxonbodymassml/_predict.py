@@ -120,7 +120,7 @@ def predict_mass(
     confidence_interval=False,
     method: str = "XGBoost",
     include_taxonomy: bool = False,
-    fuzzy_match_name: bool = True,
+    fuzzy_match_name: bool = False,
 ) -> pd.DataFrame:
     """Predict body mass for one or more species.
 
@@ -139,12 +139,12 @@ def predict_mass(
     include_taxonomy : bool
         If ``True``, include the resolved taxonomy columns in the output.
     fuzzy_match_name : bool
-        If ``True`` (default), species names are first corrected via the GBIF
+        If ``True``, species names are first corrected via the GBIF
         species-match API before taxonomy lookup, tolerating misspellings and
         minor name variants.  A ``matched_name`` column is appended to the
         output showing the GBIF-canonical name (or ``None`` when no match was
-        found).  Set to ``False`` to require exact name matches and suppress
-        the correction step.  Ignored when ``species`` is a ``pd.DataFrame``.
+        found).  Default ``False`` (exact name matching).  Ignored when
+        ``species`` is a ``pd.DataFrame``.
 
     Returns
     -------

@@ -19,6 +19,9 @@ app = Flask(__name__)
 CORS(app)
 
 GBIF_MATCH_URL = "https://api.gbif.org/v2/species/match"
+# v1 endpoint used for fuzzy name correction — returns a flat response
+# structure that the correction logic reads directly.
+GBIF_FUZZY_URL = "https://api.gbif.org/v1/species/match"
 
 NCBI_ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 NCBI_EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
@@ -269,16 +272,21 @@ def multi_species():
         return jsonify({"error": str(e)}), 500
 
 
+_MIN_FUZZY_CONFIDENCE = 75
+
+
 def _gbif_fuzzy_name(name):
-    """Return (input_name, matched_name_or_None) via GBIF fuzzy match."""
+    """Return (input_name, matched_name_or_None) via GBIF v1 fuzzy match."""
     try:
-        r = _http_get(GBIF_MATCH_URL, {"scientificName": name})
+        r = _http_get(GBIF_FUZZY_URL, {"name": name, "rank": "SPECIES"})
         if r.status_code != 200:
             return name, None
         data = r.json()
         match_type = data.get("matchType")
 
         if match_type in ("EXACT", "FUZZY"):
+            if (data.get("confidence") or 0) < _MIN_FUZZY_CONFIDENCE:
+                return name, None
             matched = data.get("species")
             return name, matched if matched else None
 
@@ -288,10 +296,13 @@ def _gbif_fuzzy_name(name):
             if corrected_genus and len(parts) >= 2:
                 candidate = f"{corrected_genus} {parts[1]}"
                 if candidate != name:
-                    r2 = _http_get(GBIF_MATCH_URL, {"scientificName": candidate})
+                    r2 = _http_get(GBIF_FUZZY_URL, {"name": candidate, "rank": "SPECIES"})
                     if r2.status_code == 200:
                         data2 = r2.json()
-                        if data2.get("matchType") in ("EXACT", "FUZZY"):
+                        if (
+                            data2.get("matchType") in ("EXACT", "FUZZY")
+                            and (data2.get("confidence") or 0) >= _MIN_FUZZY_CONFIDENCE
+                        ):
                             matched2 = data2.get("species")
                             return name, matched2 if matched2 else None
 

@@ -8,16 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- `predict_mass()` gains a `fuzzy_match_name` argument (default `True`) that
+- `predict_mass()` gains a `fuzzy_match_name` argument (default `False`) that
   controls whether GBIF name correction is applied before taxonomy lookup. This
-  consolidates fuzzy matching into the primary prediction function.
+  consolidates fuzzy matching into the primary prediction function. Set to
+  `True` to enable name correction.
 - When `fuzzy_match_name=True`, the output includes a `matched_name` column
   showing the GBIF-canonical name used for each prediction.
+- Fuzzy name matching now uses the GBIF v1 species-match endpoint with a
+  `rank=SPECIES` hint and a minimum confidence threshold of 75, improving
+  match accuracy and eliminating spurious results.
 
 ### Deprecated
 
 - `fuzzy_predict_mass()` is deprecated. Use `predict_mass(..., fuzzy_match_name=True)`
-  instead (which is now the default behaviour).
+  instead.
 
 ## [0.2.0] - 2026-07-24
 

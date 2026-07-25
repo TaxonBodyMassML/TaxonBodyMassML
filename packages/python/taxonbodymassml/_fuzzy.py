@@ -13,9 +13,15 @@ from typing import Optional
 import pandas as pd
 
 from ._http import _get
-from ._lookup import GBIF_MATCH_URL, lookup_taxonomy
+from ._lookup import lookup_taxonomy
 
+# v1 endpoint for name correction — returns a flat response structure with
+# matchType, species, genus, and confidence at the top level.  The v2 endpoint
+# used by lookup_taxonomy() has a nested structure and is intentionally kept
+# separate (GBIF_MATCH_URL in _lookup.py).
+_GBIF_FUZZY_URL = "https://api.gbif.org/v1/species/match"
 _MATCH_ACCEPTED = {"EXACT", "FUZZY"}
+_MIN_CONFIDENCE = 75
 
 
 # ---------------------------------------------------------------------------
@@ -26,13 +32,15 @@ _MATCH_ACCEPTED = {"EXACT", "FUZZY"}
 def _gbif_fuzzy_name(name: str) -> Optional[str]:
     """Return GBIF's canonical species name for *name*, or None."""
     try:
-        resp = _get(GBIF_MATCH_URL, {"scientificName": name})
+        resp = _get(_GBIF_FUZZY_URL, {"name": name, "rank": "SPECIES"})
         if resp.status_code != 200:
             return None
         data = resp.json()
         match_type = data.get("matchType")
 
         if match_type in _MATCH_ACCEPTED:
+            if (data.get("confidence") or 0) < _MIN_CONFIDENCE:
+                return None
             matched = data.get("species")
             return str(matched) if matched else None
 
@@ -42,10 +50,13 @@ def _gbif_fuzzy_name(name: str) -> Optional[str]:
             if corrected_genus and len(parts) >= 2:
                 candidate = f"{corrected_genus} {parts[1]}"
                 if candidate != name:
-                    resp2 = _get(GBIF_MATCH_URL, {"scientificName": candidate})
+                    resp2 = _get(_GBIF_FUZZY_URL, {"name": candidate, "rank": "SPECIES"})
                     if resp2.status_code == 200:
                         data2 = resp2.json()
-                        if data2.get("matchType") in _MATCH_ACCEPTED:
+                        if (
+                            data2.get("matchType") in _MATCH_ACCEPTED
+                            and (data2.get("confidence") or 0) >= _MIN_CONFIDENCE
+                        ):
                             matched2 = data2.get("species")
                             return str(matched2) if matched2 else None
 
