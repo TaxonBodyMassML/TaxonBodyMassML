@@ -77,7 +77,11 @@ NULL
 correct_species_names <- function(species) {
   names_vec <- as.character(species)
   n <- length(names_vec)
-  workers <- if (n > 1L && .Platform$OS.type != "windows") min(n, 8L) else 1L
+  limit_cores <- nzchar(Sys.getenv("_R_CHECK_LIMIT_CORES_")) &&
+    !identical(toupper(Sys.getenv("_R_CHECK_LIMIT_CORES_")), "FALSE")
+  workers <- if (n > 1L && .Platform$OS.type != "windows") {
+    if (limit_cores) min(n, 2L) else min(n, 8L)
+  } else 1L
 
   if (workers > 1L) {
     raw <- parallel::mclapply(names_vec, .gbif_fuzzy_name, mc.cores = workers)
