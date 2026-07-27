@@ -52,7 +52,7 @@ def align_categories(train_df, test_df):
     Returns:
         a tuple of the reformatted x_train and x_test with shared categories and UNK added
     """
-    for col in train_df.select_dtypes(include="object").columns:
+    for col in train_df.select_dtypes(include="str").columns:
         train_df[col] = train_df[col].astype("category")
         test_df[col] = test_df[col].astype("category")
 
