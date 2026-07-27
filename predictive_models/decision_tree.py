@@ -12,6 +12,9 @@ import xgboost as xgb
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
+import datetime
+import json
+
 MODEL_WRITE_FILE = "./regressor_microservice/sliced_model/xgboost_model.pkl"
 
 # import training and testing data
@@ -88,6 +91,32 @@ y_pred = model.predict(x_test)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 r2 = r2_score(y_test, y_pred)
 
+mae = np.mean(np.abs(y_test - y_pred))
+
+metrics = {
+    "r2": float(r2),
+    "rmse": float(rmse),
+    "mae": float(mae),
+    "n_train": len(y_train),
+    "n_test": len(y_test),
+    "log10_space": True,
+    "hyperparameters": {
+        "objective": "reg:absoluteerror",
+        "n_estimators": 600,
+        "max_depth": 40,
+        "learning_rate": 0.05,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "enable_categorical": True,
+        "random_state": 42,
+    },
+    "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+}
+metrics_path = "results/metrics.json"
+with open(metrics_path, "w") as f:
+    json.dump(metrics, f, indent=2)
+print(f"Metrics saved → {metrics_path}")
+
 print("RMSE:", rmse)
 print("R2 Score:", r2)
 
@@ -103,7 +132,7 @@ plt.ylabel("Predicted Mass (g)")
 plt.title("XGBoost: Actual vs Predicted")
 plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "--")
 
-plt.savefig("xgboost_mass_prediction.png")
+plt.savefig("results/xgboost_mass_prediction.png")
 plt.show()
 
 x_train2, x_calib, y_train2, y_calib = train_test_split(
