@@ -16,7 +16,7 @@ NULL
 .CHECKSUMS <- list(
   "model.ubj"        = "4a5baab4f80a8d3bc724e7292d23b5b50ee5d6980012c660a680c46765014991",
   "calibration.json" = "71e0f26d6dd93afa4cb7944bb9eaa2be372b0fad9fae10671ac3e24eddae8e9a",
-  "categories.json"  = "608e09054254792ccf0d3abb52931e94ecb0c337e1c053f78166e51e3e234c5c"
+  "categories.json"  = "7f83d942598093d5f759bf2125ca333b52b1f00bf226ab711038f3856bc311dc"
 )
 
 .ARTIFACT_FILES <- names(.CHECKSUMS)

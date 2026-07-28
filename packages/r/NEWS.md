@@ -1,3 +1,11 @@
+# TaxonBodyMassML 0.2.4
+
+## Bug fixes
+
+* Updated `categories.json` artifact checksum to match the re-exported model
+  artifacts. The previous checksum caused SHA-256 verification failure when
+  downloading the new artifact.
+
 # TaxonBodyMassML 0.2.3
 
 ## Changes
