@@ -1,0 +1,21 @@
+{
+  "r2": 0.8880824334945777,
+  "rmse": 0.510396014707691,
+  "mae": 0.2656349197327011,
+  "n_train": 34055,
+  "n_test": 3784,
+  "log10_space": true,
+  "hyperparameters": {
+    "objective": "reg:absoluteerror",
+    "n_estimators": 600,
+    "max_depth": 42,
+    "learning_rate": 0.027826122269433446,
+    "subsample": 0.9807602957870715,
+    "colsample_bytree": 0.933924920752799,
+    "gamma": 0.8238673280916693,
+    "min_child_weight": 1,
+    "enable_categorical": true,
+    "random_state": 42
+  },
+  "timestamp": "2026-07-27T22:49:20.437088+00:00"
+}

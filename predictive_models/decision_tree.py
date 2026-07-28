@@ -73,10 +73,12 @@ x_train, x_test = align_categories(x_train, x_test)
 model = xgb.XGBRegressor(
     objective="reg:absoluteerror",
     n_estimators=600,
-    max_depth=40,
-    learning_rate=0.05,
-    subsample=0.8,
-    colsample_bytree=0.8,
+    max_depth=42,
+    learning_rate=0.027826122269433446,
+    subsample=0.9807602957870715,
+    colsample_bytree=0.933924920752799,
+    gamma=0.8238673280916693,
+    min_child_weight=1,
     enable_categorical=True,
     random_state=42,
 )
@@ -103,16 +105,18 @@ metrics = {
     "hyperparameters": {
         "objective": "reg:absoluteerror",
         "n_estimators": 600,
-        "max_depth": 40,
-        "learning_rate": 0.05,
-        "subsample": 0.8,
-        "colsample_bytree": 0.8,
+        "max_depth": 42,
+        "learning_rate": 0.027826122269433446,
+        "subsample": 0.9807602957870715,
+        "colsample_bytree": 0.933924920752799,
+        "gamma": 0.8238673280916693,
+        "min_child_weight": 1,
         "enable_categorical": True,
         "random_state": 42,
     },
     "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
 }
-metrics_path = "results/metrics.json"
+metrics_path = "predictive_models/results/metrics.json"
 with open(metrics_path, "w") as f:
     json.dump(metrics, f, indent=2)
 print(f"Metrics saved → {metrics_path}")
@@ -124,15 +128,65 @@ print("R2 Score:", r2)
 y_test = np.pow(10, y_test)
 y_pred = np.pow(10, y_pred)
 
-# Plot predicted vs actual
-plt.loglog()
-plt.scatter(y_test, y_pred)
-plt.xlabel("Actual Mass (g)")
-plt.ylabel("Predicted Mass (g)")
-plt.title("XGBoost: Actual vs Predicted")
-plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "--")
+fig, ax = plt.subplots(figsize=(4.5, 4.5))
+ax.scatter(y_test, y_pred, s=4.5, alpha=0.35, color="#0b0b0b", linewidths=0, rasterized=True)
+lims = [min(y_test.min(), y_pred.min()), max(y_test.max(), y_pred.max())]
+ax.plot(lims, lims, lw=1, color="#52514e", zorder=5)
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel("Actual body mass (g)", fontsize=9)
+ax.set_ylabel("Predicted body mass (g)", fontsize=9)
+ax.tick_params(labelsize=8, labelcolor="#0b0b0b", color="#c3c2b7", which="both")
+for spine in ("top", "right"):
+    ax.spines[spine].set_visible(False)
+ax.spines["left"].set_color("#c3c2b7")
+ax.spines["bottom"].set_color("#c3c2b7")
+ax.text(
+    0.04,
+    0.96,
+    f"$R^2$ = {r2:.3f}\nRMSE = {rmse:.3f}\nMAE = {mae:.3f}  ($\\log_{{10}}$ space)\n$n$ = {len(y_test):,}",
+    transform=ax.transAxes,
+    fontsize=8,
+    va="top",
+    color="#52514e",
+)
+fig.tight_layout()
+fig.savefig("predictive_models/results/xgboost_mass_prediction.png", dpi=300, bbox_inches="tight")
+plt.show()
 
-plt.savefig("results/xgboost_mass_prediction.png")
+mask = y_test > 0.1
+y_test_f = y_test[mask]
+y_pred_f = y_pred[mask]
+r2_f = r2_score(np.log10(y_test_f), np.log10(y_pred_f))
+rmse_f = float(np.sqrt(mean_squared_error(np.log10(y_test_f), np.log10(y_pred_f))))
+mae_f = float(np.mean(np.abs(np.log10(y_test_f) - np.log10(y_pred_f))))
+
+fig2, ax2 = plt.subplots(figsize=(4.5, 4.5))
+ax2.scatter(y_test_f, y_pred_f, s=4.5, alpha=0.35, color="#0b0b0b", linewidths=0, rasterized=True)
+lims2 = [min(y_test_f.min(), y_pred_f.min()), max(y_test_f.max(), y_pred_f.max())]
+ax2.plot(lims2, lims2, lw=1, color="#52514e", zorder=5)
+ax2.set_xscale("log")
+ax2.set_yscale("log")
+ax2.set_xlabel("Actual body mass (g)", fontsize=9)
+ax2.set_ylabel("Predicted body mass (g)", fontsize=9)
+ax2.tick_params(labelsize=8, labelcolor="#0b0b0b", color="#c3c2b7", which="both")
+for spine in ("top", "right"):
+    ax2.spines[spine].set_visible(False)
+ax2.spines["left"].set_color("#c3c2b7")
+ax2.spines["bottom"].set_color("#c3c2b7")
+ax2.text(
+    0.04,
+    0.96,
+    f"$R^2$ = {r2_f:.3f}\nRMSE = {rmse_f:.3f}\nMAE = {mae_f:.3f}  ($\\log_{{10}}$ space)\n$n$ = {mask.sum():,}  (mass $> 10^{{-1}}$ g)",
+    transform=ax2.transAxes,
+    fontsize=8,
+    va="top",
+    color="#52514e",
+)
+fig2.tight_layout()
+fig2.savefig(
+    "predictive_models/results/xgboost_mass_prediction_gt0.1g.png", dpi=300, bbox_inches="tight"
+)
 plt.show()
 
 x_train2, x_calib, y_train2, y_calib = train_test_split(

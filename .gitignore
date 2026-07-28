@@ -208,3 +208,6 @@ __marimo__/
 
 # TaxonBodyMassML model artifacts (large files; hosted on Hugging Face Hub)
 artifacts/
+
+# Manuscript files
+ms/

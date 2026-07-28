@@ -8,6 +8,8 @@ yeo-johnson visualization of z-normalized mass.
 It samples 10% of the data as test data and saves new test/train data.
 """
 
+from pathlib import Path
+
 import matplotlib
 
 # import matplotlib.pyplot as plt
@@ -57,7 +59,7 @@ def main():
 
     # ydata profiliing report is saved to my_report.html
     # profile = ProfileReport(df, title="Profiling Report")
-    # profile.to_file("my_report.html")
+    # profile.to_file(Path(__file__).parent / "my_report.html")
 
     # create log1p visualization for the mass_g variable
     # sns.histplot(np.log1p(df["mass_g"]), bins=50, kde=True)
