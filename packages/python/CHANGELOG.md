@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.5] - 2026-07-27
+
+### Changed
+
+- Updated all three artifact checksums (`model.ubj`, `calibration.json`,
+  `categories.json`) to match the Optuna-retrained model exported from the
+  current pkl bundle.
+
 ## [0.2.4] - 2026-07-27
 
 ### Fixed

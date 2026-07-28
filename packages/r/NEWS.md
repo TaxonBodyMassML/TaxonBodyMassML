@@ -1,3 +1,11 @@
+# TaxonBodyMassML 0.2.5
+
+## Changes
+
+* Updated all three artifact checksums (`model.ubj`, `calibration.json`,
+  `categories.json`) to match the Optuna-retrained model exported from the
+  current pkl bundle.
+
 # TaxonBodyMassML 0.2.4
 
 ## Bug fixes
