@@ -160,6 +160,21 @@ y_pred_f = y_pred[mask]
 r2_f = r2_score(np.log10(y_test_f), np.log10(y_pred_f))
 rmse_f = float(np.sqrt(mean_squared_error(np.log10(y_test_f), np.log10(y_pred_f))))
 mae_f = float(np.mean(np.abs(np.log10(y_test_f) - np.log10(y_pred_f))))
+n_f = int(mask.sum())
+
+print(
+    f"Filtered metrics (mass > 0.1 g): R2={r2_f:.4f}  RMSE={rmse_f:.4f}  MAE={mae_f:.4f}  n={n_f:,}"
+)
+metrics["filtered_gt0p1g"] = {
+    "r2": float(r2_f),
+    "rmse": rmse_f,
+    "mae": mae_f,
+    "n": n_f,
+    "filter": "mass_g > 0.1",
+    "log10_space": True,
+}
+with open(metrics_path, "w") as f:
+    json.dump(metrics, f, indent=2)
 
 fig2, ax2 = plt.subplots(figsize=(4.5, 4.5))
 ax2.scatter(y_test_f, y_pred_f, s=4.5, alpha=0.35, color="#0b0b0b", linewidths=0, rasterized=True)
