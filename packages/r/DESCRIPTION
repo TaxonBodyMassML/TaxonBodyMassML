@@ -32,7 +32,9 @@ Suggests:
     cli (>= 3.0),
     testthat (>= 3.0),
     knitr,
-    rmarkdown
+    rmarkdown,
+    lifecycle,
+    bibtex
 VignetteBuilder: knitr
 URL: https://taxonbodymassml.github.io, https://github.com/TaxonBodyMassML/TaxonBodyMassML
 BugReports: https://github.com/TaxonBodyMassML/TaxonBodyMassML/issues

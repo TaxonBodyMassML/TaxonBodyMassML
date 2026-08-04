@@ -47,6 +47,7 @@ NULL
   }
   httr2::request(url) |>
     httr2::req_user_agent(ua) |>
+    httr2::req_timeout(seconds = 30) |>
     httr2::req_retry(
       max_tries = 3L,
       is_transient = ~ httr2::resp_status(.x) %in% c(429L, 500L, 502L, 503L, 504L),

@@ -8,13 +8,3 @@
     )
   }
 }
-
-# Suppress R CMD CHECK notes about package-level environments defined in other
-# files (cache.R, options.R, http.R, model.R) that are referenced across the package.
-utils::globalVariables(c(
-  ".artifacts_exist",
-  ".tbm_cache",
-  ".tbm_opts",
-  ".ncbi_rl",
-  ".ARTIFACT_FILES"
-))

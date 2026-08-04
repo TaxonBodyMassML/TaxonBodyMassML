@@ -17,11 +17,13 @@ knitr::opts_chunk$set(
 
 ## Installation
 
-Install the package from the latest release:
+Install the package from the latest release. Copy the `.tar.gz` URL from the
+[GitHub releases page](https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases)
+and pass it to `pak`:
 
 ```{r install}
 # install.packages("pak")
-pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/r-v0.5.0/TaxonBodyMassML_0.5.0.tar.gz")
+pak::pkg_install("url::<release-url>")
 ```
 
 Model artifacts (~2 GB) are downloaded automatically the first time you call
@@ -75,13 +77,14 @@ TaxonBodyMassML::predict_mass("Panthera leo", include_taxonomy = TRUE)
 `predict_mass()` can correct species names via the GBIF species-match API
 before performing the taxonomy lookup, tolerating minor misspellings and name
 variants. Set `fuzzy_match_name = TRUE` to enable this. A `matched_name`
-column is included in the output showing the GBIF-canonical name used.
+column records the original query name when a correction is made; `taxon`
+always holds the GBIF-canonical name used for prediction.
 
 ```{r fuzzy}
 # Enable fuzzy correction — misspelled name is corrected automatically
 TaxonBodyMassML::predict_mass("Canis lupuss", fuzzy_match_name = TRUE)
-#>          taxon   mass_g matched_name
-#> 1 Canis lupuss 31452.21  Canis lupus
+#>         taxon   mass_g matched_name
+#> 1 Canis lupus 31452.21 Canis lupuss
 
 # Default: exact name matching (no correction step)
 TaxonBodyMassML::predict_mass("Canis lupus")

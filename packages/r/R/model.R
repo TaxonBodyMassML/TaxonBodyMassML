@@ -102,7 +102,11 @@ NULL
 #' @export
 download_model <- function(version = "latest", force = FALSE) {
   dir.create(.cache_dir(), recursive = TRUE, showWarnings = FALSE)
-  revision <- if (identical(version, "latest")) "main" else version
+  revision <- if (identical(version, "latest")) {
+    paste0("r-v", utils::packageVersion("TaxonBodyMassML"))
+  } else {
+    version
+  }
 
   for (filename in .ARTIFACT_FILES) {
     dest <- file.path(.cache_dir(), filename)
@@ -111,6 +115,7 @@ download_model <- function(version = "latest", force = FALSE) {
     }
     message("  Downloading ", filename, " from ", .HF_REPO_ID, " on Hugging Face...")
     req <- .tbm_req(.hf_url(filename, revision)) |>
+      httr2::req_timeout(seconds = 300) |>
       httr2::req_progress()
     httr2::req_perform(req, path = dest)
     if (!isTRUE(.verify_file(dest, filename))) {

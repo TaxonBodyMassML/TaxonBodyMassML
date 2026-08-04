@@ -42,7 +42,11 @@ tbm_options <- function(...) {
          ". Valid options: ", paste(sQuote(valid), collapse = ", "))
   }
 
+  logical_opts <- c("disk_cache", "progress")
   for (nm in names(args)) {
+    if (nm %in% logical_opts && !is.logical(args[[nm]])) {
+      stop("Option '", nm, "' must be logical (TRUE or FALSE).")
+    }
     assign(nm, args[[nm]], envir = .tbm_opts)
   }
 
@@ -68,5 +72,6 @@ tbm_clear_cache <- function(disk = TRUE, session = TRUE) {
       unlink(tax_dir, recursive = TRUE)
     }
   }
+  .model_env$artifacts_ok <- FALSE
   invisible(NULL)
 }
