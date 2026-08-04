@@ -12,20 +12,19 @@ fuzzy_predict_mass(species, ...)
 \item{...}{Additional arguments passed to \code{predict_mass()}.}
 }
 \value{
-A \code{data.frame} as returned by \code{predict_mass()}, with the \code{species}
+A \code{data.frame} as returned by \code{predict_mass()}, with the \code{taxon}
 column reflecting the original input names and a \code{matched_name} column
 appended.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 
-\code{fuzzy_predict_mass()} is deprecated. Use
-\code{predict_mass(..., fuzzy_match_name = TRUE)} instead, which now performs
-GBIF name correction by default.
+This function is deprecated. Use \code{predict_mass(..., fuzzy_match_name = TRUE)}
+instead, which now performs GBIF name correction by default.
 }
 \examples{
 \dontrun{
-# Deprecated -- use predict_mass() directly:
+# Deprecated — use predict_mass() directly:
 predict_mass(c("Ballanus glandula", "Canis lupus"))
 }
 

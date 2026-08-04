@@ -21,7 +21,7 @@ Install the package from the latest release:
 
 ```{r install}
 # install.packages("pak")
-pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/r-v0.2.2/TaxonBodyMassML_0.2.2.tar.gz")
+pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/r-v0.5.0/TaxonBodyMassML_0.5.0.tar.gz")
 ```
 
 Model artifacts (~2 GB) are downloaded automatically the first time you call
@@ -40,7 +40,7 @@ TaxonBodyMassML::download_model()
 library(TaxonBodyMassML)
 
 TaxonBodyMassML::predict_mass("Homo sapiens")
-#>        species   mass_g
+#>          taxon   mass_g
 #> 1 Homo sapiens 73512.41
 ```
 
@@ -48,7 +48,7 @@ TaxonBodyMassML::predict_mass("Homo sapiens")
 
 ```{r multiple}
 TaxonBodyMassML::predict_mass(c("Canis lupus", "Panthera leo", "Mus musculus"))
-#>        species     mass_g
+#>          taxon     mass_g
 #> 1  Canis lupus  31452.21
 #> 2 Panthera leo 163241.87
 #> 3  Mus musculus     20.14
@@ -80,12 +80,12 @@ column is included in the output showing the GBIF-canonical name used.
 ```{r fuzzy}
 # Enable fuzzy correction — misspelled name is corrected automatically
 TaxonBodyMassML::predict_mass("Canis lupuss", fuzzy_match_name = TRUE)
-#>        species   mass_g matched_name
+#>          taxon   mass_g matched_name
 #> 1 Canis lupuss 31452.21  Canis lupus
 
 # Default: exact name matching (no correction step)
 TaxonBodyMassML::predict_mass("Canis lupus")
-#>      species   mass_g
+#>         taxon   mass_g
 #> 1 Canis lupus 31452.21
 ```
 
@@ -127,7 +127,7 @@ TaxonBodyMassML::predict_mass(
   c("Homo sapiens", "Mus musculus"),
   confidence_interval = 0.95
 )
-#>        species    mass_g lower_bound upper_bound confidence
+#>          taxon    mass_g lower_bound upper_bound confidence
 #> 1 Homo sapiens 73512.41    4823.61   1120423.2       0.95
 #> 2  Mus musculus    20.14       1.32       307.1       0.95
 ```

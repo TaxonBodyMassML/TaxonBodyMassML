@@ -103,7 +103,7 @@ test_that("predict_mass() preserves input order for multiple species", {
 
   sp <- c("Homo sapiens", "Mus musculus", "Panthera leo")
   result <- TaxonBodyMassML::predict_mass(sp)
-  expect_equal(result$species, sp)
+  expect_equal(result$taxon, sp)
 })
 
 test_that("predict_mass() accepts pre-resolved data.frame input", {
@@ -153,7 +153,7 @@ test_that("predict_mass() with fuzzy_match_name: corrected name in species, orig
 
   result <- TaxonBodyMassML::predict_mass("Ballanus glandula",
                                           fuzzy_match_name = TRUE)
-  expect_equal(result$species, "Balanus glandula")
+  expect_equal(result$taxon, "Balanus glandula")
   expect_equal(result$matched_name, "Ballanus glandula")
   expect_true("matched_name" %in% names(result))
 })
@@ -165,7 +165,7 @@ test_that("predict_mass() with fuzzy_match_name: matched_name is NA when no corr
 
   result <- TaxonBodyMassML::predict_mass("Balanus glandula",
                                           fuzzy_match_name = TRUE)
-  expect_equal(result$species, "Balanus glandula")
+  expect_equal(result$taxon, "Balanus glandula")
   expect_true(is.na(result$matched_name))
   expect_true("matched_name" %in% names(result))
 })
@@ -179,7 +179,7 @@ test_that("predict_mass() with fuzzy_match_name: species NA and matched_name set
     result <- TaxonBodyMassML::predict_mass("Xyzzy_definitely_not_a_species_12345",
                                             fuzzy_match_name = TRUE)
   )
-  expect_true(is.na(result$species))
+  expect_true(is.na(result$taxon))
   expect_equal(result$matched_name, "Xyzzy_definitely_not_a_species_12345")
   expect_true(is.na(result$mass_g))
 })

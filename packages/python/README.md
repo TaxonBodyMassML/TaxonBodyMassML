@@ -5,7 +5,7 @@ Predict species body mass from taxonomic identity using the TaxonBodyMassML XGBo
 ## Installation
 
 ```bash
-pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.2.3/taxonbodymassml-0.2.3-py3-none-any.whl"
+pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.5.0/taxonbodymassml-0.5.0-py3-none-any.whl"
 ```
 
 Optional progress bars:
@@ -21,7 +21,7 @@ import taxonbodymassml as tbm
 
 # Single species — model artifacts are downloaded automatically on first use (~2 GB, once only)
 tbm.predict_mass("Haustrum scobina")
-#   species     mass_g
+#   taxon     mass_g
 # 0  Haustrum scobina  0.382...
 
 # Multiple species with 90% conformal prediction interval
@@ -52,7 +52,7 @@ Predict body mass for one or more species.
 | `include_taxonomy` | `bool` | Append resolved taxonomy columns to the output. |
 | `fuzzy_match_name` | `bool` | If `True`, correct species names via the GBIF species-match API before lookup, tolerating misspellings and name variants. Appends a `matched_name` column: the originally entered name when a correction was applied or no match was found; `None` when the name was already canonical. Default `False` (exact matching). Ignored when `species` is a `pd.DataFrame`. |
 
-Returns a `pd.DataFrame` with columns `species`, `mass_g` (grams), and optionally `lower_bound`, `upper_bound`, `confidence`, `kingdom` … `species_resolved`, `matched_name`.
+Returns a `pd.DataFrame` with columns `taxon`, `mass_g` (grams), and optionally `lower_bound`, `upper_bound`, `confidence`, `kingdom` … `species_resolved`, `matched_name`.
 
 Species that cannot be resolved to taxonomy emit a warning and return `NaN`.
 

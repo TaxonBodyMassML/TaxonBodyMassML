@@ -27,22 +27,26 @@ is supported.}
 \item{include_taxonomy}{Logical. If \code{TRUE}, append the resolved taxonomy
 columns to the output. Default \code{FALSE}.}
 
-\item{fuzzy_match_name}{Logical. If \code{TRUE}, species names are first corrected
-via the GBIF species-match API before taxonomy lookup, tolerating misspellings
-and minor name variants. A \code{matched_name} column is appended to the output
-showing the GBIF-canonical name (or \code{NA} when no match was found). Default
-\code{FALSE} (exact name matching). Ignored when \code{species} is a \code{data.frame}.}
+\item{fuzzy_match_name}{Logical. If \code{TRUE}, species names are first
+corrected via the GBIF species-match API before taxonomy lookup,
+tolerating misspellings and minor name variants. A \code{matched_name} column
+is appended to the output: it contains the originally entered name when a
+correction was applied or no GBIF match was found; \code{NA} when the name was
+already canonical. Default \code{FALSE} (exact name matching). Ignored when
+\code{species} is a \code{data.frame}.}
 }
 \value{
-A \code{data.frame} with at minimum columns \code{species} and \code{mass_g}
+A \code{data.frame} with at minimum columns \code{taxon} and \code{mass_g}
 (predicted body mass in grams).
 \itemize{
 \item When \code{confidence_interval != FALSE}: also \code{lower_bound}, \code{upper_bound},
 and \code{confidence}.
 \item When \code{include_taxonomy = TRUE}: also \code{kingdom}, \code{phylum}, \code{class},
 \code{order}, \code{family}, \code{genus}, \code{species_resolved}.
-\item When \code{fuzzy_match_name = TRUE}: also \code{matched_name}.
-\item Rows for unresolvable species contain \code{NA} for all numeric columns.
+\item When \code{fuzzy_match_name = TRUE}: also \code{matched_name} (the originally
+entered name if corrected or unmatched; \code{NA} if no correction was
+needed).
+\item Rows for unresolvable inputs contain \code{NA} for all numeric columns.
 }
 }
 \description{

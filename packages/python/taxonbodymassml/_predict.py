@@ -91,7 +91,7 @@ def _predict_xgboost(
     q = float(np.quantile(residuals, level)) if residuals is not None else None
 
     for i, (name, log_pred) in enumerate(zip(input_names, log_preds)):
-        row: dict = {"species": name, "mass_g": float(10**log_pred)}
+        row: dict = {"taxon": name, "mass_g": float(10**log_pred)}
         if level is not None:
             row["lower_bound"] = float(10 ** (log_pred - q))
             row["upper_bound"] = float(10 ** (log_pred + q))
@@ -150,7 +150,7 @@ def predict_mass(
     Returns
     -------
     pd.DataFrame
-        Always includes ``species`` and ``mass_g`` (grams).
+        Always includes ``taxon`` and ``mass_g`` (grams).
         With ``confidence_interval != False``: also ``lower_bound``,
         ``upper_bound``, ``confidence``.
         With ``include_taxonomy=True``: also ``kingdom`` … ``species_resolved``.
@@ -216,7 +216,7 @@ def predict_mass(
 
     if not resolved_mask.all():
         nan_names = [input_names[i] for i in unresolved_pos]
-        nan_rows = [{"species": n, "mass_g": float("nan")} for n in nan_names]
+        nan_rows = [{"taxon": n, "mass_g": float("nan")} for n in nan_names]
         if level is not None:
             for r in nan_rows:
                 r.update(

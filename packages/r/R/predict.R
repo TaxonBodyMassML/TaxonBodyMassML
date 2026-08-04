@@ -49,7 +49,7 @@
   log_preds <- stats::predict(model, dmat)
 
   result <- data.frame(
-    species = input_names,
+    taxon  = input_names,
     mass_g  = 10^log_preds,
     stringsAsFactors = FALSE
   )
@@ -106,7 +106,7 @@
 #'   already canonical. Default `FALSE` (exact name matching). Ignored when
 #'   `species` is a `data.frame`.
 #'
-#' @return A `data.frame` with at minimum columns `species` and `mass_g`
+#' @return A `data.frame` with at minimum columns `taxon` and `mass_g`
 #'   (predicted body mass in grams).
 #'   - When `confidence_interval != FALSE`: also `lower_bound`, `upper_bound`,
 #'     and `confidence`.
@@ -115,7 +115,7 @@
 #'   - When `fuzzy_match_name = TRUE`: also `matched_name` (the originally
 #'     entered name if corrected or unmatched; `NA` if no correction was
 #'     needed).
-#'   - Rows for unresolvable species contain `NA` for all numeric columns.
+#'   - Rows for unresolvable inputs contain `NA` for all numeric columns.
 #'
 #' @examples
 #' \dontrun{
@@ -223,7 +223,7 @@ predict_mass <- function(species,
   if (!all(resolved_mask)) {
     bad_names <- input_names[!resolved_mask]
     nan_df <- data.frame(
-      species = bad_names,
+      taxon  = bad_names,
       mass_g  = NA_real_,
       stringsAsFactors = FALSE
     )
@@ -268,7 +268,7 @@ predict_mass <- function(species,
 #' @param species A character vector of scientific names (possibly misspelled).
 #' @param ... Additional arguments passed to `predict_mass()`.
 #'
-#' @return A `data.frame` as returned by `predict_mass()`, with the `species`
+#' @return A `data.frame` as returned by `predict_mass()`, with the `taxon`
 #'   column reflecting the original input names and a `matched_name` column
 #'   appended.
 #'

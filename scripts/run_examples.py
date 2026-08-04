@@ -15,7 +15,7 @@ import taxonbodymassml as tbm
 # ---------------------------------------------------------------------------
 print("=== Example 1: predict_mass('Nucella ostrina') ===")
 r1 = tbm.predict_mass("Nucella ostrina", confidence_interval=True)
-print(r1[["species", "mass_g", "lower_bound", "upper_bound"]].to_string(index=False))
+print(r1[["taxon", "mass_g", "lower_bound", "upper_bound"]].to_string(index=False))
 
 # ---------------------------------------------------------------------------
 # Example 2 — batch with fuzzy matching and 90% conformal intervals
@@ -30,5 +30,5 @@ r2 = tbm.predict_mass(
     fuzzy_match_name=True,
     confidence_interval=0.90,
 )
-cols = ["species", "matched_name", "mass_g", "lower_bound", "upper_bound"]
+cols = ["taxon", "matched_name", "mass_g", "lower_bound", "upper_bound"]
 print(r2[cols].to_string(index=False))
