@@ -15,7 +15,7 @@ The pre-trained XGBoost model (~2 GB) is automatically downloaded from [Hugging 
 
 ```r
 # install.packages("pak")
-pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/r-v0.2.3/TaxonBodyMassML_0.2.3.tar.gz")
+pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/r-v0.5.0/TaxonBodyMassML_0.5.0.tar.gz")
 ```
 
 See the [Getting Started vignette](packages/r/vignettes/getting-started.Rmd) for full usage including confidence intervals, taxonomy lookup, disk caching, and citation instructions.
@@ -23,13 +23,13 @@ See the [Getting Started vignette](packages/r/vignettes/getting-started.Rmd) for
 ### Python
 
 ```bash
-pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.2.3/taxonbodymassml-0.2.3-py3-none-any.whl"
+pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.5.0/taxonbodymassml-0.5.0-py3-none-any.whl"
 ```
 
 See the [Python package readme](packages/python/README.md) for the full API reference.
 
 ## Data Sources
-See the data sources used to train the model in the [Data Sources](docs/data-sources.md) document, which includes the [FracFeed: Global database of the fraction of feeding predators](https://github.com/marknovak/FracFeed_DB), which motivated the compilation of the body mass data.
+Training data sources are listed in [data/Citations_BodyMass.bib](data/Citations_BodyMass.bib), including the [FracFeed: Global database of the fraction of feeding predators](https://github.com/marknovak/FracFeed_DB), which motivated the compilation of the body mass data.
 
 ---
 ---

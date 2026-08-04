@@ -16,6 +16,9 @@ permissions: read-all
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
     defaults:
       run:
         working-directory: packages/python
@@ -25,7 +28,7 @@ jobs:
 
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
           cache: pip
 
       - name: Install package and dev dependencies
@@ -41,6 +44,19 @@ jobs:
         run: pytest -v
         env:
           TAXONBODYMASSML_RUN_INTEGRATION: "0"
+
+      - name: Validate categories.json checksum
+        run: |
+          python - <<'EOF'
+          import hashlib, urllib.request
+          url = "https://huggingface.co/marknovak/TaxonBodyMassML/resolve/main/categories.json"
+          expected = "b130cc3fd567b374426be7a842eae6234d1bdb2a53371fd7291310e974abdd62"
+          with urllib.request.urlopen(url) as r:
+              data = r.read()
+          actual = hashlib.sha256(data).hexdigest()
+          assert actual == expected, f"SHA256 mismatch: {actual}"
+          print("categories.json checksum OK")
+          EOF
 
   release:
     needs: lint-and-test

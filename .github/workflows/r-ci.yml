@@ -15,7 +15,10 @@ permissions: read-all
 
 jobs:
   r-cmd-check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v5
 
@@ -40,6 +43,17 @@ jobs:
       - name: R CMD check
         run: rcmdcheck::rcmdcheck("packages/r", args = "--as-cran", error_on = "warning")
         shell: Rscript {0}
+
+      - name: Validate categories.json checksum
+        shell: Rscript {0}
+        run: |
+          url <- "https://huggingface.co/marknovak/TaxonBodyMassML/resolve/main/categories.json"
+          expected <- "b130cc3fd567b374426be7a842eae6234d1bdb2a53371fd7291310e974abdd62"
+          tmp <- tempfile(fileext = ".json")
+          utils::download.file(url, tmp, quiet = TRUE, mode = "wb")
+          actual <- as.character(openssl::sha256(file(tmp, "rb")))
+          if (!identical(actual, expected)) stop("SHA256 mismatch: got ", actual)
+          cat("categories.json checksum OK\n")
 
   release:
     needs: r-cmd-check
