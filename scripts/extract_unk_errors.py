@@ -19,6 +19,8 @@ import xgboost as xgb
 REPO = Path(__file__).resolve().parents[1]
 DATA = REPO / "data"
 ARTIFACTS = REPO / "artifacts"
+RESULTS = REPO / "predictive_models" / "results"
+RESULTS.mkdir(exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Load model and categories
@@ -73,11 +75,26 @@ print(f"  Baseline MAE: {mae_full:.4f} log10 units")
 # Masking levels: progressively replace finer ranks with UNK
 # ---------------------------------------------------------------------------
 masking_levels = [
-    ("species=UNK", ["species"]),
-    ("genus+species=UNK", ["genus", "species"]),
-    ("family+genus+species=UNK", ["family", "genus", "species"]),
-    ("order+…+species=UNK", ["order", "family", "genus", "species"]),
-    ("class+…+species=UNK", ["class", "order", "family", "genus", "species"]),
+    (
+        r"\texttt{species}~$=$~\texttt{``UNK''}",
+        ["species"],
+    ),
+    (
+        r"\texttt{genus}$+$\texttt{species}~$=$~\texttt{``UNK''}",
+        ["genus", "species"],
+    ),
+    (
+        r"\texttt{family}$+$\texttt{genus}$+$\texttt{species}~$=$~\texttt{``UNK''}",
+        ["family", "genus", "species"],
+    ),
+    (
+        r"\texttt{order}$+\ldots+$\texttt{species}~$=$~\texttt{``UNK''}",
+        ["order", "family", "genus", "species"],
+    ),
+    (
+        r"\texttt{class}$+\ldots+$\texttt{species}~$=$~\texttt{``UNK''}",
+        ["class", "order", "family", "genus", "species"],
+    ),
 ]
 
 results = [("Full taxonomy", mae_full, 0.0)]
@@ -101,23 +118,17 @@ for label, mae, delta in results:
     sign = "+" if delta > 0 else ""
     print(f"{label:<35s} {mae:8.4f} {sign}{delta:8.4f}")
 
-# LaTeX table
-print("\n=== LaTeX: UNK-rank error table ===")
-print(r"\begin{table}[ht]")
-print(r"\centering")
-print(r"\caption{Mean absolute error (MAE, $\log_{10}$ g) on the 3{,}784-row test set")
-print(r"under progressive masking of finer taxonomy ranks to \texttt{UNK}.")
-print(r"$\Delta$MAE is the penalty relative to full-taxonomy prediction.}")
-print(r"\label{tab:unk_errors}")
-print(r"\begin{tabular}{lrr}")
-print(r"\toprule")
-print(r"Taxonomy resolution & MAE ($\log_{10}$ g) & $\Delta$MAE \\")
-print(r"\midrule")
+# Write LaTeX tabular to ms/results/tab_unk_errors.tex
+lines = [
+    r"\begin{tabular}{lrr}",
+    r"\toprule",
+    r"Taxonomy resolution & MAE ($\log_{10}$ g) & $\Delta$MAE \\",
+    r"\midrule",
+]
 for label, mae, delta in results:
-    label_tex = label.replace("+", r"+").replace("…", r"\ldots{}")
-    sign = "+" if delta > 0 else ("" if delta == 0 else "")
-    delta_str = f"---" if delta == 0 else f"{delta:+.4f}"
-    print(f"{label_tex} & {mae:.4f} & {delta_str} \\\\")
-print(r"\bottomrule")
-print(r"\end{tabular}")
-print(r"\end{table}")
+    delta_str = "---" if delta == 0 else f"${delta:+.3f}$"
+    lines.append(f"{label} & {mae:.4f} & {delta_str} \\\\")
+lines += [r"\bottomrule", r"\end{tabular}", ""]
+out_tex = RESULTS / "tab_unk_errors.tex"
+out_tex.write_text("\n".join(lines))
+print(f"\nWrote {out_tex}")

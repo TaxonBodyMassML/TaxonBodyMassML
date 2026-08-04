@@ -11,7 +11,7 @@ Run from repo root:
 import taxonbodymassml as tbm
 
 # ---------------------------------------------------------------------------
-# Example 1 (R equivalent) — single species, default arguments
+# Example 1 — single species, default arguments
 # ---------------------------------------------------------------------------
 print("=== Example 1: predict_mass('Nucella ostrina') ===")
 r1 = tbm.predict_mass("Nucella ostrina", confidence_interval=True)
@@ -25,7 +25,7 @@ r2 = tbm.predict_mass(
     [
         "Balanus glandula",  # correctly spelled; no correction
         "Nutella ostrina",  # misspelling; fuzzy-corrected to Nucella ostrina
-        "Xyzzy_definitely_not_a_species_12345",  # unresolvable; returns NaN
+        "Nutella glandula",  # unresolvable; returns NaN
     ],
     fuzzy_match_name=True,
     confidence_interval=0.90,

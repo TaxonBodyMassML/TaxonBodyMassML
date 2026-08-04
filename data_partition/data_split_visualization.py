@@ -51,7 +51,7 @@ def main():
     It samples 10% of the data as test data and saves new test/train data.
     """
     # read bodymass data into a pandas dataframe
-    df = pd.read_csv("./data/BodyMass_second_pass.csv")
+    df = pd.read_csv("./data/BodyMass_curated.csv")
 
     # create a new variable which is the
     # mass_g variable with z-normalization applied

@@ -1,0 +1,12 @@
+\begin{tabular}{lrr}
+\toprule
+Taxonomy resolution & MAE ($\log_{10}$ g) & $\Delta$MAE \\
+\midrule
+Full taxonomy & 0.2952 & --- \\
+\texttt{species}~$=$~\texttt{``UNK''} & 0.3010 & $+0.006$ \\
+\texttt{genus}$+$\texttt{species}~$=$~\texttt{``UNK''} & 0.4381 & $+0.143$ \\
+\texttt{family}$+$\texttt{genus}$+$\texttt{species}~$=$~\texttt{``UNK''} & 0.6342 & $+0.339$ \\
+\texttt{order}$+\ldots+$\texttt{species}~$=$~\texttt{``UNK''} & 0.8478 & $+0.553$ \\
+\texttt{class}$+\ldots+$\texttt{species}~$=$~\texttt{``UNK''} & 0.8854 & $+0.590$ \\
+\bottomrule
+\end{tabular}

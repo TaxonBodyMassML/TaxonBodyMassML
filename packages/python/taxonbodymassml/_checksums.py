@@ -3,7 +3,7 @@
 HF_REPO_ID = "marknovak/TaxonBodyMassML"
 
 CHECKSUMS = {
-    "model.ubj": "79ff244d44da0c2cdff453e1d675b5520d4231b9d1393a2d1f0dc9e75c0331cd",
-    "calibration.json": "cee5a54951d91e0540e8b15b91f560fa19cc7dd3bd36d1f3ae33dc4726c947a1",
-    "categories.json": "242d97bd02099c20acbe8492c1dc6718a2ef1a5ef1a104ca21f6593ddcd790c6",
+    "model.ubj": "fee7ae5b1674866a9cced6f1013c7b4f8178f32cbe8d8c520863510c43478f2c",
+    "calibration.json": "729867714f53553ef55e8c75947b1f065868b4c58d425fd2c42d9cfddfecc336",
+    "categories.json": "b130cc3fd567b374426be7a842eae6234d1bdb2a53371fd7291310e974abdd62",
 }

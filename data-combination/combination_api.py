@@ -17,14 +17,14 @@ import pandas as pd
 import requests
 
 INPUT_CSV = "./data/BodyMass.csv"
-OUTPUT_CSV = "./data/BodyMass_with_full_taxonomy.csv"
+OUTPUT_CSV = "./data/BodyMass_GBIF_pass.csv"
 
 GBIF_MATCH_URL = "https://api.gbif.org/v2/species/match"
 
 # use starting index to start from the last saved
 # index in case of interruption/failure
 STARTING_INDEX = 0
-MISSED_SPECIES_PATH = "./data/missed_species.txt"
+MISSED_SPECIES_PATH = "./data/missed_species_gbif.txt"
 
 # ---------------------------------------------------------------------------
 # Session (connection reuse)
@@ -109,6 +109,8 @@ def _fetch_row(args):
         if not rank_map:
             return idx, {}, None, name
         confidence_score = (result.get("diagnostics") or {}).get("confidence")
+        if confidence_score is None or confidence_score < 75:
+            return idx, {}, None, name
         return idx, rank_map, confidence_score, None
     except (requests.RequestException, KeyError, AttributeError) as e:
         print(f"Failed on {name}: {e}")

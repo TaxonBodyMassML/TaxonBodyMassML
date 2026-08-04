@@ -1,6 +1,6 @@
 Package: TaxonBodyMassML
 Title: Predict Species Body Mass Using the TaxonBodyMassML XGBoost Model
-Version: 0.2.5
+Version: 0.4.0
 Authors@R: c(
     person("Grant", "Pasquantonio", role = "aut"),
     person("Anish Chowdary", "Pendurti", role = "aut"),

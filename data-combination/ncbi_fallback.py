@@ -1,10 +1,15 @@
 """
-Docstring for missing_values_cross_validation
+ncbi_fallback.py
+----------------
 contributors: Grant Pasquantonio
 pasquang@oregonstate.edu
 3-4-2026
-purpose: use NCBI API to fill in missing values
-        from first pass of taxonomy dataset
+purpose: use NCBI Taxonomy API to fill in missing taxonomy fields
+         not resolved by GBIF. Uses exact name matching via esearch
+         + efetch.
+
+Input:  ./data/BodyMass_GBIF_pass.csv
+Output: ./data/BodyMass_NCBI_pass.csv
 """
 
 # pylint: disable=duplicate-code
@@ -15,14 +20,32 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 import requests
 
-INPUT_CSV = "./data/BodyMass_with_full_taxonomy.csv"
-OUTPUT_CSV = "./data/BodyMass_second_pass.csv"
+INPUT_CSV = "./data/BodyMass_GBIF_pass.csv"
+OUTPUT_CSV = "./data/BodyMass_NCBI_pass.csv"
 
 STARTING_INDEX = 0
-MISSED_SPECIES_PATH = "./data/missed_species_2.txt"
+MISSED_SPECIES_PATH = "./data/missed_species_ncbi.txt"
 
 NCBI_ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 NCBI_EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+
+
+_RETRY_DELAYS = (2.0, 5.0, 10.0)
+_TRANSIENT = {429, 500, 502, 503, 504}
+
+
+def _ncbi_get(url, params):
+    for attempt, delay in enumerate((*_RETRY_DELAYS, None)):
+        try:
+            r = requests.get(url, params=params, timeout=30)
+            if r.status_code not in _TRANSIENT:
+                return r
+        except (requests.ConnectionError, requests.Timeout):
+            if delay is None:
+                raise
+        if delay is not None:
+            time.sleep(delay)
+    return r
 
 
 def ncbi_match(input_name):
@@ -32,7 +55,7 @@ def ncbi_match(input_name):
 
     params = {"db": "taxonomy", "term": input_name, "retmode": "json"}
 
-    r = requests.get(NCBI_ESEARCH, params=params, timeout=10)
+    r = _ncbi_get(NCBI_ESEARCH, params)
 
     if r.status_code != 200:
         return {}
@@ -48,7 +71,7 @@ def ncbi_match(input_name):
 
     params = {"db": "taxonomy", "id": tax_id, "retmode": "xml"}
 
-    r = requests.get(NCBI_EFETCH, params=params, timeout=10)
+    r = _ncbi_get(NCBI_EFETCH, params)
 
     if r.status_code != 200:
         return {}
@@ -136,7 +159,7 @@ for i, row in df.iterrows():
 
         time.sleep(0.34)
 
-    except (FileNotFoundError, ValueError) as e:
+    except (FileNotFoundError, ValueError, requests.RequestException) as e:
         print(f"Failed to process {NAME}: {e}")
         missed_species.append(NAME)
 

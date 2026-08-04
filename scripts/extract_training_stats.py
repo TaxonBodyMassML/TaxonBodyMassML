@@ -19,11 +19,13 @@ import pandas as pd
 
 REPO = Path(__file__).resolve().parents[1]
 DATA = REPO / "data"
+RESULTS = REPO / "predictive_models" / "results"
+RESULTS.mkdir(exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Load and filter to the 37,839 rows used in training
 # ---------------------------------------------------------------------------
-df = pd.read_csv(DATA / "BodyMass_second_pass.csv")
+df = pd.read_csv(DATA / "BodyMass_curated.csv")
 
 FEATURES = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
 df = df.dropna(subset=FEATURES + ["mass_g"])
@@ -76,43 +78,52 @@ print(by_kingdom.to_string(float_format="{:.2f}".format))
 print("\n\n=== Per-class summary (top 25 by record count) ===")
 print(by_class.head(25).to_string(float_format="{:.2f}".format))
 
-# ---------------------------------------------------------------------------
-# LaTeX tabular for per-kingdom (S1 table)
-# ---------------------------------------------------------------------------
-print("\n\n=== LaTeX: per-kingdom table ===")
-print(r"\begin{table}[ht]")
-print(r"\centering")
-print(r"\caption{Training data coverage by kingdom. $n_{\text{rec}}$ = number of records;")
-print(r"$n_{\text{spp}}$ = unique species; mass range in $\log_{10}$ g (min / median / max).}")
-print(r"\label{tab:coverage_kingdom}")
-print(r"\begin{tabular}{lrrrl}")
-print(r"\toprule")
-print(r"Kingdom & $n_{\text{rec}}$ & $n_{\text{spp}}$ & & Mass range ($\log_{10}$ g) \\")
-print(r"\midrule")
-for kingdom, row in by_kingdom.iterrows():
-    mass_range = f"{row['log10_min']:.1f} / {row['log10_med']:.1f} / {row['log10_max']:.1f}"
-    print(
-        f"{kingdom} & {int(row['n_records']):,} & {int(row['n_species']):,} & & {mass_range} \\\\"
-    )
-print(r"\bottomrule")
-print(r"\end{tabular}")
-print(r"\end{table}")
 
 # ---------------------------------------------------------------------------
-# LaTeX tabular for per-class (top 20, S1 table)
+# LaTeX tabular for per-kingdom — written to ms/results/tab_kingdom.tex
 # ---------------------------------------------------------------------------
-print("\n\n=== LaTeX: per-class table (top 20) ===")
-print(r"\begin{table}[ht]")
-print(r"\centering")
-print(r"\caption{Training data coverage by class (top 20 by record count).}")
-print(r"\label{tab:coverage_class}")
-print(r"\begin{tabular}{lrrl}")
-print(r"\toprule")
-print(r"Class & $n_{\text{rec}}$ & $n_{\text{spp}}$ & Mass range ($\log_{10}$ g) \\")
-print(r"\midrule")
-for cls, row in by_class.head(20).iterrows():
-    mass_range = f"{row['log10_min']:.1f}–{row['log10_max']:.1f}"
-    print(f"{cls} & {int(row['n_records']):,} & {int(row['n_species']):,} & {mass_range} \\\\")
-print(r"\bottomrule")
-print(r"\end{tabular}")
-print(r"\end{table}")
+def _tabular_kingdom(df_k):
+    lines = [
+        r"\begin{tabular}{lrrr}",
+        r"\toprule",
+        r" & & \multicolumn{2}{c}{Mass range} \\",
+        r"\cmidrule(l){3-4}",
+        r"Kingdom & $n_{\text{rec}}$ & min & max \\",
+        r"\midrule",
+    ]
+    for kingdom, row in df_k.iterrows():
+        lines.append(
+            f"{kingdom} & {int(row['n_records']):,} & ${row['log10_min']:.1f}$ & ${row['log10_max']:.1f}$ \\\\"
+        )
+    lines += [r"\bottomrule", r"\end{tabular}", ""]
+    return "\n".join(lines)
+
+
+out_kingdom = RESULTS / "tab_kingdom.tex"
+out_kingdom.write_text(_tabular_kingdom(by_kingdom))
+print(f"\nWrote {out_kingdom}")
+
+
+# ---------------------------------------------------------------------------
+# LaTeX tabular for per-class (top 20) — written to ms/results/tab_class.tex
+# ---------------------------------------------------------------------------
+def _tabular_class(df_c, n=20):
+    lines = [
+        r"\begin{tabular}{lrrr}",
+        r"\toprule",
+        r" & & \multicolumn{2}{c}{Mass range} \\",
+        r"\cmidrule(l){3-4}",
+        r"Class & $n_{\text{rec}}$ & min & max \\",
+        r"\midrule",
+    ]
+    for cls, row in df_c.head(n).iterrows():
+        lines.append(
+            f"{cls} & {int(row['n_records']):,} & ${row['log10_min']:.1f}$ & ${row['log10_max']:.1f}$ \\\\"
+        )
+    lines += [r"\bottomrule", r"\end{tabular}", ""]
+    return "\n".join(lines)
+
+
+out_class = RESULTS / "tab_class.tex"
+out_class.write_text(_tabular_class(by_class))
+print(f"Wrote {out_class}")

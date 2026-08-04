@@ -73,11 +73,11 @@ x_train, x_test = align_categories(x_train, x_test)
 model = xgb.XGBRegressor(
     objective="reg:absoluteerror",
     n_estimators=600,
-    max_depth=42,
-    learning_rate=0.027826122269433446,
-    subsample=0.9807602957870715,
-    colsample_bytree=0.933924920752799,
-    gamma=0.8238673280916693,
+    max_depth=30,
+    learning_rate=0.032728710320767775,
+    subsample=0.6546505976015776,
+    colsample_bytree=0.9007141062190698,
+    gamma=0.056066571431818625,
     min_child_weight=1,
     enable_categorical=True,
     random_state=42,
@@ -105,11 +105,11 @@ metrics = {
     "hyperparameters": {
         "objective": "reg:absoluteerror",
         "n_estimators": 600,
-        "max_depth": 42,
-        "learning_rate": 0.027826122269433446,
-        "subsample": 0.9807602957870715,
-        "colsample_bytree": 0.933924920752799,
-        "gamma": 0.8238673280916693,
+        "max_depth": 30,
+        "learning_rate": 0.032728710320767775,
+        "subsample": 0.6546505976015776,
+        "colsample_bytree": 0.9007141062190698,
+        "gamma": 0.056066571431818625,
         "min_child_weight": 1,
         "enable_categorical": True,
         "random_state": 42,
@@ -152,7 +152,7 @@ ax.text(
 )
 fig.tight_layout()
 fig.savefig("predictive_models/results/xgboost_mass_prediction.png", dpi=300, bbox_inches="tight")
-plt.show()
+plt.close(fig)
 
 mask = y_test > 0.1
 y_test_f = y_test[mask]
@@ -202,7 +202,7 @@ fig2.tight_layout()
 fig2.savefig(
     "predictive_models/results/xgboost_mass_prediction_gt0.1g.png", dpi=300, bbox_inches="tight"
 )
-plt.show()
+plt.close(fig2)
 
 x_train2, x_calib, y_train2, y_calib = train_test_split(
     x_train, y_train, test_size=0.2, random_state=42

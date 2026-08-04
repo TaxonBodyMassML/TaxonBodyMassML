@@ -10,7 +10,7 @@ import pandas as pd
 
 # import matplotlib.pyplot as plt
 
-INPUT_FILE_PATH = "./data/BodyMass_with_full_taxonomy.csv"
+INPUT_FILE_PATH = "./data/BodyMass_GBIF_pass.csv"
 OUTPUT_FILE_PATH = "./data/species_missing_order_class.csv"
 
 df = pd.read_csv(INPUT_FILE_PATH)

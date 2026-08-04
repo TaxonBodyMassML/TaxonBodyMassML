@@ -20,6 +20,7 @@ REPO = Path(__file__).resolve().parents[1]
 ARTIFACT = REPO / "artifacts" / "model.ubj"
 OUT_DIR = REPO / "predictive_models" / "results"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+RESULTS = OUT_DIR
 
 print(f"Loading model from {ARTIFACT} ...")
 model = xgb.Booster()
@@ -42,23 +43,19 @@ for rank in RANKS:
     bar = "#" * int(pct[rank] / 2)
     print(f"  {rank:<10s} {pct[rank]:6.2f}%  {bar}")
 
-# Print LaTeX tabular
-print("\n=== LaTeX: feature importance table ===")
-print(r"\begin{table}[ht]")
-print(r"\centering")
-print(r"\caption{XGBoost gain-based feature importances for \texttt{TaxonBodyMassML},")
-print(r"normalised to 100\%. Gain measures the average improvement in loss reduction")
-print(r"per split using each feature across all trees.}")
-print(r"\label{tab:feature_importance}")
-print(r"\begin{tabular}{lr}")
-print(r"\toprule")
-print(r"Taxonomy rank & Relative importance (\%) \\")
-print(r"\midrule")
+# Write LaTeX tabular to ms/results/tab_feature_importance.tex
+lines = [
+    r"\begin{tabular}{lr}",
+    r"\toprule",
+    r"Taxonomy rank & Relative importance (\%) \\",
+    r"\midrule",
+]
 for rank in RANKS:
-    print(f"\\texttt{{{rank}}} & {pct[rank]:.1f} \\\\")
-print(r"\bottomrule")
-print(r"\end{tabular}")
-print(r"\end{table}")
+    lines.append(f"\\texttt{{{rank}}} & {pct[rank]:.1f} \\\\")
+lines += [r"\bottomrule", r"\end{tabular}", ""]
+out_tex = RESULTS / "tab_feature_importance.tex"
+out_tex.write_text("\n".join(lines))
+print(f"\nWrote {out_tex}")
 
 # Figure
 fig, ax = plt.subplots(figsize=(5, 3.5))
