@@ -59,9 +59,9 @@ will raise an error — do not proceed until that is resolved.
 Install the CLI if needed, then upload all four artifact files:
 
 ```bash
-pip install huggingface_hub
+pip install "huggingface_hub[cli]"
 huggingface-cli login
-huggingface-cli upload marknovak/TaxonBodyMassML artifacts/ . --repo-type model
+hf upload marknovak/TaxonBodyMassML artifacts/ . --repo-type model
 ```
 
 ---

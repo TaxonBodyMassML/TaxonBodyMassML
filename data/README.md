@@ -12,7 +12,7 @@ Columns: `taxon`, `mass_g`, `source_mass`, `n`
 
 ## Processed data
 
-**`BodyMass_curated.csv`** — Body mass data after taxonomic name standardization (using the Open Tree of Life via the `rotl` package), adding higher taxonomy columns (`kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species`, `confidence`, `subspecies`, `form`).
+**`BodyMass_curated.csv`** — Body mass data after taxonomic enrichment through a sequential pipeline (GBIF → NCBI → WoRMS → COL ChecklistBank → Wikidata SPARQL → ITIS) and removal of non-animal eukaryotes (Plantae, Chromista, Viridiplantae, Fungi). Columns added: `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species`, `confidence`, `subspecies`, `form`.
 
 **`BodyMass_<DB>_pass.csv`** — Intermediate files from sequential taxonomic name resolution passes through each external taxonomic database (`COL`, `GBIF`, `ITIS`, `NCBI`, `Wikidata`, `WoRMS`).
 

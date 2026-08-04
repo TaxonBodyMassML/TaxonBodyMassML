@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.0] - 2026-08-03
+
+### Changed
+
+- Taxonomy enrichment pipeline extended: GBIF (confidence ≥ 75) → NCBI → WoRMS (exact,
+  phonetic, near\_1 match types) → COL ChecklistBank → Wikidata SPARQL → ITIS.
+- Removed OToL TNRS from enrichment pipeline.
+- 210 non-animal eukaryote records removed (Plantae, Chromista, Viridiplantae, Fungi);
+  36,566 records retained after all filters. Training set: 32,909 records; test set:
+  3,657 records.
+- Retrained XGBoost model following a fresh 100-trial Optuna hyperparameter search
+  (5-fold CV, MAE in log₁₀ space). New hyperparameters: n\_estimators=600, max\_depth=30,
+  learning\_rate=0.0327, subsample=0.655, colsample\_bytree=0.901, gamma=0.056,
+  min\_child\_weight=1.
+- Test-set performance (log₁₀ space): R²=0.8222, RMSE=0.5420, MAE=0.2866. Filtered to
+  mass > 0.1 g (n=3,573): R²=0.8238, RMSE=0.4597, MAE=0.2679.
+- Updated all three artifact checksums (`model.ubj`, `calibration.json`, `categories.json`)
+  to match the retrained model.
+
 ## [0.2.5] - 2026-07-27
 
 ### Changed

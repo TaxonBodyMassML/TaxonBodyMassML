@@ -40,41 +40,33 @@
 
 | Statistic | Value |
 |---|---|
-| Min (best) | **0.2703** |
-| 25th percentile | 0.2802 |
-| Median | 0.3049 |
-| 75th percentile | 0.3318 |
-| Max (worst) | 0.4802 |
+| Min (best) | **0.2968** |
+| 25th percentile | 0.3051 |
+| Median | 0.3080 |
+| 75th percentile | 0.3185 |
+| Max (worst) | 0.4411 |
+
+Best trial: 94 (CV MAE 0.2968)
 
 ### Best vs. baseline parameters
 
 | Parameter | Baseline | Best tuned | Change |
 |---|---|---|---|
-| `n_estimators` | 600 | 600 | — |
-| `max_depth` | 40 | 42 | +2 |
-| `learning_rate` | 0.05 | 0.0278 | ↓ slower |
-| `subsample` | 0.8 | 0.9808 | ↑ higher |
-| `colsample_bytree` | 0.8 | 0.9339 | ↑ higher |
-| `gamma` | 0 (default) | 0.8239 | ↑ much higher |
-| `min_child_weight` | 1 (default) | 1 | — |
+| `n_estimators` | 450 | 600 | +150 (ceiling hit) |
+| `max_depth` | 29 | 30 | +1 |
+| `learning_rate` | 0.0523 | 0.0327 | ↓ slower |
+| `subsample` | 0.7846 | 0.6547 | ↓ lower |
+| `colsample_bytree` | 0.8769 | 0.9007 | ↑ slightly higher |
+| `gamma` | 0.2358 | 0.0561 | ↓ much lower |
+| `min_child_weight` | 1 | 1 | — |
 
 ### Key observations
 
 - `n_estimators` hit the search space ceiling (600). If a follow-up run is warranted,
   widen to 800–1,000 to check whether more trees help.
-- `gamma` increased sharply from 0 to 0.824 — the tuner found that enforcing a
-  minimum loss reduction per split is beneficial, likely compensating for the large
-  `max_depth`.
-- `learning_rate` dropped from 0.05 to 0.028, consistent with the higher-density
-  row/column sampling (subsample and colsample_bytree both increased): slower steps
-  are more stable when sampling is denser.
-
----
-
-## Next Steps
-
-1. Apply the best parameters to `predictive_models/decision_tree.py`.
-2. Re-run training; compare test-set MAE from `predictive_models/results/metrics.json`
-   against the CV MAE reported here (0.2703 is a cross-validated estimate on the
-   training set, not the held-out test set).
-3. Run `scripts/export_artifacts.py` to rebuild the model bundle for distribution.
+- `learning_rate` dropped (0.052 → 0.033) paired with more trees — classic shrinkage
+  tradeoff: more, smaller steps improve generalization.
+- `gamma` dropped sharply (0.236 → 0.056), indicating less aggressive leaf-pruning is
+  preferred with the expanded dataset.
+- `subsample` decreased (0.785 → 0.655) — more aggressive row subsampling per tree,
+  which increases variance reduction.
