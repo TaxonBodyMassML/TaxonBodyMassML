@@ -19,9 +19,6 @@ from . import __version__
 # Session (connection reuse across all GBIF + NCBI calls)
 # ---------------------------------------------------------------------------
 _SESSION = requests.Session()
-_EMAIL = os.environ.get("TAXONBODYMASSML_EMAIL", "").strip()
-_USER_AGENT = f"TaxonBodyMassML/{__version__}" + (f" (contact: {_EMAIL})" if _EMAIL else "")
-_SESSION.headers.update({"User-Agent": _USER_AGENT})
 
 # ---------------------------------------------------------------------------
 # NCBI rate limiter (slot reservation)
@@ -61,8 +58,10 @@ _RETRY_DELAYS = (1.0, 2.0, 4.0)
 _TRANSIENT = {429, 500, 502, 503, 504}
 
 
-def _get(url: str, params: dict, *, ncbi: bool = False, timeout: int = 10) -> requests.Response:
+def _get(url: str, params: dict, *, ncbi: bool = False, timeout: int = 30) -> requests.Response:
     """GET with retry on transient failures. Set ncbi=True to apply rate limiting."""
+    email = os.environ.get("TAXONBODYMASSML_EMAIL", "").strip()
+    ua = f"TaxonBodyMassML/{__version__}" + (f" (contact: {email})" if email else "")
     for attempt, delay in enumerate((*_RETRY_DELAYS, None)):
         if ncbi:
             _ncbi_wait()
@@ -70,7 +69,7 @@ def _get(url: str, params: dict, *, ncbi: bool = False, timeout: int = 10) -> re
             if api_key:
                 params = {**params, "api_key": api_key}
         try:
-            resp = _SESSION.get(url, params=params, timeout=timeout)
+            resp = _SESSION.get(url, params=params, timeout=timeout, headers={"User-Agent": ua})
             if resp.status_code not in _TRANSIENT:
                 return resp
         except (requests.ConnectionError, requests.Timeout):

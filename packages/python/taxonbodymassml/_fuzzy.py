@@ -194,8 +194,6 @@ def fuzzy_predict_mass(species, **kwargs) -> pd.DataFrame:
         Same columns as ``predict_mass()`` with ``matched_name`` appended
         and ``species`` reflecting the original input names.
     """
-    import warnings
-
     warnings.warn(
         "'fuzzy_predict_mass()' is deprecated. "
         "Use 'predict_mass(..., fuzzy_match_name=True)' instead.",

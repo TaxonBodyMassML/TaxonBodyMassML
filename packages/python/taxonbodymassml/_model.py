@@ -4,12 +4,17 @@ Artifact management: download, cache, load model/calibration/categories.
 
 import hashlib
 import json
-import warnings
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from pathlib import Path
 
 import xgboost as xgb
 
 from ._checksums import CHECKSUMS, HF_REPO_ID
+
+try:
+    _PACKAGE_VERSION = _pkg_version("taxonbodymassml")
+except PackageNotFoundError:
+    _PACKAGE_VERSION = "unknown"
 
 # ---------------------------------------------------------------------------
 # Cache location
@@ -63,17 +68,13 @@ def download_model(version: str = "latest", force: bool = False) -> None:
         ) from exc
 
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    revision = None if version == "latest" else version
+    revision = f"py-v{_PACKAGE_VERSION}" if version == "latest" else version
 
     for filename in _ARTIFACT_FILES:
         cached = _CACHE_DIR / filename
         if not force and _verify(cached, filename):
             continue
-        warnings.warn(
-            f"TaxonBodyMassML: downloading {filename} from {HF_REPO_ID} on Hugging Face...",
-            UserWarning,
-            stacklevel=2,
-        )
+        print(f"TaxonBodyMassML: downloading {filename} from {HF_REPO_ID} on Hugging Face...")
         local_path = Path(
             hf_hub_download(
                 repo_id=HF_REPO_ID,
@@ -98,11 +99,9 @@ def _ensure_artifacts() -> None:
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)
     missing = [f for f in _ARTIFACT_FILES if not _verify(_CACHE_DIR / f, f)]
     if missing:
-        warnings.warn(
-            "TaxonBodyMassML: downloading model artifacts on first use "
-            f"(~2 GB; files: {', '.join(missing)})...",
-            UserWarning,
-            stacklevel=2,
+        print(
+            f"TaxonBodyMassML: downloading model artifacts on first use "
+            f"(~2 GB; files: {', '.join(missing)})..."
         )
         download_model()
     _ARTIFACTS_VERIFIED = True

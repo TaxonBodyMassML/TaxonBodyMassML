@@ -49,8 +49,10 @@ _OPTIONS: dict = {
 }
 
 
-def tbm_options(**kwargs) -> None:
-    """Configure package-level options.
+def tbm_options(**kwargs) -> dict:
+    """Get or configure package-level options.
+
+    Called with no arguments, returns a copy of the current options dict.
 
     Parameters
     ----------
@@ -58,11 +60,19 @@ def tbm_options(**kwargs) -> None:
         Persist resolved taxonomy to disk across Python sessions.
     progress : bool
         Show a tqdm progress bar when looking up more than 10 species.
+
+    Returns
+    -------
+    dict
+        Current option values (always returned; invisible when setting).
     """
+    if not kwargs:
+        return dict(_OPTIONS)
     for k, v in kwargs.items():
         if k not in _OPTIONS:
             raise ValueError(f"Unknown option: {k!r}")
         _OPTIONS[k] = v
+    return dict(_OPTIONS)
 
 
 def tbm_clear_cache(disk: bool = True, session: bool = True) -> None:

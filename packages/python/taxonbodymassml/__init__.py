@@ -8,7 +8,12 @@ Quick start::
     tbm.predict_mass(["Haustrum scobina", "Mus musculus"], confidence_interval=True)
 """
 
-__version__ = "0.4.0"
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
+
+try:
+    __version__ = _pkg_version("taxonbodymassml")
+except PackageNotFoundError:
+    __version__ = "unknown"
 
 from ._fuzzy import correct_species_names, fuzzy_lookup_taxonomy, fuzzy_predict_mass
 from ._lookup import lookup_taxonomy, tbm_clear_cache, tbm_options
