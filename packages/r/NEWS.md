@@ -1,3 +1,19 @@
+# TaxonBodyMassML 0.5.1
+
+## Bug fixes
+
+* `lookup_taxonomy()` now returns a zero-row `data.frame` with the expected
+  8-column schema when given `character(0)`, rather than `NULL`.
+* Parallel GBIF worker count is capped at 2 to comply with CRAN's
+  concurrent-process limit enforced by `--as-cran` checks.
+
+# TaxonBodyMassML 0.5.0
+
+## Breaking changes
+
+* `predict_mass()` output column renamed from `species` to `taxon` to avoid
+  ambiguity with the taxonomy output columns (notably `species_resolved`).
+
 # TaxonBodyMassML 0.4.0
 
 ## Data curation

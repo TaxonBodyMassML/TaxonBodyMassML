@@ -103,7 +103,7 @@ export TAXONBODYMASSML_EMAIL="your@email.com"
 ```
 
 This is appended to the `User-Agent` header sent with every NCBI request:
-`TaxonBodyMassML/0.2.3 (contact: your@email.com)`.
+`TaxonBodyMassML/0.5.1 (contact: your@email.com)`.
 
 ### NCBI API key
 

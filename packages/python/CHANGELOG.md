@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.1] - 2026-08-04
+
+### Fixed
+
+- `lookup_taxonomy([])` now returns a zero-row `DataFrame` with the correct
+  8-column schema (`species`, `kingdom`, `phylum`, `class`, `order`, `family`,
+  `genus`, `species_resolved`) instead of a zero-column `DataFrame`.
+- `predict_mass([])` and `predict_mass(empty_df)` now return a zero-row
+  `DataFrame` with the correct output schema instead of raising `KeyError`
+  or `ValueError`.
+
+## [0.5.0] - 2026-08-03
+
+### Changed
+
+- `predict_mass()` output column renamed from `species` to `taxon` to avoid
+  ambiguity with the taxonomy output columns (notably `species_resolved`).
+
 ## [0.4.0] - 2026-08-03
 
 ### Changed

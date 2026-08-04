@@ -257,6 +257,20 @@ lookup_taxonomy <- function(species) {
   names_vec <- as.character(species)
   n <- length(names_vec)
 
+  if (n == 0L) {
+    return(data.frame(
+      species          = character(0L),
+      kingdom          = character(0L),
+      phylum           = character(0L),
+      class            = character(0L),
+      order            = character(0L),
+      family           = character(0L),
+      genus            = character(0L),
+      species_resolved = character(0L),
+      stringsAsFactors = FALSE
+    ))
+  }
+
   show_progress <- (
     isTRUE(.tbm_opts$progress) &&
     n > 10L &&
@@ -267,7 +281,7 @@ lookup_taxonomy <- function(species) {
   # GBIF does not require rate limiting, so parallel workers are safe.
   # Any names that GBIF cannot fully resolve are collected for a serial
   # NCBI pass below, keeping NCBI rate limiting effective.
-  workers <- if (n > 1L && .Platform$OS.type != "windows") min(n, 8L) else 1L
+  workers <- if (n > 1L && .Platform$OS.type != "windows") min(n, 2L) else 1L
 
   if (workers > 1L) {
     if (show_progress) {

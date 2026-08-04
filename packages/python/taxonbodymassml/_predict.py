@@ -197,6 +197,17 @@ def predict_mass(
             input_names = taxonomy_df["species"].tolist()
             matched_names = None
 
+    # ---- Empty input: return zero-row DataFrame with correct schema --------
+    if len(taxonomy_df) == 0:
+        cols = ["taxon", "mass_g"]
+        if level is not None:
+            cols += ["lower_bound", "upper_bound", "confidence"]
+        if include_taxonomy:
+            cols += _TAXONOMY_INPUT_COLS
+        if matched_names is not None:
+            cols += ["matched_name"]
+        return pd.DataFrame(columns=cols)
+
     # ---- Rows with failed lookup (all None) get NaN predictions ----------
     resolved_mask = taxonomy_df["species_resolved"].notna()
 

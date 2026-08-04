@@ -235,6 +235,20 @@ def lookup_taxonomy(species) -> pd.DataFrame:
     else:
         names = list(species)
 
+    if not names:
+        return pd.DataFrame(
+            columns=[
+                "species",
+                "kingdom",
+                "phylum",
+                "class",
+                "order",
+                "family",
+                "genus",
+                "species_resolved",
+            ]
+        )
+
     results: dict[str, Optional[dict]] = {}
 
     # Progress bar (opt-in; tqdm is a Suggests dep)

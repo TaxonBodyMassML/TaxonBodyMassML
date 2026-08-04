@@ -55,7 +55,6 @@ test_that(".normalise_name handles already-normalised names", {
 
 test_that("lookup_taxonomy returns a data.frame with the expected columns", {
   testthat::skip_if_offline()
-  testthat::skip_if_offline()
 
   result <- TaxonBodyMassML::lookup_taxonomy("Homo sapiens")
   expect_s3_class(result, "data.frame")
@@ -66,7 +65,6 @@ test_that("lookup_taxonomy returns a data.frame with the expected columns", {
 
 test_that("lookup_taxonomy returns one row per input name", {
   testthat::skip_if_offline()
-  testthat::skip_if_offline()
 
   sp <- c("Homo sapiens", "Mus musculus", "Canis lupus")
   result <- TaxonBodyMassML::lookup_taxonomy(sp)
@@ -76,7 +74,6 @@ test_that("lookup_taxonomy returns one row per input name", {
 
 test_that("lookup_taxonomy fills known ranks for Homo sapiens", {
   testthat::skip_if_offline()
-  testthat::skip_if_offline()
 
   result <- TaxonBodyMassML::lookup_taxonomy("Homo sapiens")
   expect_false(is.na(result$kingdom))
@@ -85,7 +82,6 @@ test_that("lookup_taxonomy fills known ranks for Homo sapiens", {
 })
 
 test_that("lookup_taxonomy warns and returns NA rows for unresolvable names", {
-  testthat::skip_if_offline()
   testthat::skip_if_offline()
 
   expect_warning(
@@ -98,7 +94,6 @@ test_that("lookup_taxonomy warns and returns NA rows for unresolvable names", {
 
 test_that("lookup_taxonomy session cache avoids duplicate lookups", {
   testthat::skip_if_offline()
-  testthat::skip_if_offline()
 
   result1 <- TaxonBodyMassML::lookup_taxonomy("Felis catus")
   result2 <- TaxonBodyMassML::lookup_taxonomy("Felis catus")
@@ -106,7 +101,6 @@ test_that("lookup_taxonomy session cache avoids duplicate lookups", {
 })
 
 test_that("lookup_taxonomy handles underscore-separated names", {
-  testthat::skip_if_offline()
   testthat::skip_if_offline()
 
   result <- TaxonBodyMassML::lookup_taxonomy("Homo_sapiens")
