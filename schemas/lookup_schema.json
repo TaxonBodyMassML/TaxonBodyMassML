@@ -1,16 +1,18 @@
 {
   "type": "object",
   "properties": {
-    "domain": { "type": "string" },
-    "kingdom": { "type": "string" },
-    "phylum": { "type": "string" },
-    "class": { "type": "string" },
-    "order": { "type": "string" },
-    "family": { "type": "string" },
-    "genus": { "type": "string" },
-    "species": { "type": "string" },
-    "number_sources": { "type": "number" },
-    "source": { "type": "string" },
-    "mass_g": { "type": "number" }
-  }
+    "taxonomy": {
+      "type": "object",
+      "properties": {
+        "kingdom": { "type": "string" },
+        "phylum": { "type": "string" },
+        "class": { "type": "string" },
+        "order": { "type": "string" },
+        "family": { "type": "string" },
+        "genus": { "type": "string" },
+        "species": { "type": "string" }
+      }
+    }
+  },
+  "required": ["taxonomy"]
 }
