@@ -52,7 +52,7 @@ jobs:
           tmp <- tempfile(fileext = ".json")
           utils::download.file(url, tmp, quiet = TRUE, mode = "wb")
           actual <- as.character(openssl::sha256(file(tmp, "rb")))
-          if (!identical(actual, expected)) stop("SHA256 mismatch: got ", actual)
+          if (!(actual == expected)) stop("SHA256 mismatch: got ", actual)
           cat("categories.json checksum OK\n")
 
   release:
