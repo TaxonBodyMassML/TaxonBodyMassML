@@ -77,11 +77,15 @@ jobs:
           echo "tarball=TaxonBodyMassML_${v}.tar.gz" >> $GITHUB_OUTPUT
 
       - name: Build source tarball
-        run: R CMD build --no-build-vignettes packages/r
+        run: |
+          R CMD build --no-build-vignettes packages/r
+          cp ${{ steps.version.outputs.tarball }} TaxonBodyMassML_latest.tar.gz
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: r-v${{ steps.version.outputs.version }}
           name: "R package v${{ steps.version.outputs.version }}"
-          files: ${{ steps.version.outputs.tarball }}
+          files: |
+            ${{ steps.version.outputs.tarball }}
+            TaxonBodyMassML_latest.tar.gz

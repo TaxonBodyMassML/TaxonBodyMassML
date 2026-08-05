@@ -81,6 +81,8 @@ jobs:
         run: |
           pip install build
           python -m build packages/python/
+          cp packages/python/dist/taxonbodymassml-${{ steps.version.outputs.version }}-py3-none-any.whl \
+             packages/python/dist/taxonbodymassml-latest-py3-none-any.whl
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

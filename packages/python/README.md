@@ -9,7 +9,7 @@ Find the current release wheel URL on the
 and install it with pip:
 
 ```bash
-pip install "<release-wheel-url>"
+pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/latest/download/taxonbodymassml-latest-py3-none-any.whl"
 ```
 
 Optional progress bars:
