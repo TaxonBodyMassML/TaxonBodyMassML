@@ -2,11 +2,9 @@
 
 ## Raw data
 
-**`BodyMass.csv`** — Raw (unprocessed) body mass data extracted from the *FracFeed* database:
+**`BodyMass.csv`** — Raw (unprocessed) body mass data compiled from 34+ literature sources and taxonomic databases by the *TaxonBodyMass_DB* project.
 
-> Novak, M., Foust, P., Hennessey, S., Tanis, B. P., Coblentz, K. E., Wolf, C., Segui, L. M., Henderson, J. S., Ingeman, K. E., Falke, L. P., Layden, T. J., Gradison, D. J., Randell, Z., Harris, C. L., Lester, S., Naito, K. A., Nakata, T., Nichols, G., Postma, B. C., Alves, R., Jarman, C. N., Kalytiak-Davis, A. R., Martin, A., Pajiah, T. J., Pinos-Sánchez, A., & Preston, D. L. (2026). *FracFeed*: Global database of the fraction of feeding predators. *Ecology*, 107(1), e70296. https://doi.org/10.1002/ecy.70296
-
-GitHub repository: https://github.com/marknovak/FracFeed_DB
+GitHub repository: https://github.com/marknovak/TaxonBodyMass_DB
 
 Columns: `taxon`, `mass_g`, `source_mass`, `n`
 
