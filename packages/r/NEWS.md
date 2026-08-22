@@ -1,3 +1,17 @@
+# TaxonBodyMassML 0.6.0
+
+## Data and model
+
+* Retrained XGBoost model on updated data from TaxonBodyMass\_DB following a
+  fresh 100-trial Optuna hyperparameter search (5-fold CV, MAE in log₁₀ space).
+  New hyperparameters: n\_estimators=550, max\_depth=41, learning\_rate=0.0835,
+  subsample=0.504, colsample\_bytree=0.856, gamma=0.005, min\_child\_weight=2.
+* Test-set performance (log₁₀ space): R²=0.8857, RMSE=0.6599, MAE=0.3601.
+  Filtered to mass > 0.1 g (n=3,509): R²=0.7803, RMSE=0.5409, MAE=0.3221.
+* Training set: 34,470 records; test set: 3,830 records.
+* Updated all three artifact checksums (`model.ubj`, `calibration.json`,
+  `categories.json`) to match the retrained model.
+
 # TaxonBodyMassML 0.5.1
 
 ## Bug fixes

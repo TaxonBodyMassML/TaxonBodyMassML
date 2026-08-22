@@ -14,9 +14,9 @@ import time
 import pandas as pd
 import requests
 
-INPUT_CSV = "./data/BodyMass_WoRMS_pass.csv"
-OUTPUT_CSV = "./data/BodyMass_COL_pass.csv"
-MISSED_SPECIES_PATH = "./data/missed_species_col.txt"
+INPUT_CSV = "./data/passes/TaxonBodyMass_WoRMS_pass.csv"
+OUTPUT_CSV = "./data/passes/TaxonBodyMass_COL_pass.csv"
+MISSED_SPECIES_PATH = "./data/passes/missed_species_col.txt"
 
 COL_URL = "https://api.checklistbank.org/dataset/3/nameusage/search"
 
@@ -95,7 +95,7 @@ for i, name in enumerate(unique_names):
                 if pd.isna(df.at[idx, field]) and field in rank_map:
                     df.at[idx, field] = rank_map[field]
 
-    if (i + 1) % 50 == 0:
+    if (i + 1) % 10 == 0:
         print(f"Checkpoint: {i + 1}/{len(unique_names)}")
         df.to_csv(OUTPUT_CSV, index=False)
 

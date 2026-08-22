@@ -50,7 +50,7 @@ jobs:
           python - <<'EOF'
           import hashlib, urllib.request
           url = "https://huggingface.co/marknovak/TaxonBodyMassML/resolve/main/categories.json"
-          expected = "b130cc3fd567b374426be7a842eae6234d1bdb2a53371fd7291310e974abdd62"
+          expected = "e5279d3ce01b22c8fc0079081707bcd31e8bfc857b14fa3e61ff071e12290ea8"
           with urllib.request.urlopen(url) as r:
               data = r.read()
           actual = hashlib.sha256(data).hexdigest()

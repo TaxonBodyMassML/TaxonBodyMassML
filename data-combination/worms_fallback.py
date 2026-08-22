@@ -16,9 +16,9 @@ import time
 import pandas as pd
 import requests
 
-INPUT_CSV = "./data/BodyMass_NCBI_pass.csv"
-OUTPUT_CSV = "./data/BodyMass_WoRMS_pass.csv"
-MISSED_SPECIES_PATH = "./data/missed_species_worms.txt"
+INPUT_CSV = "./data/passes/TaxonBodyMass_NCBI_pass.csv"
+OUTPUT_CSV = "./data/passes/TaxonBodyMass_WoRMS_pass.csv"
+MISSED_SPECIES_PATH = "./data/passes/missed_species_worms.txt"
 
 WORMS_URL = "https://www.marinespecies.org/rest/AphiaRecordsByMatchNames"
 

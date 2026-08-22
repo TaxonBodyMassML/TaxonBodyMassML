@@ -48,7 +48,7 @@ jobs:
         shell: Rscript {0}
         run: |
           url <- "https://huggingface.co/marknovak/TaxonBodyMassML/resolve/main/categories.json"
-          expected <- "b130cc3fd567b374426be7a842eae6234d1bdb2a53371fd7291310e974abdd62"
+          expected <- "e5279d3ce01b22c8fc0079081707bcd31e8bfc857b14fa3e61ff071e12290ea8"
           tmp <- tempfile(fileext = ".json")
           utils::download.file(url, tmp, quiet = TRUE, mode = "wb")
           actual <- as.character(openssl::sha256(file(tmp, "rb")))

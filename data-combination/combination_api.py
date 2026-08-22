@@ -16,15 +16,15 @@ from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import requests
 
-INPUT_CSV = "./data/BodyMass.csv"
-OUTPUT_CSV = "./data/BodyMass_GBIF_pass.csv"
+INPUT_CSV = "./data/TaxonBodyMass.csv"
+OUTPUT_CSV = "./data/passes/TaxonBodyMass_GBIF_pass.csv"
 
 GBIF_MATCH_URL = "https://api.gbif.org/v2/species/match"
 
 # use starting index to start from the last saved
 # index in case of interruption/failure
 STARTING_INDEX = 0
-MISSED_SPECIES_PATH = "./data/missed_species_gbif.txt"
+MISSED_SPECIES_PATH = "./data/passes/missed_species_gbif.txt"
 
 # ---------------------------------------------------------------------------
 # Session (connection reuse)
@@ -74,6 +74,7 @@ def gbif_match(input_name):
     return r.json()
 
 
+os.makedirs("./data/passes", exist_ok=True)
 df = pd.read_csv(INPUT_CSV)
 
 # these are the new columns that will be added to our dataset

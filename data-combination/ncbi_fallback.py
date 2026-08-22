@@ -20,11 +20,11 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 import requests
 
-INPUT_CSV = "./data/BodyMass_GBIF_pass.csv"
-OUTPUT_CSV = "./data/BodyMass_NCBI_pass.csv"
+INPUT_CSV = "./data/passes/TaxonBodyMass_GBIF_pass.csv"
+OUTPUT_CSV = "./data/passes/TaxonBodyMass_NCBI_pass.csv"
 
 STARTING_INDEX = 0
-MISSED_SPECIES_PATH = "./data/missed_species_ncbi.txt"
+MISSED_SPECIES_PATH = "./data/passes/missed_species_ncbi.txt"
 
 NCBI_ESEARCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 NCBI_EFETCH = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
@@ -104,6 +104,10 @@ def parse_ncbi_xml(xml_text):
     if species_ is not None:
         taxons["species"] = species_.text
 
+    # NCBI uses "Metazoa" where other databases use the formal kingdom "Animalia"
+    if taxons.get("kingdom") == "Metazoa":
+        taxons["kingdom"] = "Animalia"
+
     return taxons
 
 
@@ -132,7 +136,7 @@ for i, row in df.iterrows():
     if not missing_fields:
         continue
 
-    if i % 100 == 0:
+    if i % 25 == 0:
         print("Saving taxonomy data from index:", i)
         df.to_csv(OUTPUT_CSV, index=False)
 

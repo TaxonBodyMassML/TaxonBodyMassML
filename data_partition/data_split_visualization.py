@@ -8,6 +8,7 @@ yeo-johnson visualization of z-normalized mass.
 It samples 10% of the data as test data and saves new test/train data.
 """
 
+import os
 from pathlib import Path
 
 import matplotlib
@@ -51,7 +52,7 @@ def main():
     It samples 10% of the data as test data and saves new test/train data.
     """
     # read bodymass data into a pandas dataframe
-    df = pd.read_csv("./data/BodyMass_curated.csv")
+    df = pd.read_csv("./data/passes/TaxonBodyMass_curated.csv")
 
     # create a new variable which is the
     # mass_g variable with z-normalization applied
@@ -79,13 +80,17 @@ def main():
     # plt.xlabel("Z-Normalized Mass")
     # plt.show(block=True)
 
-    df = df.drop(["taxon", "source_mass", "n", "confidence", "subspecies", "form"], axis=1)
+    df = df.drop(
+        ["taxon", "source_mass", "n", "confidence", "subspecies", "form", "variety"],
+        axis=1,
+        errors="ignore",
+    )
     print("Number of missing values in each column:\n", df.isna().sum())
     df = df.dropna()
     print(df)
 
     # test data is a random sample of 10% of the database
-    test = df.sample(frac=0.1, replace=False)
+    test = df.sample(frac=0.1, replace=False, random_state=42)
 
     # train data is the remaining 90%
     train = df.drop(test.index)
@@ -94,8 +99,9 @@ def main():
     print(train)
 
     # save the train/test split to independent csv files
-    test.to_csv("./data/test.csv", index=False)
-    train.to_csv("./data/train.csv", index=False)
+    os.makedirs("./data/split", exist_ok=True)
+    test.to_csv("./data/split/test.csv", index=False)
+    train.to_csv("./data/split/train.csv", index=False)
 
 
 main()

@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0] - 2026-08-22
+
+### Changed
+
+- Retrained XGBoost model on updated data from TaxonBodyMass_DB following a
+  fresh 100-trial Optuna hyperparameter search (5-fold CV, MAE in log₁₀ space).
+  New hyperparameters: n_estimators=550, max_depth=41, learning_rate=0.0835,
+  subsample=0.504, colsample_bytree=0.856, gamma=0.005, min_child_weight=2.
+- Test-set performance (log₁₀ space): R²=0.8857, RMSE=0.6599, MAE=0.3601.
+  Filtered to mass > 0.1 g (n=3,509): R²=0.7803, RMSE=0.5409, MAE=0.3221.
+- Training set: 34,470 records; test set: 3,830 records.
+- Updated all three artifact checksums (`model.ubj`, `calibration.json`,
+  `categories.json`) to match the retrained model.
+
 ## [0.5.1] - 2026-08-04
 
 ### Fixed

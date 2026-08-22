@@ -14,9 +14,9 @@ import time
 import pandas as pd
 import requests
 
-INPUT_CSV = "./data/BodyMass_Wikidata_pass.csv"
-OUTPUT_CSV = "./data/BodyMass_ITIS_pass.csv"
-MISSED_SPECIES_PATH = "./data/missed_species_itis.txt"
+INPUT_CSV = "./data/passes/TaxonBodyMass_Wikidata_pass.csv"
+OUTPUT_CSV = "./data/passes/TaxonBodyMass_ITIS_pass.csv"
+MISSED_SPECIES_PATH = "./data/passes/missed_species_itis.txt"
 
 ITIS_BASE = "https://www.itis.gov/ITISWebService/jsonservice"
 
@@ -102,7 +102,7 @@ for i, name in enumerate(unique_names):
                 if pd.isna(df.at[idx, field]) and field in rank_map:
                     df.at[idx, field] = rank_map[field]
 
-    if (i + 1) % 100 == 0:
+    if (i + 1) % 10 == 0:
         print(f"Checkpoint: {i + 1}/{len(unique_names)}")
         df.to_csv(OUTPUT_CSV, index=False)
 

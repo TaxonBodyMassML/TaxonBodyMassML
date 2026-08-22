@@ -45,8 +45,8 @@ def align_categories(train_df, test_df):
     return train_df, test_df
 
 
-train = pd.read_csv(REPO_ROOT / "data" / "train.csv")
-test = pd.read_csv(REPO_ROOT / "data" / "test.csv")
+train = pd.read_csv(REPO_ROOT / "data" / "split" / "train.csv")
+test = pd.read_csv(REPO_ROOT / "data" / "split" / "test.csv")
 train["mass_g"] = np.log10(train["mass_g"])
 
 y_full = train["mass_g"]

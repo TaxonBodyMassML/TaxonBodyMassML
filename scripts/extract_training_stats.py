@@ -25,7 +25,7 @@ RESULTS.mkdir(exist_ok=True)
 # ---------------------------------------------------------------------------
 # Load and filter to the 37,839 rows used in training
 # ---------------------------------------------------------------------------
-df = pd.read_csv(DATA / "BodyMass_curated.csv")
+df = pd.read_csv(DATA / "passes" / "TaxonBodyMass_curated.csv")
 
 FEATURES = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
 df = df.dropna(subset=FEATURES + ["mass_g"])

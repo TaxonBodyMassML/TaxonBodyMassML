@@ -36,7 +36,7 @@ from sklearn.model_selection import train_test_split
 # ---------------------------------------------------------------------------
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODEL_PKL = REPO_ROOT / "regressor_microservice" / "sliced_model" / "xgboost_model.pkl"
-TRAIN_CSV = REPO_ROOT / "data" / "train.csv"
+TRAIN_CSV = REPO_ROOT / "data" / "split" / "train.csv"
 OUT_DIR = REPO_ROOT / "artifacts"
 OUT_DIR.mkdir(exist_ok=True)
 
@@ -161,7 +161,8 @@ print(f"  Written to {checksums_path}")
 # ---------------------------------------------------------------------------
 # 6. Instructions
 # ---------------------------------------------------------------------------
-print("""
+print(
+    """
 Done. Upload the four files in artifacts/ to Hugging Face:
 
     pip install huggingface_hub
@@ -170,4 +171,5 @@ Done. Upload the four files in artifacts/ to Hugging Face:
 
 Then copy the checksums from artifacts/checksums.json into the package
 source files (Python: packages/python/taxonbodymassml/_checksums.py; R: packages/r/R/model.R).
-""")
+"""
+)

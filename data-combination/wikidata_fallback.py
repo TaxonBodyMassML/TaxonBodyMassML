@@ -19,9 +19,9 @@ import time
 import pandas as pd
 import requests
 
-INPUT_CSV = "./data/BodyMass_COL_pass.csv"
-OUTPUT_CSV = "./data/BodyMass_Wikidata_pass.csv"
-MISSED_SPECIES_PATH = "./data/missed_species_wikidata.txt"
+INPUT_CSV = "./data/passes/TaxonBodyMass_COL_pass.csv"
+OUTPUT_CSV = "./data/passes/TaxonBodyMass_Wikidata_pass.csv"
+MISSED_SPECIES_PATH = "./data/passes/missed_species_wikidata.txt"
 
 SPARQL_URL = "https://query.wikidata.org/sparql"
 HEADERS = {

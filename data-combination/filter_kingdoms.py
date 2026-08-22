@@ -11,8 +11,8 @@ Kingdoms retained: Animalia, Metazoa, Protozoa, Bacteria, Bacillati (+ any UNK)
 
 import pandas as pd
 
-INPUT_FILE_PATH = "./data/BodyMass_ITIS_pass.csv"
-OUTPUT_FILE_PATH = "./data/BodyMass_curated.csv"
+INPUT_FILE_PATH = "./data/passes/TaxonBodyMass_ITIS_pass.csv"
+OUTPUT_FILE_PATH = "./data/passes/TaxonBodyMass_curated.csv"
 
 KINGDOMS_TO_REMOVE = {"Plantae", "Chromista", "Fungi", "Viridiplantae"}
 

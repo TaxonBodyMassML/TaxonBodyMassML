@@ -18,8 +18,8 @@ import json
 MODEL_WRITE_FILE = "./regressor_microservice/sliced_model/xgboost_model.pkl"
 
 # import training and testing data
-train = pd.read_csv("./data/train.csv")
-test = pd.read_csv("./data/test.csv")
+train = pd.read_csv("./data/split/train.csv")
+test = pd.read_csv("./data/split/test.csv")
 
 # convert mass to log10 to avoid rounding error
 # + reduce loss effect of large outliers
@@ -72,13 +72,13 @@ x_train, x_test = align_categories(x_train, x_test)
 # define model hyperparameters
 model = xgb.XGBRegressor(
     objective="reg:absoluteerror",
-    n_estimators=600,
-    max_depth=30,
-    learning_rate=0.032728710320767775,
-    subsample=0.6546505976015776,
-    colsample_bytree=0.9007141062190698,
-    gamma=0.056066571431818625,
-    min_child_weight=1,
+    n_estimators=550,
+    max_depth=41,
+    learning_rate=0.08348231251276578,
+    subsample=0.5035316641692348,
+    colsample_bytree=0.855506702261133,
+    gamma=0.0047401196530895695,
+    min_child_weight=2,
     enable_categorical=True,
     random_state=42,
 )
@@ -104,13 +104,13 @@ metrics = {
     "log10_space": True,
     "hyperparameters": {
         "objective": "reg:absoluteerror",
-        "n_estimators": 600,
-        "max_depth": 30,
-        "learning_rate": 0.032728710320767775,
-        "subsample": 0.6546505976015776,
-        "colsample_bytree": 0.9007141062190698,
-        "gamma": 0.056066571431818625,
-        "min_child_weight": 1,
+        "n_estimators": 550,
+        "max_depth": 41,
+        "learning_rate": 0.08348231251276578,
+        "subsample": 0.5035316641692348,
+        "colsample_bytree": 0.855506702261133,
+        "gamma": 0.0047401196530895695,
+        "min_child_weight": 2,
         "enable_categorical": True,
         "random_state": 42,
     },

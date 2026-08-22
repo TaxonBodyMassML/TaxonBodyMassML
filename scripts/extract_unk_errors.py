@@ -37,7 +37,7 @@ RANKS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
 # ---------------------------------------------------------------------------
 # Load test set
 # ---------------------------------------------------------------------------
-test = pd.read_csv(DATA / "test.csv")
+test = pd.read_csv(DATA / "split" / "test.csv")
 y_true_log10 = np.log10(test["mass_g"].values)
 x_test = test.drop(columns=["mass_g"]).copy()
 
