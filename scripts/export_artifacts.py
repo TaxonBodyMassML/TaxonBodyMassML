@@ -5,9 +5,9 @@ Run from the repository root:
     python scripts/export_artifacts.py
 
 Outputs (in artifacts/):
-    model.ubj         -- XGBoost model in binary UBJSON format (~2 GB; cross-platform/language)
-    calibration.json  -- {"residuals": [<float>, ...]} full sorted calibration residuals array
-    categories.json   -- {"<col>": [<str>, ...]} valid training category sets per taxonomy column
+    model.ubj         -- XGBoost model in binary UBJSON format (~2 GB; cross-platform)
+    calibration.json  -- {"residuals": [<float>, ...]} full sorted calibration residuals
+    categories.json   -- {"<col>": [<str>, ...]} valid training category sets per column
     checksums.json    -- {"model.ubj": "<sha256>", "calibration.json": "<sha256>", ...}
 
 Upload these four files to the Hugging Face model repository:
@@ -19,7 +19,7 @@ Using the huggingface_hub CLI:
     huggingface-cli upload marknovak/TaxonBodyMassML artifacts/ . --repo-type model
 
 The Python and R packages download these files on first use and cache them locally.
-Bundle the contents of artifacts/checksums.json into the packages as the integrity constants.
+Bundle checksums from artifacts/checksums.json into the package source files.
 """
 
 import hashlib
@@ -103,7 +103,7 @@ print(f"  Saved {len(residuals_sorted)} residuals → {calibration_path}")
 # Sanity check: rebuilt 90th-pct q should match stored bundle value
 q_rebuilt = float(np.quantile(residuals, 0.90))
 q_stored = float(bundle["q"])
-print(f"  q (rebuilt 90th pct): {q_rebuilt:.6f}  |  q (stored in bundle): {q_stored:.6f}")
+print(f"  q rebuilt: {q_rebuilt:.6f}  |  q stored: {q_stored:.6f}")
 if abs(q_rebuilt - q_stored) > 1e-4:
     raise RuntimeError(
         f"Rebuilt q ({q_rebuilt:.6f}) differs from stored q ({q_stored:.6f}) "
@@ -129,9 +129,9 @@ for feat_idx, fname in enumerate(feature_names_model):
     e = enc[feat_idx]
     offsets = e["offsets"]
     values = e["values"]
-    strings = [
-        bytes(values[offsets[i] : offsets[i + 1]]).decode("utf-8") for i in range(len(offsets) - 1)
-    ]
+    strings = []
+    for i in range(len(offsets) - 1):
+        strings.append(bytes(values[offsets[i] : offsets[i + 1]]).decode("utf-8"))
     categories[fname] = strings  # index == training-time integer code
     print(f"  {fname}: {len(strings)} categories (incl. UNK)")
 
@@ -170,6 +170,7 @@ Done. Upload the four files in artifacts/ to Hugging Face:
     huggingface-cli upload marknovak/TaxonBodyMassML artifacts/ . --repo-type model
 
 Then copy the checksums from artifacts/checksums.json into the package
-source files (Python: packages/python/taxonbodymassml/_checksums.py; R: packages/r/R/model.R).
+source files (Python: packages/python/taxonbodymassml/_checksums.py; R:
+packages/r/R/model.R).
 """
 )

@@ -17,8 +17,14 @@ DST_DIR = REPO_ROOT / "data"
 
 SOURCES = [
     (TBM_DB_ROOT / "TaxonBodyMass.csv", DST_DIR / "TaxonBodyMass.csv"),
-    (TBM_DB_ROOT / "Bib" / "TaxonBodyMass_Citations.csv", DST_DIR / "TaxonBodyMass_Citations.csv"),
-    (TBM_DB_ROOT / "Bib" / "TaxonBodyMass_Citations.bib", DST_DIR / "Citations_BodyMass.bib"),
+    (
+        TBM_DB_ROOT / "Bib" / "TaxonBodyMass_Citations.csv",
+        DST_DIR / "TaxonBodyMass_CitationCiteIDs.csv",
+    ),
+    (
+        TBM_DB_ROOT / "Bib" / "TaxonBodyMass_Citations.bib",
+        DST_DIR / "Citations_BodyMass.bib",
+    ),
 ]
 
 for src, dst in SOURCES:

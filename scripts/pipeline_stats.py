@@ -6,6 +6,7 @@ Run from the repo root:
 """
 
 from pathlib import Path
+
 import pandas as pd
 
 ROOT = Path(__file__).parent.parent
@@ -194,7 +195,11 @@ print()
 
 # Table header
 col_w = [10, 26, 14, 12, 10, 20]
-header = f"{'Pass':<{col_w[0]}} {'API':<{col_w[1]}} {'Taxa queried':>{col_w[2]}} {'Resolved':>{col_w[3]}} {'Missed':>{col_w[4]}} {'Cumulative % complete':>{col_w[5]}}"
+header = (
+    f"{'Pass':<{col_w[0]}} {'API':<{col_w[1]}} "
+    f"{'Taxa queried':>{col_w[2]}} {'Resolved':>{col_w[3]}} "
+    f"{'Missed':>{col_w[4]}} {'Cumulative % complete':>{col_w[5]}}"
+)
 print(header)
 print("-" * sum(col_w))
 
