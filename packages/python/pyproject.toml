@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "taxonbodymassml"
-version = "0.6.0"
+version = "0.6.1"
 description = "Predict species body mass using the TaxonBodyMassML XGBoost model"
 readme = "README.md"
 requires-python = ">=3.11"

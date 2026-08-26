@@ -23,7 +23,7 @@ print("\nKingdom counts before filtering:")
 print(df["kingdom"].value_counts(dropna=False))
 
 removed = df[df["kingdom"].isin(KINGDOMS_TO_REMOVE)]
-print(f"\nRows to remove by kingdom:")
+print("\nRows to remove by kingdom:")
 print(removed["kingdom"].value_counts())
 
 df = df[~df["kingdom"].isin(KINGDOMS_TO_REMOVE)]

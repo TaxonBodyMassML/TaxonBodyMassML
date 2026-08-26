@@ -4,6 +4,9 @@ pasquang@oregonstate.edu
 4/10/2026
 """
 
+import datetime
+import json
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -11,9 +14,6 @@ import pickleslicer
 import xgboost as xgb
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-
-import datetime
-import json
 
 MODEL_WRITE_FILE = "./regressor_microservice/sliced_model/xgboost_model.pkl"
 
@@ -50,7 +50,8 @@ def align_categories(train_df, test_df):
         test_df (pandas dataframe): _description_
 
     Returns:
-        a tuple of the reformatted x_train and x_test with shared categories and UNK added
+        a tuple of the reformatted x_train and x_test with shared
+        categories and UNK added
     """
     for col in train_df.select_dtypes(include="str").columns:
         train_df[col] = train_df[col].astype("category")
@@ -58,7 +59,9 @@ def align_categories(train_df, test_df):
 
         # adds the UNK category and both train and test categories
         categories = list(
-            set(train_df[col].cat.categories) | set(list(test_df[col].cat.categories)) | {"UNK"}
+            set(train_df[col].cat.categories)
+            | set(list(test_df[col].cat.categories))
+            | {"UNK"}  # noqa: E501
         )
 
         train_df[col] = train_df[col].cat.set_categories(categories)
@@ -73,11 +76,11 @@ x_train, x_test = align_categories(x_train, x_test)
 model = xgb.XGBRegressor(
     objective="reg:absoluteerror",
     n_estimators=550,
-    max_depth=41,
-    learning_rate=0.08348231251276578,
-    subsample=0.5035316641692348,
-    colsample_bytree=0.855506702261133,
-    gamma=0.0047401196530895695,
+    max_depth=43,
+    learning_rate=0.11750844291262583,
+    subsample=0.5320937649781214,
+    colsample_bytree=0.6955159036504461,
+    gamma=0.05647956497022174,
     min_child_weight=2,
     enable_categorical=True,
     random_state=42,
@@ -105,11 +108,11 @@ metrics = {
     "hyperparameters": {
         "objective": "reg:absoluteerror",
         "n_estimators": 550,
-        "max_depth": 41,
-        "learning_rate": 0.08348231251276578,
-        "subsample": 0.5035316641692348,
-        "colsample_bytree": 0.855506702261133,
-        "gamma": 0.0047401196530895695,
+        "max_depth": 43,
+        "learning_rate": 0.11750844291262583,
+        "subsample": 0.5320937649781214,
+        "colsample_bytree": 0.6955159036504461,
+        "gamma": 0.05647956497022174,
         "min_child_weight": 2,
         "enable_categorical": True,
         "random_state": 42,
@@ -129,7 +132,9 @@ y_test = np.pow(10, y_test)
 y_pred = np.pow(10, y_pred)
 
 fig, ax = plt.subplots(figsize=(4.5, 4.5))
-ax.scatter(y_test, y_pred, s=4.5, alpha=0.35, color="#0b0b0b", linewidths=0, rasterized=True)
+ax.scatter(
+    y_test, y_pred, s=4.5, alpha=0.35, color="#0b0b0b", linewidths=0, rasterized=True
+)  # noqa: E501
 lims = [min(y_test.min(), y_pred.min()), max(y_test.max(), y_pred.max())]
 ax.plot(lims, lims, lw=1, color="#52514e", zorder=5)
 ax.set_xscale("log")
@@ -144,14 +149,19 @@ ax.spines["bottom"].set_color("#c3c2b7")
 ax.text(
     0.04,
     0.96,
-    f"$R^2$ = {r2:.3f}\nRMSE = {rmse:.3f}\nMAE = {mae:.3f}  ($\\log_{{10}}$ space)\n$n$ = {len(y_test):,}",
+    f"$R^2$ = {r2:.3f}\nRMSE = {rmse:.3f}\nMAE = {mae:.3f}"
+    f"  ($\\log_{{10}}$ space)\n$n$ = {len(y_test):,}",
     transform=ax.transAxes,
     fontsize=8,
     va="top",
     color="#52514e",
 )
 fig.tight_layout()
-fig.savefig("predictive_models/results/xgboost_mass_prediction.png", dpi=300, bbox_inches="tight")
+fig.savefig(
+    "predictive_models/results/xgboost_mass_prediction.png",
+    dpi=300,
+    bbox_inches="tight",
+)
 plt.close(fig)
 
 mask = y_test > 0.1
@@ -163,7 +173,8 @@ mae_f = float(np.mean(np.abs(np.log10(y_test_f) - np.log10(y_pred_f))))
 n_f = int(mask.sum())
 
 print(
-    f"Filtered metrics (mass > 0.1 g): R2={r2_f:.4f}  RMSE={rmse_f:.4f}  MAE={mae_f:.4f}  n={n_f:,}"
+    f"Filtered metrics (mass > 0.1 g): "
+    f"R2={r2_f:.4f}  RMSE={rmse_f:.4f}  MAE={mae_f:.4f}  n={n_f:,}"
 )
 metrics["filtered_gt0p1g"] = {
     "r2": float(r2_f),
@@ -177,7 +188,15 @@ with open(metrics_path, "w") as f:
     json.dump(metrics, f, indent=2)
 
 fig2, ax2 = plt.subplots(figsize=(4.5, 4.5))
-ax2.scatter(y_test_f, y_pred_f, s=4.5, alpha=0.35, color="#0b0b0b", linewidths=0, rasterized=True)
+ax2.scatter(
+    y_test_f,
+    y_pred_f,
+    s=4.5,
+    alpha=0.35,
+    color="#0b0b0b",
+    linewidths=0,
+    rasterized=True,  # noqa: E501
+)
 lims2 = [min(y_test_f.min(), y_pred_f.min()), max(y_test_f.max(), y_pred_f.max())]
 ax2.plot(lims2, lims2, lw=1, color="#52514e", zorder=5)
 ax2.set_xscale("log")
@@ -192,7 +211,8 @@ ax2.spines["bottom"].set_color("#c3c2b7")
 ax2.text(
     0.04,
     0.96,
-    f"$R^2$ = {r2_f:.3f}\nRMSE = {rmse_f:.3f}\nMAE = {mae_f:.3f}  ($\\log_{{10}}$ space)\n$n$ = {mask.sum():,}  (mass $> 10^{{-1}}$ g)",
+    f"$R^2$ = {r2_f:.3f}\nRMSE = {rmse_f:.3f}\nMAE = {mae_f:.3f}"
+    f"  ($\\log_{{10}}$ space)\n$n$ = {mask.sum():,}  (mass $> 10^{{-1}}$ g)",
     transform=ax2.transAxes,
     fontsize=8,
     va="top",
@@ -200,7 +220,9 @@ ax2.text(
 )
 fig2.tight_layout()
 fig2.savefig(
-    "predictive_models/results/xgboost_mass_prediction_gt0.1g.png", dpi=300, bbox_inches="tight"
+    "predictive_models/results/xgboost_mass_prediction_gt0.1g.png",
+    dpi=300,
+    bbox_inches="tight",
 )
 plt.close(fig2)
 
@@ -218,7 +240,9 @@ calib_residuals = np.abs(y_calib - y_calib_pred)
 q = np.quantile(calib_residuals, 0.90)
 
 # save BOTH model + q
-pickleslicer.dump({"model": model, "q": float(q)}, MODEL_WRITE_FILE, max_size=100 * 1024 * 1024)
+pickleslicer.dump(
+    {"model": model, "q": float(q)}, MODEL_WRITE_FILE, max_size=100 * 1024 * 1024
+)  # noqa: E501
 # pickleslicer.dump(model, MODEL_WRITE_FILE, max_size=100*1024*1024)
 
 # Test if unknown values will cause the model to crash in eval
@@ -228,7 +252,9 @@ print("\n")
 for col in x_train.select_dtypes(include="category").columns:
     unk_test = x_test.iloc[[0]].copy()
     unk_test[col] = "UNK"
-    unk_test[col] = pd.Categorical(unk_test[col], categories=x_train[col].cat.categories)
+    unk_test[col] = pd.Categorical(
+        unk_test[col], categories=x_train[col].cat.categories
+    )  # noqa: E501
     print(unk_test)
     print("Ground Truth Mass:", y_test.iloc[0])
     pred = model.predict(unk_test)

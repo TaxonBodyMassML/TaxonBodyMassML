@@ -10,7 +10,6 @@ import json
 import os
 import traceback
 
-import numpy as np
 import pandas as pd
 import pickleslicer
 from flask import Flask, jsonify, request
@@ -21,12 +20,7 @@ TAXONOMY_COLS = ["kingdom", "phylum", "class", "order", "family", "genus", "spec
 
 
 def _extract_categories(model):
-    """Extract per-column category lists in training-time integer-code order.
-
-    Reads the model's internal JSON encoding so that the ordering matches
-    exactly what was used during training. This is the same approach used by
-    scripts/export_artifacts.py to produce categories.json for the packages.
-    """
+    """Extract per-column category lists in training-time integer-code order."""
     booster = model.get_booster() if hasattr(model, "get_booster") else model
     model_raw = json.loads(booster.save_raw(raw_format="json"))
     cats_data = model_raw["learner"]["gradient_booster"]["model"]["cats"]
@@ -39,7 +33,7 @@ def _extract_categories(model):
         offsets = e["offsets"]
         values = e["values"]
         categories[fname] = [
-            bytes(values[offsets[i] : offsets[i + 1]]).decode("utf-8")
+            bytes(v & 0xFF for v in values[offsets[i] : offsets[i + 1]]).decode("utf-8")
             for i in range(len(offsets) - 1)
         ]
     return categories
@@ -70,7 +64,9 @@ def _load_state():
     categories = _extract_categories(model)
 
     # Warm up XGBoost's OpenMP thread pool so the first real request isn't penalized.
-    warmup = _apply_categories(pd.DataFrame([{col: "UNK" for col in TAXONOMY_COLS}]), categories)
+    warmup = _apply_categories(
+        pd.DataFrame([{col: "UNK" for col in TAXONOMY_COLS}]), categories
+    )  # noqa: E501
     model.predict(warmup)
 
     return model, q, categories

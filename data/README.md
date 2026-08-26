@@ -4,7 +4,7 @@
 
 **`BodyMass.csv`** — Raw (unprocessed) body mass data compiled from 34+ literature sources and taxonomic databases by the *TaxonBodyMass_DB* project.
 
-GitHub repository: https://github.com/marknovak/TaxonBodyMass_DB
+GitHub repository: [TaxonBodyMass_DB](https://github.com/marknovak/TaxonBodyMass_DB)
 
 Columns: `taxon`, `mass_g`, `source_mass`, `n`
 

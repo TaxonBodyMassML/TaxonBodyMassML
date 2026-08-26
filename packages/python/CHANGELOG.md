@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.1] - 2026-08-26
+
+### Changed
+
+- Retrained XGBoost model on updated data from TaxonBodyMass_DB (38,883 source
+  taxa; 38,101 curated after kingdom filtering). Hyperparameters unchanged from
+  0.6.0 except `max_depth` increased from 41 to 43 following a fresh 100-trial
+  Optuna search (5-fold CV, MAE in log₁₀ space, `n_estimators` ceiling widened
+  to 900). New hyperparameters: n_estimators=550, max_depth=43,
+  learning_rate=0.1175, subsample=0.532, colsample_bytree=0.696, gamma=0.056,
+  min_child_weight=2.
+- Test-set performance (log₁₀ space): R²=0.9106, RMSE=0.5621, MAE=0.3384.
+  Filtered to mass > 0.1 g (n=3,516): R²=0.7964, RMSE=0.5156, MAE=0.3148.
+- Training set: 34,251 records; test set: 3,806 records.
+- ASCII-normalised all taxonomy strings before training to prevent an XGBoost
+  JSON serialisation bug triggered by multi-byte UTF-8 characters in category
+  names.
+- Updated all three artifact checksums (`model.ubj`, `calibration.json`,
+  `categories.json`) to match the retrained model.
+
+---
+
 ## [0.6.0] - 2026-08-22
 
 ### Changed

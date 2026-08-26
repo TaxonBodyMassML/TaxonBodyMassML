@@ -14,9 +14,9 @@ NULL
 .HF_REPO_ID <- "marknovak/TaxonBodyMassML"
 
 .CHECKSUMS <- list(
-  "model.ubj"        = "02a8136e3420e07725909f51ba7ed74aed37d6d70ec2ebf5b069c3aeb5016c29",
-  "calibration.json" = "afa19bdd696173520548a5172b8264ad9a6fee1dfdde110d458c0f7c69b04da8",
-  "categories.json"  = "e5279d3ce01b22c8fc0079081707bcd31e8bfc857b14fa3e61ff071e12290ea8"
+  "model.ubj"        = "6f94483f99af5f3792cd602b70735b5f34f3b7329b6cd76bf88ac33775fa4ac8",
+  "calibration.json" = "931b981419b8950e85be8195b5837855f89716c6f9353c4062ea7fce4a72c6ca",
+  "categories.json"  = "c1db62061c22673bde63b3347246373c4340e3a92d35804df892b1ec9938298d"
 )
 
 .ARTIFACT_FILES <- names(.CHECKSUMS)

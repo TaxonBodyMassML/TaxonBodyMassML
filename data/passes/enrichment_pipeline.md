@@ -21,8 +21,8 @@ Copies three files from the sibling repository `TaxonBodyMass_DB` (expected at `
 | Source (in TaxonBodyMass_DB) | Destination (in data/) |
 |---|---|
 | `TaxonBodyMass.csv` | `data/TaxonBodyMass.csv` |
-| `Bib/TaxonBodyMass_Citations.csv` | `data/TaxonBodyMass_Citations.csv` |
-| `Bib/TaxonBodyMass_Citations.bib` | `data/Citations_BodyMass.bib` |
+| `bib/TaxonBodyMass_CitationCiteIDs.csv` | `data/TaxonBodyMass_Citations.csv` |
+| `bib/TaxonBodyMass_Citations.bib` | `data/Citations_BodyMass.bib` |
 
 The script raises `FileNotFoundError` immediately if any source is absent. Run it once before starting any enrichment pass.
 
@@ -160,18 +160,18 @@ The unfiltered `TaxonBodyMass_ITIS_pass.csv` is preserved as-is; `TaxonBodyMass_
 
 ## 5. Output Statistics
 
-Source CSV: 39,155 rows, 39,155 unique taxa.
+Source CSV: 38,883 rows, 38,883 unique taxa.
 
 ### Per-pass enrichment summary
 
 | Pass | API | Taxa queried | Resolved | Missed | Cumulative % complete |
 |---|---|---:|---:|---:|---:|
-| 1 GBIF | GBIF species/match | 39,155 | 39,040 | 115 | 57.6% |
-| 2 NCBI | NCBI Entrez | 16,590 | 13,799 | 2,791 | 92.6% |
-| 3 WoRMS | WoRMS AphiaRecordsByMatchNames | 2,897 | 268 | 2,629 | 93.2% |
-| 4 COL | COL ChecklistBank | 2,668 | 2,630 | 38 | 99.7% |
-| 5 Wikidata | Wikidata SPARQL | 113 | 70 | 43 | 99.8% |
-| 6 ITIS | ITIS JSON service | 89 | 36 | 53 | 99.8% |
+| 1 GBIF | GBIF species/match | 38,883 | 38,798 | 85 | 57.7% |
+| 2 NCBI | NCBI Entrez | 16,442 | 13,703 | 2,739 | 92.7% |
+| 3 WoRMS | WoRMS AphiaRecordsByMatchNames | 2,830 | 371 | 2,459 | 93.5% |
+| 4 COL | COL ChecklistBank | 2,516 | 2,510 | 6 | 99.8% |
+| 5 Wikidata | Wikidata SPARQL | 77 | 62 | 15 | 99.8% |
+| 6 ITIS | ITIS JSON service | 61 | 36 | 25 | 99.9% |
 
 **Taxa queried** — unique taxa with at least one missing taxonomy field going into that pass (all taxa for GBIF, which initialises the taxonomy columns).  
 **Resolved** — taxa queried minus taxa in the missed-species log (i.e. received at least partial taxonomy from this pass).  
@@ -181,8 +181,8 @@ Source CSV: 39,155 rows, 39,155 unique taxa.
 
 | | Rows |
 |---|---:|
-| Input (ITIS pass) | 39,155 |
-| Output (curated) | 38,373 |
+| Input (ITIS pass) | 38,883 |
+| Output (curated) | 38,101 |
 | Removed | 782 |
 
 Rows whose `kingdom` matched `Plantae`, `Chromista`, `Fungi`, or `Viridiplantae` were removed.

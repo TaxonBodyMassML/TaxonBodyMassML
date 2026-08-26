@@ -9,7 +9,7 @@ It samples 10% of the data as test data and saves new test/train data.
 """
 
 import os
-from pathlib import Path
+import unicodedata
 
 import matplotlib
 
@@ -85,6 +85,32 @@ def main():
         axis=1,
         errors="ignore",
     )
+
+    # Normalize all taxonomy string columns to ASCII to prevent XGBoost's JSON
+    # serialisation from miscomputing category byte offsets for multi-byte UTF-8
+    # characters, which garbles all subsequent category names in saved models.
+    taxonomy_cols = [
+        "kingdom",
+        "phylum",
+        "class",
+        "order",
+        "family",
+        "genus",
+        "species",
+    ]  # noqa: E501
+    for col in taxonomy_cols:
+        if col in df.columns:
+            df[col] = df[col].apply(
+                lambda x: (
+                    (
+                        unicodedata.normalize("NFKD", str(x))
+                        .encode("ascii", "ignore")
+                        .decode("ascii")
+                    )
+                    if pd.notna(x)
+                    else x
+                )
+            )
     print("Number of missing values in each column:\n", df.isna().sum())
     df = df.dropna()
     print(df)

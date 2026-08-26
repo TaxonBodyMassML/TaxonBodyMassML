@@ -75,7 +75,7 @@ jobs:
         id: version
         run: |
           v=$(python -c "import tomllib; f=open('packages/python/pyproject.toml','rb'); print(tomllib.load(f)['project']['version'])")
-          echo "version=$v" >> $GITHUB_OUTPUT
+          echo "version=$v" >> "$GITHUB_OUTPUT"
 
       - name: Build wheel and sdist
         run: |

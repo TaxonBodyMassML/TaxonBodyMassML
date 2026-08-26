@@ -1,11 +1,11 @@
 import datetime
 import json
+from pathlib import Path
 
 import numpy as np
 import optuna
 import pandas as pd
 import xgboost as xgb
-from pathlib import Path
 from sklearn.model_selection import KFold
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -28,7 +28,8 @@ def align_categories(train_df, test_df):
         test_df (pandas dataframe): _description_
 
     Returns:
-        a tuple of the reformatted x_train and x_test with shared categories and UNK added
+        a tuple of the reformatted x_train and x_test with shared
+        categories and UNK added
     """
     for col in train_df.select_dtypes(include="str").columns:
         train_df[col] = train_df[col].astype("category")
@@ -36,7 +37,9 @@ def align_categories(train_df, test_df):
 
         # adds the UNK category and both train and test categories
         categories = list(
-            set(train_df[col].cat.categories) | set(list(test_df[col].cat.categories)) | {"UNK"}
+            set(train_df[col].cat.categories)
+            | set(list(test_df[col].cat.categories))
+            | {"UNK"}  # noqa: E501
         )
 
         train_df[col] = train_df[col].cat.set_categories(categories)
@@ -63,7 +66,7 @@ def objective(trial):
         objective="reg:absoluteerror",
         enable_categorical=True,
         random_state=SEED,
-        n_estimators=trial.suggest_int("n_estimators", 200, 600, step=50),
+        n_estimators=trial.suggest_int("n_estimators", 200, 900, step=50),
         max_depth=trial.suggest_int("max_depth", 5, 50),
         learning_rate=trial.suggest_float("learning_rate", 0.01, 0.30, log=True),
         subsample=trial.suggest_float("subsample", 0.5, 1.0),

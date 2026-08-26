@@ -1,3 +1,23 @@
+# TaxonBodyMassML 0.6.1
+
+## Data and model
+
+* Retrained XGBoost model on updated data from TaxonBodyMass\_DB (38,883 source
+  taxa; 38,101 curated after kingdom filtering). Hyperparameters unchanged from
+  0.6.0 except `max\_depth` increased from 41 to 43 following a fresh 100-trial
+  Optuna search (5-fold CV, MAE in log₁₀ space, `n\_estimators` ceiling widened
+  to 900). New hyperparameters: n\_estimators=550, max\_depth=43,
+  learning\_rate=0.1175, subsample=0.532, colsample\_bytree=0.696, gamma=0.056,
+  min\_child\_weight=2.
+* Test-set performance (log₁₀ space): R²=0.9106, RMSE=0.5621, MAE=0.3384.
+  Filtered to mass > 0.1 g (n=3,516): R²=0.7964, RMSE=0.5156, MAE=0.3148.
+* Training set: 34,251 records; test set: 3,806 records.
+* ASCII-normalised all taxonomy strings before training to prevent an XGBoost
+  JSON serialisation bug triggered by multi-byte UTF-8 characters in category
+  names.
+* Updated all three artifact checksums (`model.ubj`, `calibration.json`,
+  `categories.json`) to match the retrained model.
+
 # TaxonBodyMassML 0.6.0
 
 ## Data and model
@@ -14,7 +34,7 @@
 
 # TaxonBodyMassML 0.5.1
 
-## Bug fixes
+## Bugfixes
 
 * `lookup_taxonomy()` now returns a zero-row `data.frame` with the expected
   8-column schema when given `character(0)`, rather than `NULL`.
@@ -87,7 +107,7 @@
 
 # TaxonBodyMassML 0.2.4
 
-## Bug fixes
+## Bugfixes
 
 * Updated `categories.json` artifact checksum to match the re-exported model
   artifacts. The previous checksum caused SHA-256 verification failure when
@@ -104,7 +124,7 @@
 
 # TaxonBodyMassML 0.2.2
 
-## Bug fixes
+## Bugfixes
 
 * Fuzzy name matching now uses the GBIF v1 species-match endpoint (previously
   the v2 endpoint was called but v1 response fields were parsed, causing
@@ -146,7 +166,7 @@
 * XGBoost thread pool is now warmed up on package load to reduce first-prediction
   latency.
 
-## Bug fixes
+## Bugfixes
 
 * Disk cache is now thread-safe; fixed `cache_store` backfill and an incorrect
   HTTP 512 status mapping (corrected to 422).

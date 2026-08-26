@@ -162,6 +162,7 @@ Anarchias leucurus
 Anatololacerta budaki
 Anchoa curta
 Anchoa exigua
+Ancistrus temminckii
 Ancylocranium ionidesi
 Ancylocranium somalicum
 Andinosaura petrorum
@@ -186,7 +187,6 @@ Anilios tovelli
 Anilios yampiensis
 Anilios yirrikalae
 Anisolepis undulatus
-Anocha lyolepis
 Anolis antioquiae
 Anolis beckeri
 Anolis bellipeniculus
@@ -260,6 +260,8 @@ Aphinius fasciatus
 Aphrophila noevaezelandiae
 Aphyocharax erythrurus
 Aplocheilichthys johnstoni
+Aplopeltura boa
+Apodichthys fucorum
 Apogon dammermani
 Apostolepis ambiniger
 Apostolepis cerradoensis
@@ -309,6 +311,8 @@ Arthrosaura tyleri
 Artibeus anthonyi
 Asaccus barani
 Asaccus saffinae
+Aspidoscelis costata
+Aspidoscelis costatus
 Aspidoscelis cozumelae
 Aspidoscelis espiritensis
 Aspidoscelis neomexicana
@@ -433,7 +437,6 @@ Bachia psamophila
 Bachia pyburni
 Bachia remota
 Bagropsis reinhardti
-Banjos banjos
 Barbatula farsica
 Barilius evezardi
 Barkudia insularis
@@ -472,7 +475,6 @@ Brachymeles wrighti
 Brachyseps gastrostictus
 Brachyseps mandady
 Brachyseps spilostichus
-Brachyuran larvae
 Brada inhabilisa
 Bronchocela celebensis
 Bronchocela danieli
@@ -553,19 +555,18 @@ Calumma jejy
 Calumma tsycorne
 Calumma vatosoa
 Camaroptera undosa
-Camelia sasnqua
 Campalita chlorostictum
-Candiacervus spII
 Candoia carinatus
 Cantherhines tiki
 Canthidermis rotundatus
 Capitellum metallicum
 Capitellum parvicruzae
 Capreolus miyakoensis
-Carangoides latus
 Cardiosis fairmarei
+Caribicus anelpistus
 Carinoma tremaphorus
 Carlarius gigas
+Carlia dogare
 Carlia insularis
 Carlia isostriacantha
 Carlia leucotaenia
@@ -578,7 +579,6 @@ Carulerpa taxifolia
 Catharactus skua
 Causus rasmusseni
 Celestus adercus
-Celestus anelpistus
 Celestus badius
 Celestus bivittatus
 Celestus carraui
@@ -714,9 +714,6 @@ Contomastix vittata
 Copella metae
 Copeoglossum margaritae
 Copeoglossum redondae
-Copepd nauplii
-Copepod nauplii
-Copepoda nauplii
 Copidita suturalis
 Corallus blombergi
 Cordylus cloetei
@@ -746,7 +743,6 @@ Ctenogobius szechuanensis
 Ctenophorus mirrityana
 Ctenophorus nguyarna
 Ctenophorus yinnietharra
-Ctenosaura bakeri
 Ctenotus pallasotus
 Ctenotus vagus
 Cubophis brooksi
@@ -757,7 +753,6 @@ Cyclodomorphus maxima
 Cyclophiops doriae
 Cyclophiops hamptoni
 Cyclophiops herminae
-Cyclopoid copepodites
 Cylindrophis aruensis
 Cylindrophis engkariensis
 Cylindrophis lineatus
@@ -932,7 +927,6 @@ Dopasia wegneri
 Draco abbreviatus
 Draco jareckii
 Draco norvillii
-Drepanocladusex annulatus
 Drymarchon caudomaculatus
 Drymarchon margaritae
 Drymobius melanotropis
@@ -941,6 +935,7 @@ Dryocalamus gracilis
 Dryocalamus philippinus
 Echinosaura sulcarostrum
 Echis hughesi
+Edaphus blÅhweissi
 Egernia douglasi
 Egernia pilbarensis
 Eirenis africana
@@ -954,7 +949,6 @@ Elapsoidea guentherii
 Elapsoidea laticincta
 Elapsoidea trapei
 Elephas iolensis
-Elephas namadicus
 Eliomys morpheus
 Elysia catula
 Emmochliophis miops
@@ -1069,7 +1063,6 @@ Eumeces cholistanensis
 Eumeces persicus
 Eumecia johnstoni
 Eumicotremus derjugini
-Euschides luctata
 Euspondylus acutirostris
 Euspondylus auyanensis
 Euspondylus caideni
@@ -1079,7 +1072,6 @@ Euspondylus monsfumus
 Euspondylus nellycarrillae
 Euspondylus paxcorpus
 Euspondylus simonsii
-Eutemora hirundoides
 Eutrachelophis steinbachi
 Eutropis andamanensis
 Eutropis austini
@@ -1179,10 +1171,6 @@ Glaphyromorphus clandestinus
 Glaphyromorphus nyanchupinta
 Glaphyromorphus othelarrni
 Glaseria mira
-Glossotherium myloides
-Glyptotherium cylindricum
-Glyptotherium floridanum
-Glyptotherium mexicanum
 Gnatholepis caudimaculata
 Gobiesox canidens
 Gobiesox marijeanae
@@ -1197,7 +1185,6 @@ Gonatodes timidus
 Gongylosoma mukutense
 Gongylosoma nicobariensis
 Gongylosoma scripta
-Gonionotophis egbensis
 Gonionotophis gabouensis
 Gonionotophis laurenti
 Gonionotophis vernayi
@@ -1235,7 +1222,6 @@ Hebius sarasinorum
 Hebius sarawacense
 Hebius taronense
 Hebius viperinum
-Hebridae indet
 Helcion pellucidum
 Helicops apiaka
 Helicops petersi
@@ -1244,7 +1230,6 @@ Helicops tapajonicus
 Helicops yacu
 Heliobolus neumanni
 Heliobolus nitidus
-Helius waiti
 Helminthophis frontalis
 Helminthophis praeocularis
 Hemidactylus albivertebralis
@@ -1350,7 +1335,6 @@ Indotyphlops veddae
 Indotyphlops violaceus
 Iphiaulax epicus
 Isodyctia cavicornuta
-Isodyctia steifera
 Isodyctia toxophila
 Isopachys borealis
 Isopachys roulei
@@ -1627,7 +1611,6 @@ Lycodon fausti
 Lycodon ferroni
 Lycodon flavomaculatus
 Lycodon hypsirhinoides
-Lycodon kundui
 Lycodon multifasciatus
 Lycodon odishii
 Lycodon orientalis
@@ -1676,8 +1659,6 @@ Lygosoma pembanum
 Lygosoma singha
 Lyonsia arenosa
 Lysigamasus cornutus
-Lysigamasus jugincola
-Lysigamasus minorleitneriae
 Lytorhynchus gasperetti
 Lytorhynchus kennedyi
 Mabuya cochonae
@@ -1688,20 +1669,17 @@ Mabuya montserratae
 Macrocalamus jasoni
 Macrocalamus vogeli
 Macropholidus ataktolepis
-Macropus piltonesis
 Macrozoraces americanus
 Madascincus macrolepis
 Madatyphlops boettgeri
 Madatyphlops calabresii
 Madatyphlops cuneirostris
 Madatyphlops leucocephalus
-Madatyphlops madagascariensis
 Madatyphlops platyrhynchus
 Malayotyphlops canlaonensis
 Malayotyphlops castanotus
 Malayotyphlops collaris
 Malayotyphlops hypogius
-Malayotyphlops koekkoeki
 Malayotyphlops kraalii
 Malayotyphlops ruficaudus
 Manis paleojavanica
@@ -1712,7 +1690,6 @@ Masticodryas bifossatus
 Mastigodryas amarali
 Mastigodryas bruesi
 Mastigodryas cliftoni
-Mastigodryas heathii
 Mastigodryas moratoi
 Medialuna ancietae
 Mediodactylus ilamensis
@@ -1743,7 +1720,6 @@ Mesopicos elliotii
 Mesopicos goertae
 Mesoscincus altamirani
 Metacyrba undata
-Metapenaeus pruinosus
 Micrelaps boettgeri
 Micrelaps tchernovi
 Micrelaps vaillanti
@@ -1834,7 +1810,6 @@ Namibiana gracilior
 Nandopsis friedrichsthalii
 Natator depressa
 Natriciteres bipostocularis
-Nectarinia tsavoensis
 Nemipterus bleekeri
 Nemipterus delagoe
 Nemipterus tolu
@@ -1865,8 +1840,6 @@ Notoscincus butleri
 Notropis cornutus
 Nucras caesicaudata
 Nyctophilus timoriensis
-Ochotona dalli
-Octopus tuberculata
 Odontoscion eurymesops
 Oedalis instillatus
 Oedura jowalbinna
@@ -1930,7 +1903,6 @@ Opisthotropis boonsongi
 Opisthotropis cucae
 Opisthotropis spenceri
 Opistognathus whitehurstii
-Order pseudoscorpionidae
 Oreosaurus luctuosus
 Osteodiscus cascadiae
 Ostorhinchus oxina
@@ -1974,7 +1946,6 @@ Paraliparis deani
 Paralipinia rara
 Paralonchurus petersii
 Paramecium micronucleatum
-Paramegatherium nazarrei
 Paraphidippus flavus
 Parapriasus australasiae
 Parapsilorhynchus elongatus
@@ -2051,7 +2022,6 @@ Phyllurus nepthys
 Phymaturus aguanegra
 Phymaturus desuetus
 Physiculus cyanostrophus
-Piceaen gelmanii
 Pimelia cenchronota
 Pimelia obsoleta
 Pimelodus absconditus
@@ -2078,9 +2048,7 @@ Platysaurus maculatus
 Platysaurus ocellatus
 Platysaurus torquatus
 Plectophoreus fischeri
-Plesiorycteropus germainepetterae
 Plesiorycteropus madagascariensis
-Pleuromonas jaculans
 Plica caribeana
 Plica kathleenae
 Plica medemi
@@ -2123,7 +2091,6 @@ Prosymna somalica
 Protemnodon nombe
 Protemnodon tumbuna
 Proteracanthus sarissophorus
-Proteus mor
 Psallus conspurcatus
 Psammodes striatus
 Psammophis longifrons
@@ -2167,7 +2134,6 @@ Pseudorabdion saravacense
 Pseudorabdion sirambense
 Pseudorabdion talonuran
 Pseudosciaena diacanthus
-Pseudoupeneus macularus
 Pseudoxenodon baramensis
 Pseudoxenodon inornatus
 Pseudoxyrhopus ankafinaensis
@@ -2248,16 +2214,13 @@ Rhinophis punctatus
 Rhinopitechus avunculus
 Rhinopitechus bieti
 Rhinopitechus brelichi
-Rhinopitechus roxella
 Rhinotyphlops ataeniatus
 Rhinotyphlops boylei
 Rhinotyphlops scortecci
 Rhithropanopeus hermandii
-Rhizophor amucronata
 Rhynchoedura eyrensis
 Rhynchoedura mentalis
 Rhytinota praelonga
-Rhytonomus isobellina
 Riama inanis
 Riama luctuosa
 Riama petrorum
@@ -2270,7 +2233,6 @@ Ristella guentheri
 Ristella travancorica
 Rondonops xanthomystax
 Rossella tarenja
-Saguinus caffer
 Salariopsis economidisi
 Salea gularis
 Salmo ezenami
@@ -2323,14 +2285,12 @@ Scincella rara
 Scincella rufocaudatus
 Scincella schmidti
 Scinus mitranus
-Sclerocalyptus migoyanus
 Scleroderma macrogaster
 Scolecolepides viridis
 Scolecoseps litipoensis
 Scoloplos robustus
 Scopelosaurus adleri
 Scorpaena orgila
-Scorpaena pascuensis
 Scorpaena stephanica
 Scorpaenodes englerti
 Sepsina bayoni
@@ -2360,7 +2320,6 @@ Soergelia minor
 Sorubim trigonocephalus
 Spalerosophis cliffordi
 Spalerosophis josephscorteccii
-Spanioconnus wetterhali
 Sphaeriontis dilatata
 Sphaerodactylus argivus
 Sphaerodactylus armasi
@@ -2455,11 +2414,9 @@ Sphenomorphus woodfordi
 Sphenomorphus zimmeri
 Sphenops sepsoides
 Sphingicampa quadrilineata
-Spirocerus kiakhtensis
 Spirostoma minus
 Spondylurus haitiae
 Spondylurus spilonotus
-Squalinus cephalus
 Staurosirella leptostauron
 Stegodon zdanskyi
 Stegonotus borneensis
@@ -2490,7 +2447,6 @@ Stenocercus santander
 Stenocercus simonsii
 Stenocercus variabilis
 Stenomys omlichodes
-Sternotherus carinatus
 Stethorus japonicus
 Stiliger fuscatus
 Stizostedion canadensis
@@ -2525,7 +2481,6 @@ Tantilla capistrata
 Tantilla cascadae
 Tantilla ceboruca
 Tantilla coronadoi
-Tantilla coronata
 Tantilla cucullata
 Tantilla cuniculator
 Tantilla deppei
@@ -2573,8 +2528,6 @@ Tetradactylus breyeri
 Tetradactylus eastwoodae
 Tetradactylus ellenbergeri
 Tetradactylus udzungwensis
-Tetraphyllidean larva
-Thalassionema proschkinae
 Thalestris rufovalescans
 Thamnodynastes ceibae
 Thamnodynastes corocoroensis
@@ -2599,7 +2552,6 @@ Tonicia benaventii
 Toxicocalamus buergersi
 Toxicocalamus grandis
 Toxicocalamus spilolepidotus
-Toxodon bilobidens
 Toxodon burmeisteri
 Toxodon platensis
 Tracharus japonicus
@@ -2636,8 +2588,6 @@ Tricheilostoma dissimilis
 Tricheilostoma greenwelli
 Tricheilostoma sundewalli
 Trichomonas batrachorum
-Trichomonas nasai
-Trigonodops lopesi
 Trilepida brevissima
 Trilepida dimidiatum
 Trilepida dugandi
@@ -2665,7 +2615,6 @@ Trioceros kinetensis
 Trioceros marsabitensis
 Trioceros ntunte
 Trioceros schoutedeni
-Trophon clathratus
 Tropidodipsas repleta
 Tropidodipsas zweifeli
 Tropidolaemus huttoni
@@ -2769,7 +2718,6 @@ Xenocalamus sabiensis
 Xenochrophis melanzostus
 Xenochrophis sanctijohannis
 Xenopholis werdingorum
-Xenorhinotherium bahiense
 Xenosaurus agrenon
 Xenosaurus arboreus
 Xenosaurus fractus
