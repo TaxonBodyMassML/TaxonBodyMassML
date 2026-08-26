@@ -174,8 +174,7 @@ print(f"  Written to {checksums_path}")
 # ---------------------------------------------------------------------------
 # 6. Instructions
 # ---------------------------------------------------------------------------
-print(
-    """
+print("""
 Done. Upload the four files in artifacts/ to Hugging Face:
 
     pip install huggingface_hub
@@ -185,5 +184,4 @@ Done. Upload the four files in artifacts/ to Hugging Face:
 Then copy the checksums from artifacts/checksums.json into the package
 source files (Python: packages/python/taxonbodymassml/_checksums.py; R:
 packages/r/R/model.R).
-"""
-)
+""")
