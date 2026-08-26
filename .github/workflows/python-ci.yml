@@ -48,14 +48,21 @@ jobs:
       - name: Validate categories.json checksum
         run: |
           python - <<'EOF'
-          import hashlib, urllib.request
-          url = "https://huggingface.co/marknovak/TaxonBodyMassML/resolve/main/categories.json"
-          expected = "c1db62061c22673bde63b3347246373c4340e3a92d35804df892b1ec9938298d"
+          import hashlib, sys, tomllib, urllib.request
+          with open("pyproject.toml", "rb") as f:
+              version = tomllib.load(f)["project"]["version"]
+          sys.path.insert(0, "taxonbodymassml")
+          from _checksums import CHECKSUMS
+          url = (
+              "https://huggingface.co/marknovak/TaxonBodyMassML"
+              f"/resolve/py-v{version}/categories.json"
+          )
           with urllib.request.urlopen(url) as r:
               data = r.read()
           actual = hashlib.sha256(data).hexdigest()
+          expected = CHECKSUMS["categories.json"]
           assert actual == expected, f"SHA256 mismatch: {actual}"
-          print("categories.json checksum OK")
+          print(f"categories.json checksum OK (py-v{version})")
           EOF
 
   release:
