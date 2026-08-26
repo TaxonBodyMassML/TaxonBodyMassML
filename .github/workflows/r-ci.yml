@@ -47,13 +47,19 @@ jobs:
       - name: Validate categories.json checksum
         shell: Rscript {0}
         run: |
-          url <- "https://huggingface.co/marknovak/TaxonBodyMassML/resolve/main/categories.json"
-          expected <- "e5279d3ce01b22c8fc0079081707bcd31e8bfc857b14fa3e61ff071e12290ea8"
+          version <- read.dcf("packages/r/DESCRIPTION")[, "Version"]
+          lines   <- readLines("packages/r/R/model.R")
+          line    <- grep("categories\\.json", lines, value = TRUE)
+          expected <- regmatches(line, regexpr("[0-9a-f]{64}", line))
+          url <- paste0(
+            "https://huggingface.co/marknovak/TaxonBodyMassML",
+            "/resolve/r-v", version, "/categories.json"
+          )
           tmp <- tempfile(fileext = ".json")
           utils::download.file(url, tmp, quiet = TRUE, mode = "wb")
           actual <- as.character(openssl::sha256(file(tmp, "rb")))
           if (!(actual == expected)) stop("SHA256 mismatch: got ", actual)
-          cat("categories.json checksum OK\n")
+          cat("categories.json checksum OK (r-v", version, ")\n", sep = "")
 
   release:
     needs: r-cmd-check
