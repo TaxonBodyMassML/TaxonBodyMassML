@@ -4,7 +4,7 @@ Body mass is a powerful trait because it scales predictably with many aspects of
 
 Unfortunately, although the body mass of thousands of species has been measured, these represent only a tiny fraction of all scientifically-described species.  `TaxonBodyMassML` provides a solution to predict the body mass of unmeasured species (and measured species) along with associated estimates of uncertainty.
 
-`TaxonBodyMassML` is based on a comprehensive database of measured species body masses that was used to train a machine learning model to estimate a species' body mass from its scientific name and taxonomy.  The model is integrated into an [open web interface](https://taxonbodymassml.github.io) and both R and Python packages.   All three allow for single- and batch querying of species scientific names.
+`TaxonBodyMassML` is based on a comprehensive [database](https://github.com/TaxonBodyMassML/TaxonBodyMass_DB) of measured species body masses that was used to train a machine learning model to estimate a species' body mass from its scientific name and taxonomy.  The model is integrated into an [open web interface](https://taxonbodymassml.github.io) and both R and Python packages.   All three allow for single- and batch querying of species scientific names.
 
 
 ## Packages
