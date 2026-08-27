@@ -20,9 +20,9 @@ recompile   <- TRUE
 DataRetrieve <- FALSE
 ```
 
-**Output:** `TaxonBodyMass_DB/TaxonBodyMass.csv` (species-level body masses: `taxon`, `mass_g`, `source_mass`, `n`).
+**Output:** `TaxonBodyMass_DB/TaxonBodyMass.csv` — enriched, deduplicated species-level body masses with full taxonomy (`kingdom`–`species`), provenance (`taxon_provided`, `source_mass`, `taxonomy_source`), and QC columns (`log10_range`, `gbif_confidence`, `gbif_status`, `species_changed`). Reports written to `TaxonBodyMass_DB/reports/errors.md` and `reports/warnings.md`.
 
-**Verify:** Row count and modification timestamp changed; spot-check that removed taxa (e.g. `Glyptotherium_cylindricum`, `Omnivorous_nematodes`) are absent, and corrected names (e.g. `Squalius_cephalus` not `Squalinus_cephalus`) appear.
+**Verify:** Row count and modification timestamp changed; `reports/errors.md` has no duplicate-species or non-positive-mass entries. Spot-check that removed taxa (e.g. `Glyptotherium_cylindricum`) are absent and corrected names (e.g. `Squalius cephalus`) appear in the `species` column.
 
 ---
 
@@ -38,27 +38,19 @@ Copies `TaxonBodyMass_DB/TaxonBodyMass.csv` → `data/TaxonBodyMass.csv`. Raises
 
 ---
 
-## Phase 3 — Taxonomy enrichment (6 passes) + kingdom filter + train/test split
+## Phase 3 — Train/test split
 
-All scripts run from `/Users/novakm/Git/FracFeed/TaxonBodyMassML/`. Run sequentially; each pass reads the previous pass's output.
+Taxonomy enrichment, autotroph filtering, and deduplication are now performed by `TaxonBodyMass_DB/R/RunMe.r` (Phases 1–2). `TaxonBodyMass.csv` is the single enriched, deduplicated output.
+
+Run from `/Users/novakm/Git/FracFeed/TaxonBodyMassML/`:
 
 ```bash
-python data-combination/combination_api.py       # Pass 1: GBIF (threaded, ~minutes)
-python data-combination/ncbi_fallback.py         # Pass 2: NCBI Entrez (rate-limited, ~hours)
-python data-combination/worms_fallback.py        # Pass 3: WoRMS (batched)
-python data-combination/col_fallback.py          # Pass 4: COL ChecklistBank (sequential)
-python data-combination/wikidata_fallback.py     # Pass 5: Wikidata SPARQL (batched 10)
-python data-combination/itis_fallback.py         # Pass 6: ITIS JSON (sequential)
-python data-combination/filter_kingdoms.py       # Kingdom filter → TaxonBodyMass_curated.csv
 python data_partition/data_split_visualization.py  # 90/10 train/test split
 ```
 
-**Outputs:**
+**Output:** `data/split/train.csv`, `data/split/test.csv`
 
-- `data/passes/TaxonBodyMass_curated.csv` (~38,000 rows)
-- `data/split/train.csv`, `data/split/test.csv`
-
-**Verify:** `TaxonBodyMass_curated.csv` row count plausible (~38,000 ± 500). Check `data/split/train.csv` and `test.csv` exist with expected column set (`mass_g`, `kingdom` … `species`).
+**Verify:** Both files exist with expected column set (`mass_g`, `kingdom` … `species`). No provenance columns (`taxon`, `source_mass`, etc.) should remain.
 
 ---
 

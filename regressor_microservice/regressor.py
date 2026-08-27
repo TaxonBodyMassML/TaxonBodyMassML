@@ -9,6 +9,7 @@ pasquang@oregonstate.edu
 import json
 import os
 import traceback
+import unicodedata
 
 import pandas as pd
 import pickleslicer
@@ -39,12 +40,20 @@ def _extract_categories(model):
     return categories
 
 
+def _ascii_normalize(x):
+    if pd.isna(x):
+        return x
+    normalized = unicodedata.normalize("NFKD", str(x))
+    return normalized.encode("ascii", "ignore").decode("ascii")
+
+
 def _apply_categories(df, categories):
     """Replace unknown taxonomy values with 'UNK' and encode as Categorical."""
     df = df.copy()
     for col in TAXONOMY_COLS:
         if col not in df.columns:
             continue
+        df[col] = df[col].apply(_ascii_normalize)
         valid = set(categories[col])
         df[col] = df[col].where(df[col].isin(valid), other="UNK")
         df[col] = pd.Categorical(df[col], categories=categories[col])

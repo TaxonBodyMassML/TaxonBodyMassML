@@ -52,7 +52,7 @@ def main():
     It samples 10% of the data as test data and saves new test/train data.
     """
     # read bodymass data into a pandas dataframe
-    df = pd.read_csv("./data/passes/TaxonBodyMass_curated.csv")
+    df = pd.read_csv("./data/TaxonBodyMass.csv")
 
     # create a new variable which is the
     # mass_g variable with z-normalization applied
@@ -81,7 +81,19 @@ def main():
     # plt.show(block=True)
 
     df = df.drop(
-        ["taxon", "source_mass", "n", "confidence", "subspecies", "form", "variety"],
+        [
+            "taxon",
+            "taxon_provided",
+            "source_mass",
+            "n",
+            "log10_range",
+            "taxonomy_source",
+            "gbif_confidence",
+            "gbif_status",
+            "gbif_family",
+            "gbif_order",
+            "species_changed",
+        ],
         axis=1,
         errors="ignore",
     )

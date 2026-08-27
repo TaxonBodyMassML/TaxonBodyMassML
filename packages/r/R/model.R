@@ -115,7 +115,7 @@ download_model <- function(version = "latest", force = FALSE) {
     }
     message("  Downloading ", filename, " from ", .HF_REPO_ID, " on Hugging Face...")
     req <- .tbm_req(.hf_url(filename, revision)) |>
-      httr2::req_timeout(seconds = 300) |>
+      httr2::req_timeout(0) |>
       httr2::req_progress()
     httr2::req_perform(req, path = dest)
     if (!isTRUE(.verify_file(dest, filename))) {

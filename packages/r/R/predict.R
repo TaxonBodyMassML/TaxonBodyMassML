@@ -40,6 +40,7 @@
 
   # Apply UNK mapping and set factor levels matching training categories
   for (col in COLS) {
+    X[[col]] <- iconv(X[[col]], to = "ASCII//TRANSLIT")
     valid <- cats[[col]]
     X[[col]] <- ifelse(X[[col]] %in% valid, X[[col]], "UNK")
     X[[col]] <- factor(X[[col]], levels = valid)

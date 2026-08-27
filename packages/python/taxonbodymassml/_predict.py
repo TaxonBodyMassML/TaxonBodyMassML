@@ -4,6 +4,7 @@ Prediction logic: UNK mapping, XGBoost inference, conformal intervals.
 
 from __future__ import annotations
 
+import unicodedata
 import warnings
 from typing import Optional
 
@@ -43,9 +44,21 @@ def _resolve_ci_level(confidence_interval) -> Optional[float]:
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def _ascii_normalize(x):
+    if pd.isna(x):
+        return x
+    normalized = unicodedata.normalize("NFKD", str(x))
+    return normalized.encode("ascii", "ignore").decode("ascii")
+
+
+# ---------------------------------------------------------------------------
 # UNK mapping
 # ---------------------------------------------------------------------------
-def _apply_unk_mapping(df: pd.DataFrame, categories: dict[str, list[str]]) -> pd.DataFrame:
+def _apply_unk_mapping(  # noqa: E501
+    df: pd.DataFrame, categories: dict[str, list[str]]
+) -> pd.DataFrame:
     """Replace unknown category values with 'UNK' and set category dtype."""
     col_map = {
         "kingdom": "kingdom",
@@ -62,8 +75,9 @@ def _apply_unk_mapping(df: pd.DataFrame, categories: dict[str, list[str]]) -> pd
     renamed = df[cols].rename(columns=col_map)
 
     for col in TAXONOMY_COLS:
+        col_data = renamed[col].apply(_ascii_normalize)
         valid = set(categories.get(col, []))
-        mapped = renamed[col].where(renamed[col].isin(valid), other="UNK")
+        mapped = col_data.where(col_data.isin(valid), other="UNK")
         renamed[col] = pd.Categorical(mapped, categories=categories[col])
 
     return renamed[TAXONOMY_COLS]
@@ -98,7 +112,9 @@ def _predict_xgboost(
             row["confidence"] = level
         if include_taxonomy:
             for col in _TAXONOMY_INPUT_COLS:
-                row[col] = taxonomy_df[col].iloc[i] if col in taxonomy_df.columns else None
+                row[col] = (
+                    taxonomy_df[col].iloc[i] if col in taxonomy_df.columns else None
+                )  # noqa: E501
         rows.append(row)
 
     return pd.DataFrame(rows)
@@ -168,9 +184,13 @@ def predict_mass(
         required = set(_TAXONOMY_INPUT_COLS)
         missing = required - set(species.columns)
         if missing:
-            raise ValueError(f"Input DataFrame is missing taxonomy columns: {sorted(missing)}")
+            raise ValueError(
+                f"Input DataFrame is missing taxonomy columns: {sorted(missing)}"
+            )  # noqa: E501
         taxonomy_df = species.reset_index(drop=True)
-        input_names = taxonomy_df.get("species", taxonomy_df["species_resolved"]).tolist()
+        input_names = taxonomy_df.get(
+            "species", taxonomy_df["species_resolved"]
+        ).tolist()  # noqa: E501
         matched_names = None
     else:
         if isinstance(species, str):
@@ -178,7 +198,7 @@ def predict_mass(
         else:
             names = list(species)
         if fuzzy_match_name:
-            from ._fuzzy import fuzzy_lookup_taxonomy  # local import avoids circular dep
+            from ._fuzzy import fuzzy_lookup_taxonomy  # noqa: E501 local import avoids circular dep
 
             tax_full = fuzzy_lookup_taxonomy(names)
             corrected = tax_full["matched_name"].notna() & (
@@ -190,7 +210,9 @@ def predict_mass(
                 .where(corrected, tax_full["input_name"].where(~no_match, other=None))
                 .tolist()
             )
-            matched_names = tax_full["input_name"].where(corrected | no_match, other=None).tolist()
+            matched_names = (
+                tax_full["input_name"].where(corrected | no_match, other=None).tolist()
+            )  # noqa: E501
             taxonomy_df = tax_full.drop(columns=["input_name", "matched_name"])
         else:
             taxonomy_df = lookup_taxonomy(names)
@@ -212,7 +234,9 @@ def predict_mass(
     resolved_mask = taxonomy_df["species_resolved"].notna()
 
     if not resolved_mask.any():
-        warnings.warn("No species could be resolved; returning all-NaN result.", stacklevel=2)
+        warnings.warn(
+            "No species could be resolved; returning all-NaN result.", stacklevel=2
+        )  # noqa: E501
 
     resolved_pos = [i for i, ok in enumerate(resolved_mask) if ok]
     unresolved_pos = [i for i, ok in enumerate(resolved_mask) if not ok]
