@@ -6,6 +6,7 @@ pasquang@oregonstate.edu
 
 import datetime
 import json
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +17,28 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
 MODEL_WRITE_FILE = "./regressor_microservice/sliced_model/xgboost_model.pkl"
+
+_RESULTS_DIR = Path(__file__).resolve().parent / "results"
+_TUNING_JSON = _RESULTS_DIR / "tuning_study.json"
+_DEFAULT_PARAMS = {
+    "n_estimators": 550,
+    "max_depth": 43,
+    "learning_rate": 0.11750844291262583,
+    "subsample": 0.5320937649781214,
+    "colsample_bytree": 0.6955159036504461,
+    "gamma": 0.05647956497022174,
+    "min_child_weight": 2,
+}
+
+
+def _load_best_params():
+    if _TUNING_JSON.exists():
+        with open(_TUNING_JSON) as f:
+            return json.load(f)["best_params"]
+    return dict(_DEFAULT_PARAMS)
+
+
+BEST_PARAMS = _load_best_params()
 
 # import training and testing data
 train = pd.read_csv("./data/split/train.csv")
@@ -75,15 +98,9 @@ x_train, x_test = align_categories(x_train, x_test)
 # define model hyperparameters
 model = xgb.XGBRegressor(
     objective="reg:absoluteerror",
-    n_estimators=550,
-    max_depth=43,
-    learning_rate=0.11750844291262583,
-    subsample=0.5320937649781214,
-    colsample_bytree=0.6955159036504461,
-    gamma=0.05647956497022174,
-    min_child_weight=2,
     enable_categorical=True,
     random_state=42,
+    **BEST_PARAMS,
 )
 
 # train the model
@@ -107,15 +124,9 @@ metrics = {
     "log10_space": True,
     "hyperparameters": {
         "objective": "reg:absoluteerror",
-        "n_estimators": 550,
-        "max_depth": 43,
-        "learning_rate": 0.11750844291262583,
-        "subsample": 0.5320937649781214,
-        "colsample_bytree": 0.6955159036504461,
-        "gamma": 0.05647956497022174,
-        "min_child_weight": 2,
         "enable_categorical": True,
         "random_state": 42,
+        **BEST_PARAMS,
     },
     "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
 }

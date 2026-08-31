@@ -1,10 +1,40 @@
-# Pipeline: Re-import data → retune hyperparameters → fit model
+# Pipeline: Re-import data → retune hyperparameters → fit models → export
 
 ## Context
 
-The TaxonBodyMass_DB has undergone significant cleaning (fix_nontaxa.r, fix_misspellings.r, fix_outliers.r). The trained model and all downstream artifacts must be regenerated from the cleaned database. This plan covers everything through artifact export. Results, figures, tables, and manuscript updates are explicitly out of scope until the user approves them separately.
+`TaxonBodyMass_DB` is the single source of truth for enriched, deduplicated species-level body masses. After any update to the DB (new sources, enrichment re-run, cleaning fixes), the ML pipeline must be re-run from Phase 1 to regenerate training data and retrain all three models.
 
-**Stop condition:** After `export_artifacts.py` produces the four artifact files. Do NOT upload to Hugging Face, do not update package checksums, do not run manuscript update scripts.
+Three model architectures are trained and exported:
+- **XGBoost** — native categorical encoding (`decision_tree.py`)
+- **GPBoost** — LightGBM trees + nested Gaussian process random effects (`gpboost_model.py`)
+- **Entity Embeddings** — PyTorch MLP (Stage 1) + XGBoost on embedding features (Stage 2) (`entity_embeddings_model.py`)
+
+**Stop condition after Phase 6:** inspect `predictive_models/results/metrics*.json` for all three models and confirm quality before proceeding to Phases 7–9.
+
+---
+
+## Quick start
+
+From `/Users/novakm/Git/FracFeed/TaxonBodyMassML/`:
+
+```bash
+make clean-tune      # discard stale tuning state when training data has changed
+make all             # fetch → split → tune (sequential) → train → export
+```
+
+To tune all three models concurrently (requires ~3× CPU):
+
+```bash
+make clean-tune
+make split
+make tune -j3        # all three tuners in parallel
+make train
+make artifacts
+```
+
+Individual targets: `make split`, `make tune-xgboost`, `make train-gpboost`, etc.
+
+Each training script reads best hyperparameters from its tuning JSON at runtime and falls back to built-in defaults if the JSON is absent.
 
 ---
 
@@ -12,138 +42,93 @@ The TaxonBodyMass_DB has undergone significant cleaning (fix_nontaxa.r, fix_miss
 
 **Working dir:** `/Users/novakm/Git/FracFeed/TaxonBodyMass_DB/R/`
 
-**Action:** Run `RunMe.r` with `recompile = TRUE` so that the cleaning functions (fix_formatting, fix_misspellings, fix_nontaxa, fix_body_mass_errors, fix_outliers) are applied to the raw per-source `.Rdata` files. `DataRetrieve` should remain `FALSE` (no re-download from rdataretriever).
+Run `RunMe.r` with `recompile = TRUE` to apply all cleaning functions to raw per-source `.Rdata` files and re-run the full enrichment pipeline.
 
-```r
-# Set at the top of RunMe.r before sourcing:
-recompile   <- TRUE
-DataRetrieve <- FALSE
-```
-
-**Output:** `TaxonBodyMass_DB/TaxonBodyMass.csv` — enriched, deduplicated species-level body masses with full taxonomy (`kingdom`–`species`), provenance (`taxon_provided`, `source_mass`, `taxonomy_source`), and QC columns (`log10_range`, `gbif_confidence`, `gbif_status`, `species_changed`). Reports written to `TaxonBodyMass_DB/reports/errors.md` and `reports/warnings.md`.
-
-**Verify:** Row count and modification timestamp changed; `reports/errors.md` has no duplicate-species or non-positive-mass entries. Spot-check that removed taxa (e.g. `Glyptotherium_cylindricum`) are absent and corrected names (e.g. `Squalius cephalus`) appear in the `species` column.
+**Output:** `TaxonBodyMass_DB/TaxonBodyMass.csv` — enriched, deduplicated species-level body masses with full taxonomy (`kingdom`–`species`), provenance (`taxon_provided`, `source_mass`, `taxonomy_source`), and QC columns (`log10_range`, `gbif_confidence`, `gbif_status`, `species_changed`). QC reports written to `TaxonBodyMass_DB/reports/errors.md` and `reports/warnings.md`.
 
 ---
 
 ## Phase 2 — Fetch source data into ML project
 
-**Working dir:** `/Users/novakm/Git/FracFeed/TaxonBodyMassML/`
-
 ```bash
-python scripts/fetch_source_data.py
+make data/TaxonBodyMass.csv   # or triggered automatically by make split / make all
 ```
 
-Copies `TaxonBodyMass_DB/TaxonBodyMass.csv` → `data/TaxonBodyMass.csv`. Raises immediately if source is missing.
+Copies `TaxonBodyMass_DB/TaxonBodyMass.csv` → `data/TaxonBodyMass.csv` (and bib files). Make skips this step if the local copy is newer than the DB source.
 
 ---
 
 ## Phase 3 — Train/test split
 
-Taxonomy enrichment, autotroph filtering, and deduplication are now performed by `TaxonBodyMass_DB/R/RunMe.r` (Phases 1–2). `TaxonBodyMass.csv` is the single enriched, deduplicated output.
-
-Run from `/Users/novakm/Git/FracFeed/TaxonBodyMassML/`:
-
 ```bash
-python data_partition/data_split_visualization.py  # 90/10 train/test split
+make split   # or triggered automatically by make tune / make all
 ```
+
+Drops all provenance/QC columns, ASCII-normalises taxonomy strings, produces a 90/10 split.
 
 **Output:** `data/split/train.csv`, `data/split/test.csv`
 
-**Verify:** Both files exist with expected column set (`mass_g`, `kingdom` … `species`). No provenance columns (`taxon`, `source_mass`, etc.) should remain.
-
 ---
 
-## Phase 4 — Hyperparameter tuning (Optuna)
-
-**Working dir:** `/Users/novakm/Git/FracFeed/TaxonBodyMassML/`
-
-The previous best hit the `n_estimators` ceiling (600). Before running, widen the search space in `predictive_models/tune_hyperparameters.py`:
-
-```python
-# Change:
-n_estimators = trial.suggest_int("n_estimators", 200, 600, step=50)
-# To:
-n_estimators = trial.suggest_int("n_estimators", 200, 900, step=50)
-```
-
-Delete both the SQLite study and the JSON results so the run starts completely fresh — stale trials from different data are invalid:
+## Phase 4 — Hyperparameter tuning
 
 ```bash
-rm predictive_models/results/tuning.db
-rm predictive_models/results/tuning_study.json
+make tune          # sequential: xgboost → gpboost → ee
+make tune -j3      # concurrent: all three in parallel
 ```
 
-Then run:
+100 Optuna TPE trials, 5-fold CV MAE in log₁₀ space per model. SQLite backends are resumable (`load_if_exists=True`) — interrupted runs can be continued without losing completed trials.
 
-```bash
-python predictive_models/tune_hyperparameters.py
-```
-
-100 TPE trials, 5-fold CV MAE in log₁₀ space. Takes ~30–60 min on CPU.
-
-**Output:** `predictive_models/results/tuning_study.json` — contains `best_params` dict and full trial list.
-
-**Verify:** `tuning_study.json` has a `best_params` entry. Check whether `n_estimators` is now below the new ceiling (900); if it is still at the ceiling, note it and consider a second widening pass before training.
-
----
-
-## Phase 5 — Model fit
-
-**Working dir:** `/Users/novakm/Git/FracFeed/TaxonBodyMassML/`
-
-Update `predictive_models/decision_tree.py` with the best params from `tuning_study.json`. The relevant constructor call:
-
-```python
-xgb.XGBRegressor(
-    objective="reg:absoluteerror",
-    n_estimators=<best>,
-    max_depth=<best>,
-    learning_rate=<best>,
-    subsample=<best>,
-    colsample_bytree=<best>,
-    gamma=<best>,
-    min_child_weight=<best>,
-    enable_categorical=True,
-    random_state=42
-)
-```
-
-Then run:
-
-```bash
-python predictive_models/decision_tree.py
-```
+Run `make clean-tune` first whenever training data has changed; stale trials from a different dataset are invalid.
 
 **Outputs:**
+- `predictive_models/results/tuning_study.json` — XGBoost best params
+- `predictive_models/results/tuning_study_gpboost.json` — GPBoost best params
+- `predictive_models/results/tuning_study_ee.json` — Entity Embeddings Stage 2 best params
 
-- `regressor_microservice/sliced_model/xgboost_model.pkl` (pickleslicer bundle: model + conformal `q`)
-- `predictive_models/results/metrics.json` (R², RMSE, MAE on test set)
+---
 
-**Verify:** `metrics.json` R² is plausible (prior run: check `tuning_summary.md` for reference MAE ≈ 0.297 log₁₀). If markedly worse, investigate before proceeding.
+## Phase 5 — Model training
+
+```bash
+make train   # trains all three sequentially after tuning JSONs exist
+```
+
+Each script loads `best_params` from its tuning JSON and falls back to built-in defaults if absent.
+
+**Outputs:**
+- `regressor_microservice/sliced_model/xgboost_model.pkl.*` — XGBoost pickleslicer bundle (model + conformal `q`)
+- `artifacts/model_gpboost.json` — GPBoost model
+- `artifacts/model_ee.ubj` — Entity Embeddings Stage 2 XGBoost
+- `artifacts/embeddings.json` — Entity Embeddings lookup tables
+- `artifacts/calibration_*.json` — conformal calibration residuals (pooled + rank-stratified) for each model
+- `predictive_models/results/metrics*.json` — test-set R², RMSE, MAE for each model
 
 ---
 
 ## Phase 6 — Artifact export
 
 ```bash
-python scripts/export_artifacts.py
+make artifacts   # or triggered automatically by make all
 ```
 
 **Outputs (all in `artifacts/`):**
-
 - `model.ubj` — XGBoost UBJSON binary
-- `calibration.json` — sorted conformal residuals; sanity-checks rebuilt `q` (errors if delta > 1e-4)
-- `categories.json` — taxonomy category lists in training-time integer-code order (**do not sort alphabetically** — order must match training-time codes for correct predictions)
-- `checksums.json` — SHA-256 hashes of the three files above
+- `calibration.json` — sorted conformal residuals (XGBoost)
+- `calibration_by_rank.json` — rank-stratified residuals (XGBoost)
+- `categories.json` — taxonomy category lists in **training-time integer-code order** (do not sort alphabetically — order must match training-time codes)
+- `lookup.json` — species → `{mass_g, source}` lookup table
+- `checksums.json` — SHA-256 hashes for all artifacts
 
-**Verify:** All four files exist and `checksums.json` is non-empty. Run a quick sanity prediction using `scripts/run_examples.py` or `run_examples.R` against the new `model.ubj` to confirm it loads and returns a plausible value.
+**Verify:** `checksums.json` is non-empty; all artifact files for all three models are present. Run a quick sanity prediction with `scripts/run_examples.py` or `scripts/run_examples.R`.
 
 ---
 
 ## STOP HERE — await user approval
 
-Inspect `predictive_models/results/metrics.json` (R², RMSE, MAE) and confirm the model quality is satisfactory before proceeding to any of the steps below.
+Inspect `predictive_models/results/metrics.json`, `metrics_gpboost.json`, `metrics_ee.json`. Confirm R², RMSE, and MAE are satisfactory before proceeding to Phases 7–9.
+
+Prior XGBoost baseline (old data): R²=0.9106, RMSE=0.5621, MAE=0.3384 (log₁₀, n_test=3,806)
 
 ---
 
@@ -151,14 +136,12 @@ Inspect `predictive_models/results/metrics.json` (R², RMSE, MAE) and confirm th
 
 ### Phase 7 — Rebuild microservice and publish artifacts
 
-The Flask microservice (`regressor_microservice/`) bakes `sliced_model/xgboost_model.pkl` into the Docker image at build time (no volume mount). After Phase 5 updates the pkl, rebuild and restart the container:
+The Flask microservice (`regressor_microservice/`) bakes `sliced_model/xgboost_model.pkl` into the Docker image at build time. After Phase 5 updates the pkl, rebuild and restart:
 
 ```bash
 cd regressor_microservice
 docker compose up --build -d
 ```
-
-Verify with the `/health` endpoint and a test prediction against `/xgb_pred_single` before publishing externally.
 
 Then publish artifacts:
 
@@ -173,40 +156,20 @@ Then publish artifacts:
 
 ### Phase 8 — Regenerate results (figures and tables)
 
-Run the extraction/formatting scripts that feed the manuscript:
-
 ```bash
-python scripts/extract_test_metrics.py       # test-set metrics → LaTeX
-python scripts/extract_training_stats.py     # training statistics → LaTeX
-python scripts/extract_feature_importance.py # feature importance → figure data
-python scripts/extract_unk_errors.py         # UNK prediction errors → analysis
-bash ms/copy_results.sh                      # copy into ms/ directory
+python scripts/extract_test_metrics.py
+python scripts/extract_training_stats.py
+python scripts/extract_feature_importance.py
+python scripts/extract_unk_errors.py
+bash ms/copy_results.sh
 ```
 
 ### Phase 9 — Update manuscript
 
-**Requires Phase 7 to be complete first** (Hugging Face upload + package checksum update), because the R/Python packages download the model from Hugging Face on first use.
+**Requires Phase 7 complete first** (Hugging Face upload + package checksum update).
 
-**9a — Regenerate numeric results and figures** (same scripts as Phase 8 if not already run), then update all values in `ms/manuscript.tex` that depend on:
+Update all values in `ms/manuscript.tex` that depend on model performance metrics, training dataset statistics, feature importance rankings, hyperparameter values, and conformal interval width (`q`).
 
-- Model performance metrics (R², RMSE, MAE)
-- Training dataset statistics (n taxa, class breakdown)
-- Feature importance rankings
-- Hyperparameter values
-- Conformal prediction interval width (`q`)
+Regenerate R example output (lines 504–529 of `manuscript.tex`) by running `Rscript scripts/run_examples.R` with the updated package and pasting the console output into the two `lstlisting` blocks.
 
-**9b — Regenerate R example output (lines 504–529 of `manuscript.tex`):**
-
-The manuscript contains two `lstlisting` R code blocks with hardcoded expected output (`mass_g`, `lower_bound`, `upper_bound`) for `Nucella ostrina`, `Haustrum haustorium`, and the unresolvable `Nutella haustrina`. A `\MN{Be sure to rerun these numbers}` note already flags these as needing refresh.
-
-Run the example script with the updated package (which must already be pointing to the new Hugging Face model):
-
-```bash
-Rscript scripts/run_examples.R
-```
-
-Manually paste the console output into the two `lstlisting` blocks in `ms/manuscript.tex` (there is no automated back-write).
-
-**9c — Compile and verify:**
-
-Compile `ms/manuscript.tex` to confirm no broken references, changed labels, or layout regressions from updated table/figure content.
+Compile `ms/manuscript.tex` to confirm no broken references or layout regressions.
