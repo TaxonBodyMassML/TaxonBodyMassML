@@ -96,6 +96,16 @@ jobs:
         with:
           tag_name: python-v${{ steps.version.outputs.version }}
           name: "Python package v${{ steps.version.outputs.version }}"
+          make_latest: false
           files: |
             packages/python/dist/taxonbodymassml-*.whl
             packages/python/dist/taxonbodymassml-*.tar.gz
+
+      - name: Update latest release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: latest
+          name: "Latest packages"
+          make_latest: true
+          files: |
+            packages/python/dist/taxonbodymassml-latest-py3-none-any.whl
