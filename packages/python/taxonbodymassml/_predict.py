@@ -112,6 +112,15 @@ def _apply_unk_mapping(  # noqa: E501
         col_data = renamed[col].apply(_ascii_normalize)
         if col == "kingdom":
             col_data = col_data.map(lambda x: _GBIF_KINGDOM_NORM.get(x, x))
+        if col == "genus":
+            # Genus names queried via NCBI land in species_resolved with genus
+            # left as "UNK". Promote them to the correct slot.
+            sp_data = renamed["species"].apply(_ascii_normalize)
+            genus_vocab = set(categories.get("genus", []))
+            promote = col_data.isin(["UNK"]) | col_data.isna()
+            promote &= sp_data.isin(genus_vocab)
+            col_data = col_data.where(~promote, other=sp_data)
+            renamed["species"] = renamed["species"].where(~promote, other="UNK")
         valid = set(categories.get(col, []))
         mapped = col_data.where(col_data.isin(valid), other="UNK")
         renamed[col] = pd.Categorical(mapped, categories=categories[col])
@@ -123,6 +132,12 @@ def _apply_unk_mapping(  # noqa: E501
 # Source rank inference for model-inferred rows
 # ---------------------------------------------------------------------------
 def _infer_source_rank(row: pd.Series, categories: dict[str, list[str]]) -> str:
+    # Genus names land in species_resolved (not genus) via NCBI lookup when
+    # GBIF matches at genus rank. Check before iterating the standard ranks.
+    sr = _ascii_normalize(row.get("species_resolved"))
+    g = _ascii_normalize(row.get("genus"))
+    if sr and (not g or g == "UNK") and sr in set(categories.get("genus", [])):
+        return "tbmML_genus"
     for rank in _RANK_ORDER:
         val = _ascii_normalize(row.get(rank))
         if val and val != "UNK" and val in set(categories.get(rank, [])):
@@ -353,6 +368,21 @@ def _predict_entity_embeddings(
             if df_col in taxonomy_df.columns
             else pd.Series(["UNK"] * n)
         )
+        if col == "genus":
+            sp_col = "species_resolved"
+            sp_vals = (
+                taxonomy_df[sp_col].fillna("UNK")
+                if sp_col in taxonomy_df.columns
+                else pd.Series(["UNK"] * n)
+            )
+            genus_vocab = set(col_embs.keys()) - {"UNK"}
+            for i in range(n):
+                norm_g = _ascii_normalize(vals.iloc[i]) or "UNK"
+                if norm_g == "UNK":
+                    norm_sp = _ascii_normalize(sp_vals.iloc[i]) or "UNK"
+                    if norm_sp in genus_vocab:
+                        vals = vals.copy()
+                        vals.iloc[i] = sp_vals.iloc[i]
         for i, val in enumerate(vals):
             norm = _ascii_normalize(val) or "UNK"
             X[i, offset : offset + dim] = col_embs.get(norm, unk_vec)

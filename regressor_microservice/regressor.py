@@ -51,9 +51,20 @@ def _apply_categories(df, categories):
     """Replace unknown taxonomy values with 'UNK' and encode as Categorical."""
     df = df.copy()
     for col in TAXONOMY_COLS:
+        if col in df.columns:
+            df[col] = df[col].apply(_ascii_normalize)
+    # Genus names queried via NCBI land in the species slot with genus left as
+    # "UNK". Promote them to the correct slot so the model uses genus embeddings.
+    if "genus" in df.columns and "species" in df.columns:
+        genus_vocab = set(categories.get("genus", []))
+        genus_unk = df["genus"].isin(["UNK"]) | df["genus"].isna()
+        sp_is_genus = df["species"].isin(genus_vocab)
+        promote = genus_unk & sp_is_genus
+        df.loc[promote, "genus"] = df.loc[promote, "species"]
+        df.loc[promote, "species"] = "UNK"
+    for col in TAXONOMY_COLS:
         if col not in df.columns:
             continue
-        df[col] = df[col].apply(_ascii_normalize)
         valid = set(categories[col])
         df[col] = df[col].where(df[col].isin(valid), other="UNK")
         df[col] = pd.Categorical(df[col], categories=categories[col])

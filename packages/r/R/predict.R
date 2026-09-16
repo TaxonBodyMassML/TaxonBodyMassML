@@ -31,7 +31,14 @@
 
 .infer_source_rank <- function(taxonomy_df, cats) {
   ranks <- c("genus", "family", "order", "class", "phylum", "kingdom")
-  apply(taxonomy_df[, ranks, drop = FALSE], 1, function(row) {
+  cols  <- c("species_resolved", ranks)
+  apply(taxonomy_df[, cols, drop = FALSE], 1, function(row) {
+    # Genus names land in species_resolved (not genus) via NCBI lookup when
+    # GBIF matches at genus rank. Check before iterating the standard ranks.
+    sr <- iconv(row[["species_resolved"]], to = "ASCII//TRANSLIT")
+    g  <- iconv(row[["genus"]], to = "ASCII//TRANSLIT")
+    if (!is.na(sr) && (is.na(g) || identical(g, "UNK")) && sr %in% cats[["genus"]])
+      return("tbmML_genus")
     for (rank in ranks) {
       val <- iconv(row[[rank]], to = "ASCII//TRANSLIT")
       if (!is.na(val) && val != "UNK" && val %in% cats[[rank]])
@@ -126,9 +133,14 @@
     species = taxonomy_df$species_resolved,
     stringsAsFactors = FALSE
   )
+  for (col in COLS) X[[col]] <- iconv(X[[col]], to = "ASCII//TRANSLIT")
+  # Genus names queried via NCBI land in species_resolved with genus left as
+  # "UNK". Promote them to the correct slot so the model uses genus embeddings.
+  promote <- (is.na(X$genus) | X$genus == "UNK") & (X$species %in% cats[["genus"]])
+  X$genus[promote]   <- X$species[promote]
+  X$species[promote] <- "UNK"
   for (col in COLS) {
-    X[[col]] <- iconv(X[[col]], to = "ASCII//TRANSLIT")
-    valid <- cats[[col]]
+    valid    <- cats[[col]]
     X[[col]] <- ifelse(X[[col]] %in% valid, X[[col]], "UNK")
     X[[col]] <- factor(X[[col]], levels = valid)
   }
@@ -225,6 +237,12 @@
     src_col  <- col_map[[col]]
     vals     <- iconv(as.character(taxonomy_df[[src_col]]), to = "ASCII//TRANSLIT")
     if (identical(col, "kingdom")) vals <- .normalise_kingdom(vals)
+    if (identical(col, "genus")) {
+      sp_vals     <- iconv(as.character(taxonomy_df$species_resolved), to = "ASCII//TRANSLIT")
+      genus_vocab <- setdiff(names(col_embs), "UNK")
+      promote     <- (is.na(vals) | vals == "UNK") & !is.na(sp_vals) & (sp_vals %in% genus_vocab)
+      vals[promote] <- sp_vals[promote]
+    }
     vals[is.na(vals)] <- "UNK"
     for (i in seq_len(n)) {
       vec <- if (!is.null(col_embs[[vals[i]]])) unlist(col_embs[[vals[i]]]) else unk_vec
