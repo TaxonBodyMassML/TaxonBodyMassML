@@ -7,7 +7,7 @@
 predict_mass(
   taxon,
   confidence_interval = FALSE,
-  method = "XGBoost",
+  method = "EntityEmbeddings",
   interval_method = "stratified",
   include_taxonomy = FALSE,
   fuzzy_match_name = FALSE,
@@ -25,10 +25,12 @@ conformal prediction interval), or a numeric in (0, 1) for a custom
 coverage level. Conformal intervals apply only to model-inferred values;
 rows returned from the training-data dictionary receive \code{NA} bounds.}
 
-\item{method}{Character. Prediction method. \code{"XGBoost"} (default),
+\item{method}{Character. Prediction method. \code{"EntityEmbeddings"} (default;
+two-stage: taxonomy embeddings + XGBoost on embedding vectors),
 \code{"GPBoost"} (gradient boosting with nested taxonomic random effects;
-requires the \code{gpboost} package), or \code{"EntityEmbeddings"} (two-stage:
-taxonomy embeddings + XGBoost on embedding vectors).}
+requires the \code{gpboost} package), or \code{"XGBoost"} (raises an error in R:
+the Python-trained model uses categorical bitmask splits that R's xgboost
+cannot evaluate correctly).}
 
 \item{interval_method}{Character. How the conformal half-width is computed
 when \code{confidence_interval} is not \code{FALSE}. \code{"stratified"} (default) uses
