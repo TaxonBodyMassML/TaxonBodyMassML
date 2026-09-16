@@ -124,7 +124,7 @@
 .apply_unk_mapping <- function(taxonomy_df, cats) {
   COLS <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
   X <- data.frame(
-    kingdom = .normalise_kingdom(taxonomy_df$kingdom),
+    kingdom = taxonomy_df$kingdom,
     phylum  = taxonomy_df$phylum,
     class   = taxonomy_df$class,
     order   = taxonomy_df$order,
@@ -134,9 +134,11 @@
     stringsAsFactors = FALSE
   )
   for (col in COLS) X[[col]] <- iconv(X[[col]], to = "ASCII//TRANSLIT")
+  # Apply GBIF v2 kingdom remapping after transliteration, matching Python order.
+  X$kingdom <- .normalise_kingdom(X$kingdom)
   # Genus names queried via NCBI land in species_resolved with genus left as
   # "UNK". Promote them to the correct slot so the model uses genus embeddings.
-  promote <- (is.na(X$genus) | X$genus == "UNK") & (X$species %in% cats[["genus"]])
+  promote <- (is.na(X$genus) | X$genus == "UNK") & (X$species %in% setdiff(cats[["genus"]], "UNK"))
   X$genus[promote]   <- X$species[promote]
   X$species[promote] <- "UNK"
   for (col in COLS) {
@@ -154,12 +156,12 @@
 .predict_xgboost <- function(taxonomy_df, level, include_taxonomy,
                               input_names, include_source,
                               interval_method = "pooled") {
-  cats      <- .load_categories()
-  X         <- .apply_unk_mapping(taxonomy_df, cats)
-  # model.ubj was trained with features in this order (not the standard rank order)
-  X         <- X[, c("genus", "species", "kingdom", "phylum", "class", "order", "family")]
+  cats  <- .load_categories()
+  X     <- .apply_unk_mapping(taxonomy_df, cats)
+  model <- .load_model()
+  X     <- X[, model$feature_names]
   dmat      <- xgboost::xgb.DMatrix(data = X)
-  log_preds <- stats::predict(.load_model(), dmat)
+  log_preds <- stats::predict(model, dmat)
   residuals <- if (!is.null(level)) .load_calibration() else NULL
   by_rank   <- if (!is.null(level) && identical(interval_method, "stratified"))
                  .load_calibration_by_rank() else NULL
@@ -186,13 +188,15 @@
   cats <- .load_categories()
   X    <- .apply_unk_mapping(taxonomy_df, cats)
 
-  # Group data for nested random effects: species -> genus -> family -> order -> class
+  # Group data for nested random effects: species -> genus -> family -> order -> class.
+  # Built from promoted X so genus-level random effects use the promoted name,
+  # not the raw 'UNK' that NCBI genus-rank hits carry in taxonomy_df.
   group_data <- as.matrix(data.frame(
-    species = as.character(taxonomy_df$species_resolved),
-    genus   = as.character(taxonomy_df$genus),
-    family  = as.character(taxonomy_df$family),
-    order   = as.character(taxonomy_df$order),
-    class   = as.character(taxonomy_df$class),
+    species = as.character(X$species),
+    genus   = as.character(X$genus),
+    family  = as.character(X$family),
+    order   = as.character(X$order),
+    class   = as.character(X$class),
     stringsAsFactors = FALSE
   ))
   group_data[is.na(group_data)] <- "UNK"
@@ -229,6 +233,7 @@
   n     <- nrow(taxonomy_df)
   X_mat <- matrix(0.0, nrow = n, ncol = .EE_TOTAL_DIM)
   offset <- 1L
+  ee_promote_mask <- rep(FALSE, n)
 
   for (col in names(.EE_DIMS)) {
     dim      <- .EE_DIMS[[col]]
@@ -238,10 +243,15 @@
     vals     <- iconv(as.character(taxonomy_df[[src_col]]), to = "ASCII//TRANSLIT")
     if (identical(col, "kingdom")) vals <- .normalise_kingdom(vals)
     if (identical(col, "genus")) {
-      sp_vals     <- iconv(as.character(taxonomy_df$species_resolved), to = "ASCII//TRANSLIT")
-      genus_vocab <- setdiff(names(col_embs), "UNK")
-      promote     <- (is.na(vals) | vals == "UNK") & !is.na(sp_vals) & (sp_vals %in% genus_vocab)
-      vals[promote] <- sp_vals[promote]
+      sp_vals         <- iconv(as.character(taxonomy_df$species_resolved), to = "ASCII//TRANSLIT")
+      genus_vocab     <- setdiff(names(col_embs), "UNK")
+      promote         <- (is.na(vals) | vals == "UNK") & !is.na(sp_vals) & (sp_vals %in% genus_vocab)
+      vals[promote]   <- sp_vals[promote]
+      ee_promote_mask <- promote
+    }
+    if (identical(col, "species") && any(ee_promote_mask)) {
+      # Write UNK into species for rows whose genus was promoted from species_resolved.
+      vals[ee_promote_mask] <- "UNK"
     }
     vals[is.na(vals)] <- "UNK"
     for (i in seq_len(n)) {
@@ -391,9 +401,16 @@ predict_mass <- function(taxon,
     }
   }
 
-  if (!is.data.frame(taxon) && length(taxon) == 0L) {
-    return(data.frame(taxon = character(0), mass_g = numeric(0),
-                      stringsAsFactors = FALSE))
+  if ((!is.data.frame(taxon) && length(taxon) == 0L) ||
+      (is.data.frame(taxon) && nrow(taxon) == 0L)) {
+    empty_cols <- c("taxon", "mass_g")
+    if (!is.null(level))     empty_cols <- c(empty_cols, "lower_bound", "upper_bound", "confidence")
+    if (include_taxonomy)    empty_cols <- c(empty_cols, "kingdom", "phylum", "class", "order",
+                                             "family", "genus", "species_resolved")
+    if (include_source)      empty_cols <- c(empty_cols, "source")
+    if (fuzzy_match_name && !is.data.frame(taxon)) empty_cols <- c(empty_cols, "matched_name")
+    return(as.data.frame(setNames(lapply(empty_cols, function(.) character(0L)), empty_cols),
+                         stringsAsFactors = FALSE))
   }
 
   .ensure_artifacts()

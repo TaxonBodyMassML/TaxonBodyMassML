@@ -18,6 +18,10 @@ from flask_cors import CORS
 
 MODEL_READ_FILE = "./sliced_model/xgboost_model.pkl"
 TAXONOMY_COLS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
+_GBIF_KINGDOM_NORM: dict[str, str] = {
+    "Metazoa": "Animalia",
+    "Plantae": "Viridiplantae",
+}
 
 
 def _extract_categories(model):
@@ -42,7 +46,7 @@ def _extract_categories(model):
 
 def _ascii_normalize(x):
     if pd.isna(x):
-        return x
+        return None
     normalized = unicodedata.normalize("NFKD", str(x))
     return normalized.encode("ascii", "ignore").decode("ascii")
 
@@ -53,10 +57,12 @@ def _apply_categories(df, categories):
     for col in TAXONOMY_COLS:
         if col in df.columns:
             df[col] = df[col].apply(_ascii_normalize)
+    if "kingdom" in df.columns:
+        df["kingdom"] = df["kingdom"].map(lambda x: _GBIF_KINGDOM_NORM.get(x, x))
     # Genus names queried via NCBI land in the species slot with genus left as
     # "UNK". Promote them to the correct slot so the model uses genus embeddings.
     if "genus" in df.columns and "species" in df.columns:
-        genus_vocab = set(categories.get("genus", []))
+        genus_vocab = set(categories.get("genus", [])) - {"UNK"}
         genus_unk = df["genus"].isin(["UNK"]) | df["genus"].isna()
         sp_is_genus = df["species"].isin(genus_vocab)
         promote = genus_unk & sp_is_genus

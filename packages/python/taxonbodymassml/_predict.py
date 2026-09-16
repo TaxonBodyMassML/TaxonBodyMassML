@@ -116,7 +116,7 @@ def _apply_unk_mapping(  # noqa: E501
             # Genus names queried via NCBI land in species_resolved with genus
             # left as "UNK". Promote them to the correct slot.
             sp_data = renamed["species"].apply(_ascii_normalize)
-            genus_vocab = set(categories.get("genus", []))
+            genus_vocab = set(categories.get("genus", [])) - {"UNK"}
             promote = col_data.isin(["UNK"]) | col_data.isna()
             promote &= sp_data.isin(genus_vocab)
             col_data = col_data.where(~promote, other=sp_data)
@@ -228,18 +228,6 @@ def _assemble_output(
 # ---------------------------------------------------------------------------
 # XGBoost predictor
 # ---------------------------------------------------------------------------
-# model.ubj was trained with features in this order (not the standard rank order)
-_XGB_FEATURE_ORDER = [
-    "genus",
-    "species",
-    "kingdom",
-    "phylum",
-    "class",
-    "order",
-    "family",
-]  # noqa: E501
-
-
 def _predict_xgboost(
     taxonomy_df: pd.DataFrame,
     level: Optional[float],
@@ -250,9 +238,10 @@ def _predict_xgboost(
 ) -> pd.DataFrame:
     _ensure_artifacts()
     categories = load_categories()
-    X = _apply_unk_mapping(taxonomy_df, categories)[_XGB_FEATURE_ORDER]
+    model = load_model()
+    X = _apply_unk_mapping(taxonomy_df, categories)[model.feature_names]
     dmat = xgb.DMatrix(X, enable_categorical=True)
-    log_preds = load_model().predict(dmat)
+    log_preds = model.predict(dmat)
     residuals = load_calibration() if level is not None else None
     by_rank = (
         load_calibration_by_rank()
@@ -297,14 +286,18 @@ def _predict_gpboost(
     # Fixed-effect feature matrix — same UNK mapping as XGBoost
     X = _apply_unk_mapping(taxonomy_df, categories)
 
-    # Group data for nested random effects (species→genus→family→order→class)
-    group_cols = ["species_resolved", "genus", "family", "order", "class"]
-    group_data = (
-        taxonomy_df[[c for c in group_cols if c in taxonomy_df.columns]]
-        .fillna("UNK")
-        .astype(str)
-        .to_numpy()
-    )
+    # Group data for nested random effects (species→genus→family→order→class).
+    # Built from promoted X so genus-level random effects use the promoted name,
+    # not the raw 'UNK' that NCBI genus-rank hits carry in taxonomy_df.
+    group_data = pd.DataFrame(
+        {
+            "species": X["species"].astype(str),
+            "genus": X["genus"].astype(str),
+            "family": X["family"].astype(str),
+            "order": X["order"].astype(str),
+            "class": X["class"].astype(str),
+        }
+    ).to_numpy()
 
     booster = load_model_gpboost()
     log_preds = booster.predict(data=X, group_data_pred=group_data)
@@ -358,6 +351,7 @@ def _predict_entity_embeddings(
     X = np.zeros((n, _EE_TOTAL_DIM), dtype=np.float32)
     src_col = {"species": "species_resolved"}  # column name remap
     offset = 0
+    ee_promote_mask = pd.Series([False] * n, dtype=bool)
     for col in TAXONOMY_COLS:
         dim = _EE_DIMS[col]
         col_embs = embeddings[col]
@@ -368,6 +362,10 @@ def _predict_entity_embeddings(
             if df_col in taxonomy_df.columns
             else pd.Series(["UNK"] * n)
         )
+        if col == "kingdom":
+            # Apply GBIF v2 kingdom remapping (same as _apply_unk_mapping).
+            normed = vals.apply(lambda x: _ascii_normalize(x) or "UNK")
+            vals = normed.map(lambda x: _GBIF_KINGDOM_NORM.get(x, x))
         if col == "genus":
             sp_col = "species_resolved"
             sp_vals = (
@@ -376,13 +374,16 @@ def _predict_entity_embeddings(
                 else pd.Series(["UNK"] * n)
             )
             genus_vocab = set(col_embs.keys()) - {"UNK"}
-            for i in range(n):
-                norm_g = _ascii_normalize(vals.iloc[i]) or "UNK"
-                if norm_g == "UNK":
-                    norm_sp = _ascii_normalize(sp_vals.iloc[i]) or "UNK"
-                    if norm_sp in genus_vocab:
-                        vals = vals.copy()
-                        vals.iloc[i] = sp_vals.iloc[i]
+            norm_g = vals.apply(lambda x: _ascii_normalize(x) or "UNK")
+            norm_sp = sp_vals.apply(lambda x: _ascii_normalize(x) or "UNK")
+            ee_promote_mask = (norm_g == "UNK") & norm_sp.isin(genus_vocab)
+            if ee_promote_mask.any():
+                vals = vals.copy()
+                vals[ee_promote_mask] = sp_vals[ee_promote_mask]
+        if col == "species" and ee_promote_mask.any():
+            # Write UNK into species for rows promoted from species_resolved.
+            vals = vals.copy()
+            vals[ee_promote_mask] = "UNK"
         for i, val in enumerate(vals):
             norm = _ascii_normalize(val) or "UNK"
             X[i, offset : offset + dim] = col_embs.get(norm, unk_vec)
