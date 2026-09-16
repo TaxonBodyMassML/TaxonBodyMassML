@@ -156,13 +156,20 @@
 .predict_xgboost <- function(taxonomy_df, level, include_taxonomy,
                               input_names, include_source,
                               interval_method = "pooled") {
+  # model.ubj was trained in Python with enable_categorical=True, which
+  # embeds categorical bitmask splits that R's xgboost cannot evaluate
+  # correctly regardless of encoding approach.  All inputs route to the
+  # same leaf, producing a constant nonsense prediction.  Use EntityEmbeddings.
+  stop(
+    "The XGBoost method is not usable in R: the Python-trained model uses ",
+    "categorical bitmask splits that R's xgboost cannot evaluate correctly, ",
+    "producing constant wrong predictions for all inputs.\n",
+    "Use method = \"EntityEmbeddings\" (the default) instead.",
+    call. = FALSE
+  )
   cats  <- .load_categories()
   X     <- .apply_unk_mapping(taxonomy_df, cats)
   model <- .load_model()
-  # enable_categorical=TRUE passes factor level names to xgboost, which looks
-  # them up in the model's stored category table (built during Python training)
-  # and maps them to the correct 0-based codes for categorical split evaluation.
-  # Requires xgboost >= 2.0; DESCRIPTION enforces this.
   dmat  <- xgboost::xgb.DMatrix(data = X, enable_categorical = TRUE)
   log_preds <- stats::predict(model, dmat)
   residuals <- if (!is.null(level)) .load_calibration() else NULL
@@ -309,8 +316,10 @@
 #'   rank-specific calibration residuals, providing approximate conditional
 #'   coverage per taxonomic rank. `"pooled"` applies a single quantile from all
 #'   calibration residuals, providing the marginal conformal guarantee.
-#' @param method Character. Prediction method. Currently only `"XGBoost"`
-#'   is supported.
+#' @param method Character. Prediction method: `"EntityEmbeddings"` (default),
+#'   `"GPBoost"`, or `"XGBoost"`. Note: `"XGBoost"` raises an error in R
+#'   because the Python-trained model uses categorical bitmask splits that
+#'   R's xgboost cannot evaluate correctly.
 #' @param include_taxonomy Logical. If `TRUE`, append the resolved taxonomy
 #'   columns to the output. Default `FALSE`.
 #' @param fuzzy_match_name Logical. If `TRUE`, species names are first
@@ -373,7 +382,7 @@
 #' @export
 predict_mass <- function(taxon,
                     confidence_interval = FALSE,
-                    method = "XGBoost",
+                    method = "EntityEmbeddings",
                     interval_method = "stratified",
                     include_taxonomy = FALSE,
                     fuzzy_match_name = FALSE,
