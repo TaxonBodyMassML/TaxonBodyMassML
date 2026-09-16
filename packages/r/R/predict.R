@@ -159,14 +159,11 @@
   cats  <- .load_categories()
   X     <- .apply_unk_mapping(taxonomy_df, cats)
   model <- .load_model()
-  # .apply_unk_mapping() returns factors with levels in training-category order.
-  # The Python-trained model expects 0-based integer codes (pd.Categorical);
-  # R factors carry 1-based codes, so subtract 1 before building the DMatrix.
-  X_mat <- data.matrix(X) - 1.0   # double literal promotes result to double
-  dmat  <- xgboost::xgb.DMatrix(
-    data          = X_mat,
-    feature_types = rep("c", ncol(X_mat))
-  )
+  # enable_categorical=TRUE passes factor level names to xgboost, which looks
+  # them up in the model's stored category table (built during Python training)
+  # and maps them to the correct 0-based codes for categorical split evaluation.
+  # Requires xgboost >= 2.0; DESCRIPTION enforces this.
+  dmat  <- xgboost::xgb.DMatrix(data = X, enable_categorical = TRUE)
   log_preds <- stats::predict(model, dmat)
   residuals <- if (!is.null(level)) .load_calibration() else NULL
   by_rank   <- if (!is.null(level) && identical(interval_method, "stratified"))

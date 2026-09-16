@@ -1,6 +1,6 @@
 Package: TaxonBodyMassML
 Title: Predict Species Body Mass Using the TaxonBodyMassML XGBoost Model
-Version: 0.7.8
+Version: 0.7.9
 Authors@R: c(
     person("Grant", "Pasquantonio", role = "aut"),
     person("Anish Chowdary", "Pendurti", role = "aut"),
@@ -19,7 +19,7 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.1)
 Imports:
-    xgboost (>= 1.7),
+    xgboost (>= 2.0),
     httr2 (>= 0.2),
     jsonlite (>= 1.8),
     openssl (>= 2.0),
