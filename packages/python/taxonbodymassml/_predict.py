@@ -79,6 +79,14 @@ def _ascii_normalize(x):
     return normalized.encode("ascii", "ignore").decode("ascii")
 
 
+# GBIF v2 uses clade-based kingdom names; training data was built with the
+# older GBIF v1 / Catalogue of Life names.
+_GBIF_KINGDOM_NORM: dict[str, str] = {
+    "Metazoa": "Animalia",
+    "Plantae": "Viridiplantae",
+}
+
+
 # ---------------------------------------------------------------------------
 # UNK mapping
 # ---------------------------------------------------------------------------
@@ -102,6 +110,8 @@ def _apply_unk_mapping(  # noqa: E501
 
     for col in TAXONOMY_COLS:
         col_data = renamed[col].apply(_ascii_normalize)
+        if col == "kingdom":
+            col_data = col_data.map(lambda x: _GBIF_KINGDOM_NORM.get(x, x))
         valid = set(categories.get(col, []))
         mapped = col_data.where(col_data.isin(valid), other="UNK")
         renamed[col] = pd.Categorical(mapped, categories=categories[col])
@@ -203,6 +213,18 @@ def _assemble_output(
 # ---------------------------------------------------------------------------
 # XGBoost predictor
 # ---------------------------------------------------------------------------
+# model.ubj was trained with features in this order (not the standard rank order)
+_XGB_FEATURE_ORDER = [
+    "genus",
+    "species",
+    "kingdom",
+    "phylum",
+    "class",
+    "order",
+    "family",
+]  # noqa: E501
+
+
 def _predict_xgboost(
     taxonomy_df: pd.DataFrame,
     level: Optional[float],
@@ -213,7 +235,7 @@ def _predict_xgboost(
 ) -> pd.DataFrame:
     _ensure_artifacts()
     categories = load_categories()
-    X = _apply_unk_mapping(taxonomy_df, categories)
+    X = _apply_unk_mapping(taxonomy_df, categories)[_XGB_FEATURE_ORDER]
     dmat = xgb.DMatrix(X, enable_categorical=True)
     log_preds = load_model().predict(dmat)
     residuals = load_calibration() if level is not None else None

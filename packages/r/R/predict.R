@@ -97,13 +97,27 @@
 }
 
 # ---------------------------------------------------------------------------
+# GBIF v2 → training-data taxonomy normalisation
+# ---------------------------------------------------------------------------
+
+# GBIF v2 uses clade-based kingdom names; training data was built with the
+# older GBIF v1 / Catalogue of Life names.  Map the known divergences so that
+# taxonomy resolved via GBIF v2 still hits the correct model categories.
+.GBIF_KINGDOM_NORM <- c("Metazoa" = "Animalia", "Plantae" = "Viridiplantae")
+
+.normalise_kingdom <- function(x) {
+  norm <- .GBIF_KINGDOM_NORM[x]
+  ifelse(!is.na(norm), norm, x)
+}
+
+# ---------------------------------------------------------------------------
 # Shared UNK mapping for tree-based methods
 # ---------------------------------------------------------------------------
 
 .apply_unk_mapping <- function(taxonomy_df, cats) {
   COLS <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
   X <- data.frame(
-    kingdom = taxonomy_df$kingdom,
+    kingdom = .normalise_kingdom(taxonomy_df$kingdom),
     phylum  = taxonomy_df$phylum,
     class   = taxonomy_df$class,
     order   = taxonomy_df$order,
@@ -130,6 +144,8 @@
                               interval_method = "pooled") {
   cats      <- .load_categories()
   X         <- .apply_unk_mapping(taxonomy_df, cats)
+  # model.ubj was trained with features in this order (not the standard rank order)
+  X         <- X[, c("genus", "species", "kingdom", "phylum", "class", "order", "family")]
   dmat      <- xgboost::xgb.DMatrix(data = X)
   log_preds <- stats::predict(.load_model(), dmat)
   residuals <- if (!is.null(level)) .load_calibration() else NULL
@@ -208,6 +224,7 @@
     unk_vec  <- unlist(col_embs[["UNK"]])
     src_col  <- col_map[[col]]
     vals     <- iconv(as.character(taxonomy_df[[src_col]]), to = "ASCII//TRANSLIT")
+    if (identical(col, "kingdom")) vals <- .normalise_kingdom(vals)
     vals[is.na(vals)] <- "UNK"
     for (i in seq_len(n)) {
       vec <- if (!is.null(col_embs[[vals[i]]])) unlist(col_embs[[vals[i]]]) else unk_vec
@@ -354,6 +371,11 @@ predict_mass <- function(taxon,
         call. = FALSE
       )
     }
+  }
+
+  if (!is.data.frame(taxon) && length(taxon) == 0L) {
+    return(data.frame(taxon = character(0), mass_g = numeric(0),
+                      stringsAsFactors = FALSE))
   }
 
   .ensure_artifacts()

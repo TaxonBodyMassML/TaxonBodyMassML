@@ -10,8 +10,8 @@ CHECKSUMS = {
     "categories.json": "910394f7a8fa2d4d34b3a559ad170f7d6d4909f9ad88167d3820e6701ca0b377",  # noqa: E501
     "lookup.json": "ba530ab9b34eb5a0c236fd6c1ebba0e6fa04ec3287011887681146282dd6cd46",  # noqa: E501
     # Entity Embeddings
-    "embeddings.json": "664206d2ff673a9a86d55893e3b9e77e2291d812322acf362cfce08d6bddd81d",  # noqa: E501
-    "model_ee.ubj": "1ed9cc8a0509be42aade44cb878f40ae71eb33f6a711531db9f750628df163e8",  # noqa: E501
-    "calibration_ee.json": "a43e8dc258f4db18324c340105a65c38a40a8e59373ed21058ca05ead4e366ec",  # noqa: E501
-    "calibration_by_rank_ee.json": "b54e422030f356ab5d50e302e6b635fa878cd3f68583005d593215000dc35841",  # noqa: E501
+    "embeddings.json": "cce9b15b709e72a7caf6b1c0d771ea3e0b629085a88de6bf2bc761e5cc9b74c0",  # noqa: E501
+    "model_ee.ubj": "3bff6e3218f949744f4d1bcbe2cee5cf2bbe60b3886543d7e0c85629502683cc",  # noqa: E501
+    "calibration_ee.json": "cba32526436d1eb3f8f2965bf4f6e12ad105e9baf4d038a44fc5a03937dde1b2",  # noqa: E501
+    "calibration_by_rank_ee.json": "8a1579dd5f3fbf1ab063819f6d8304c60a30064f5bbeb938d2b3ae3217e34fd6",  # noqa: E501
 }

@@ -40,6 +40,8 @@ from torch.optim.lr_scheduler import OneCycleLR  # noqa: E402
 from torch.utils.data import DataLoader, TensorDataset  # noqa: E402
 
 torch.set_num_threads(1)
+torch.manual_seed(42)
+np.random.seed(42)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TRAIN_CSV = REPO_ROOT / "data" / "split" / "train.csv"
