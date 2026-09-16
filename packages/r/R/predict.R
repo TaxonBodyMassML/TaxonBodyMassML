@@ -162,9 +162,11 @@
   # .apply_unk_mapping() returns factors with levels in training-category order.
   # The Python-trained model expects 0-based integer codes (pd.Categorical);
   # R factors carry 1-based codes, so subtract 1 before building the DMatrix.
-  X_mat <- data.matrix(X) - 1L
-  storage.mode(X_mat) <- "double"
-  dmat  <- xgboost::xgb.DMatrix(data = X_mat)
+  X_mat <- data.matrix(X) - 1.0   # double literal promotes result to double
+  dmat  <- xgboost::xgb.DMatrix(
+    data          = X_mat,
+    feature_types = rep("c", ncol(X_mat))
+  )
   log_preds <- stats::predict(model, dmat)
   residuals <- if (!is.null(level)) .load_calibration() else NULL
   by_rank   <- if (!is.null(level) && identical(interval_method, "stratified"))
