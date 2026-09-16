@@ -356,7 +356,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Single taxon — returns empirical mass if in training data, else model
+#' # Single taxon -- returns empirical mass if in training data, else model
 #' TaxonBodyMassML::predict_mass("Homo sapiens")
 #'
 #' # Multiple taxa with 90% confidence interval
@@ -581,7 +581,7 @@ predict_mass <- function(taxon,
 #'
 #' @examples
 #' \dontrun{
-#' # Deprecated — use predict_mass() directly:
+#' # Deprecated -- use predict_mass() directly:
 #' predict_mass(c("Ballanus glandula", "Canis lupus"))
 #' }
 #'
