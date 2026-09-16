@@ -239,7 +239,12 @@ def _predict_xgboost(
     _ensure_artifacts()
     categories = load_categories()
     model = load_model()
-    X = _apply_unk_mapping(taxonomy_df, categories)[model.feature_names]
+    X = _apply_unk_mapping(taxonomy_df, categories)
+    # model.feature_names may be None when loading across xgboost versions;
+    # _apply_unk_mapping() already outputs columns in training order.
+    fnames = model.feature_names
+    if fnames:
+        X = X[fnames]
     dmat = xgb.DMatrix(X, enable_categorical=True)
     log_preds = model.predict(dmat)
     residuals = load_calibration() if level is not None else None
