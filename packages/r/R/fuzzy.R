@@ -15,6 +15,18 @@ NULL
 # separate (.GBIF_URL in lookup_taxonomy.R).
 .GBIF_FUZZY_URL <- "https://api.gbif.org/v1/species/match"
 
+# Ranked sequence of higher-rank GBIF queries tried for single-word inputs
+# when rank=SPECIES returns matchType=NONE.  Each element is c(rank, field)
+# where field is the response key holding the corrected name.
+.HIGHER_RANK_TRIES <- list(
+  c("GENUS",   "genus"),
+  c("FAMILY",  "family"),
+  c("ORDER",   "order"),
+  c("CLASS",   "class"),
+  c("PHYLUM",  "phylum"),
+  c("KINGDOM", "kingdom")
+)
+
 # ---------------------------------------------------------------------------
 # Internal: ask GBIF for its canonical match for a single name
 # Returns the matched species string, or NA_character_ on no match.
@@ -53,6 +65,29 @@ NULL
                 return(as.character(matched2))
             }
           }
+        }
+      }
+    }
+
+    # Single-word inputs that got NONE from rank=SPECIES: walk higher ranks so
+    # misspelled family/order/class names can still be corrected (Issue #17).
+    parts <- strsplit(trimws(name), "\\s+")[[1]]
+    if (identical(match_type, "NONE") && length(parts) == 1L) {
+      for (pair in .HIGHER_RANK_TRIES) {
+        rank  <- pair[[1L]]
+        field <- pair[[2L]]
+        resp_r <- tryCatch(
+          .tbm_get(.GBIF_FUZZY_URL, list(name = name, rank = rank)),
+          error = function(e) NULL
+        )
+        if (is.null(resp_r) || httr2::resp_status(resp_r) != 200L) next
+        data_r <- httr2::resp_body_json(resp_r, simplifyVector = TRUE)
+        mt_r <- data_r[["matchType"]]
+        if (!is.null(mt_r) && mt_r %in% c("EXACT", "FUZZY") &&
+            isTRUE(data_r[["confidence"]] >= 75L)) {
+          corrected <- data_r[[field]]
+          if (!is.null(corrected) && !is.na(corrected) && nchar(corrected) > 0L)
+            return(as.character(corrected))
         }
       }
     }

@@ -120,6 +120,9 @@ def create_app(model, q, categories):
             data = request.json
             df = _apply_categories(pd.DataFrame([data]), categories)
 
+            if df.empty:
+                return jsonify({"error": "No valid taxonomy data provided"}), 400
+
             prediction_log = float(model.predict(df)[0])
 
             return jsonify(
@@ -144,6 +147,9 @@ def create_app(model, q, categories):
 
             data = request.json
             df = _apply_categories(pd.DataFrame(data), categories)
+
+            if df.empty:
+                return jsonify({"error": "No valid taxonomy data provided"}), 400
 
             predictions = model.predict(df)
             results = []

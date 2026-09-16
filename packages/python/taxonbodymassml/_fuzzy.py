@@ -23,6 +23,17 @@ _GBIF_FUZZY_URL = "https://api.gbif.org/v1/species/match"
 _MATCH_ACCEPTED = {"EXACT", "FUZZY"}
 _MIN_CONFIDENCE = 75
 
+# Ranked sequence tried for single-word inputs when rank=SPECIES returns NONE.
+# Each tuple is (gbif_rank_param, response_field_name).
+_HIGHER_RANK_TRIES = [
+    ("GENUS", "genus"),
+    ("FAMILY", "family"),
+    ("ORDER", "order"),
+    ("CLASS", "class"),
+    ("PHYLUM", "phylum"),
+    ("KINGDOM", "kingdom"),
+]
+
 
 # ---------------------------------------------------------------------------
 # Internal: GBIF canonical name for one species
@@ -61,6 +72,25 @@ def _gbif_fuzzy_name(name: str) -> Optional[str]:
                         ):
                             matched2 = data2.get("species")
                             return str(matched2) if matched2 else None
+
+        # Single-word inputs that got NONE from rank=SPECIES: walk higher ranks
+        # so misspelled family/order/class names can still be corrected (#17).
+        if match_type == "NONE" and len(name.strip().split()) == 1:
+            for rank, field in _HIGHER_RANK_TRIES:
+                try:
+                    resp_r = _get(_GBIF_FUZZY_URL, {"name": name, "rank": rank})
+                    if resp_r.status_code != 200:
+                        continue
+                    data_r = resp_r.json()
+                    if (
+                        data_r.get("matchType") in _MATCH_ACCEPTED
+                        and (data_r.get("confidence") or 0) >= _MIN_CONFIDENCE
+                    ):
+                        corrected = data_r.get(field)
+                        if corrected:
+                            return str(corrected)
+                except Exception:
+                    continue
 
         return None
     except Exception:

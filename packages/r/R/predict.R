@@ -160,7 +160,7 @@
   X     <- .apply_unk_mapping(taxonomy_df, cats)
   model <- .load_model()
   X     <- X[, model$feature_names]
-  dmat      <- xgboost::xgb.DMatrix(data = X)
+  dmat      <- xgboost::xgb.DMatrix(data = X, enable_categorical = TRUE)
   log_preds <- stats::predict(model, dmat)
   residuals <- if (!is.null(level)) .load_calibration() else NULL
   by_rank   <- if (!is.null(level) && identical(interval_method, "stratified"))
