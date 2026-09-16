@@ -13,6 +13,12 @@ NULL
 
 .HF_REPO_ID <- "marknovak/TaxonBodyMassML"
 
+# HuggingFace revision that hosts the current model artifacts (r-v<version>).
+# Only advances when make publish is run with new artifacts. Intentionally
+# independent of the package version so code-only releases work without a
+# new HuggingFace upload. Updated automatically by scripts/publish_artifacts.py.
+.MODEL_ARTIFACT_VERSION <- "0.7.2"
+
 .CHECKSUMS <- list(
   # XGBoost (original method)
   "model.ubj"               = "0fdb5d375e6158cd8eed635330f9f06d1d3054af65ee3857ff6890d2e15e94ed",
@@ -111,7 +117,7 @@ NULL
 download_model <- function(version = "latest", force = FALSE) {
   dir.create(.cache_dir(), recursive = TRUE, showWarnings = FALSE)
   revision <- if (identical(version, "latest")) {
-    paste0("r-v", utils::packageVersion("TaxonBodyMassML"))
+    paste0("r-v", .MODEL_ARTIFACT_VERSION)
   } else {
     version
   }

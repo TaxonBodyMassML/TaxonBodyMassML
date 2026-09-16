@@ -4,18 +4,11 @@ Artifact management: download, cache, load model/calibration/categories.
 
 import hashlib
 import json
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _pkg_version
 from pathlib import Path
 
 import xgboost as xgb
 
-from ._checksums import CHECKSUMS, HF_REPO_ID
-
-try:
-    _PACKAGE_VERSION = _pkg_version("taxonbodymassml")
-except PackageNotFoundError:
-    _PACKAGE_VERSION = "unknown"
+from ._checksums import CHECKSUMS, HF_REPO_ID, MODEL_ARTIFACT_VERSION
 
 # ---------------------------------------------------------------------------
 # Cache location
@@ -69,7 +62,7 @@ def download_model(version: str = "latest", force: bool = False) -> None:
         ) from exc
 
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    revision = f"py-v{_PACKAGE_VERSION}" if version == "latest" else version
+    revision = f"py-v{MODEL_ARTIFACT_VERSION}" if version == "latest" else version
 
     for filename in _ARTIFACT_FILES:
         cached = _CACHE_DIR / filename

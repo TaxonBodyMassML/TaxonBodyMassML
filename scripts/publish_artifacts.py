@@ -33,9 +33,33 @@ def _r_version() -> str:
     raise RuntimeError(f"Version not found in {DESCRIPTION}")
 
 
+PY_CHECKSUMS = REPO_ROOT / "packages" / "python" / "taxonbodymassml" / "_checksums.py"
+R_MODEL = REPO_ROOT / "packages" / "r" / "R" / "model.R"
+
+
+def _update_model_artifact_version(version: str) -> None:
+    """Rewrite MODEL_ARTIFACT_VERSION / .MODEL_ARTIFACT_VERSION in both source files."""
+    for path, pattern in (
+        (
+            PY_CHECKSUMS,
+            r'(MODEL_ARTIFACT_VERSION\s*=\s*")[^"]+(")',
+        ),
+        (
+            R_MODEL,
+            r'(\.MODEL_ARTIFACT_VERSION\s*<-\s*")[^"]+(")',
+        ),
+    ):
+        text = path.read_text()
+        new_text, n = re.subn(pattern, rf"\g<1>{version}\g<2>", text)
+        if n == 0:
+            sys.exit(f"Could not find MODEL_ARTIFACT_VERSION pattern in {path}")
+        path.write_text(new_text)
+        rel = path.relative_to(REPO_ROOT)
+        print(f"  Updated MODEL_ARTIFACT_VERSION → {version!r} in {rel}")
+
+
 def main() -> None:
     version = _r_version()
-    tag = f"r-v{version}"
 
     print(f"Uploading {ARTIFACTS_DIR} → {HF_REPO_ID} ...")
     result = subprocess.run(
@@ -49,7 +73,12 @@ def main() -> None:
     for tag in (f"r-v{version}", f"py-v{version}"):
         print(f"Creating HuggingFace tag {tag!r} ...")
         api.create_tag(HF_REPO_ID, tag=tag, repo_type="model", exist_ok=True)
+
+    print("Updating MODEL_ARTIFACT_VERSION in package source files ...")
+    _update_model_artifact_version(version)
+
     print(f"Done. Artifacts published at {HF_REPO_ID} (r-v{version}, py-v{version})")
+    print("Commit _checksums.py and model.R, then bump the package version and push.")
 
 
 if __name__ == "__main__":
