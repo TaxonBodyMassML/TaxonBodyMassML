@@ -23,7 +23,10 @@ RUN python -c "import taxonbodymassml as t; t.download_model()"
 
 COPY . .
 
-RUN useradd --no-create-home --shell /bin/false appuser \
+# The service user needs a home directory: gunicorn >= 26 opens its control
+# socket under $HOME/.gunicorn by default and logs an ERROR (though it keeps
+# serving) when the directory cannot be created.
+RUN useradd --create-home --shell /bin/false appuser \
  && chown -R appuser:appuser /app/.cache
 USER appuser
 
