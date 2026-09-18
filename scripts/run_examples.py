@@ -3,7 +3,7 @@ Run the manuscript code examples and print formatted output for the
 Distribution and usage section.
 
 Requires internet access for GBIF taxonomy lookups on first run.
-Model artifacts are cached after the first download (~2 GB).
+Model artifacts are cached after the first download (~0.6 GB).
 
 Run from repo root:
   predictive_models/.venv/bin/python scripts/run_examples.py

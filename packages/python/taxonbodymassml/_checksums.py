@@ -7,18 +7,18 @@ HF_REPO_ID = "marknovak/TaxonBodyMassML"
 
 # HuggingFace revision that hosts the current model artifacts (py-v<version>).
 # Only advances when make publish is run with new artifacts.
-MODEL_ARTIFACT_VERSION = "0.7.2"
+MODEL_ARTIFACT_VERSION = "0.10.0"
 
 CHECKSUMS = {
     # XGBoost (original method)
-    "model.ubj": "0fdb5d375e6158cd8eed635330f9f06d1d3054af65ee3857ff6890d2e15e94ed",  # noqa: E501
-    "calibration.json": "814fd4dde6421e0509de77d778dfb62f5beab9d129af1744b5f1aa59095bc1bd",  # noqa: E501
-    "calibration_by_rank.json": "dd409f4d0f7e544d36309328c89135d8669539e365bd93076b639e5f8be01280",  # noqa: E501
-    "categories.json": "910394f7a8fa2d4d34b3a559ad170f7d6d4909f9ad88167d3820e6701ca0b377",  # noqa: E501
+    "model.ubj": "7ea10b33634f42d81bc566a1986880e59701ef479e052eea78c80a5149aa0b12",  # noqa: E501
+    "calibration.json": "cc0204bd5391b8cc37273443a62c79d5b9b92e4f7e82b141066f726ca156666d",  # noqa: E501
+    "calibration_by_rank.json": "232decdce8e29fbda4bd1835c0151d478bd07bbb508a423c3a8a8316cd8e14c9",  # noqa: E501
+    "categories.json": "ac2ab3af8f6d7078ac1c98c57868c4c3eb989bc007028887d8a4449e271f56ec",  # noqa: E501
     "lookup.json": "ba530ab9b34eb5a0c236fd6c1ebba0e6fa04ec3287011887681146282dd6cd46",  # noqa: E501
     # Entity Embeddings
-    "embeddings.json": "cce9b15b709e72a7caf6b1c0d771ea3e0b629085a88de6bf2bc761e5cc9b74c0",  # noqa: E501
-    "model_ee.ubj": "3bff6e3218f949744f4d1bcbe2cee5cf2bbe60b3886543d7e0c85629502683cc",  # noqa: E501
-    "calibration_ee.json": "cba32526436d1eb3f8f2965bf4f6e12ad105e9baf4d038a44fc5a03937dde1b2",  # noqa: E501
-    "calibration_by_rank_ee.json": "8a1579dd5f3fbf1ab063819f6d8304c60a30064f5bbeb938d2b3ae3217e34fd6",  # noqa: E501
+    "embeddings.json": "eeb1ad2e37cb93324823376581ad6e45da37efcffbc367266168d62d9c3b2a39",  # noqa: E501
+    "model_ee.ubj": "b4c6be58111d6d6b8ffecb82c918bcbe83c2b4c274754722cece42d7d6dc4310",  # noqa: E501
+    "calibration_ee.json": "415a0dd395611574892efec2b4b54585fabee551b3a5ab7925398c19f8fb027f",  # noqa: E501
+    "calibration_by_rank_ee.json": "59cbf182f4efcf10c7739ef678f45b4af51aca05a285253eb7dd60ac9bc75a48",  # noqa: E501
 }

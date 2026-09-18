@@ -1,7 +1,7 @@
 """
 Tests for taxonbodymassml.predict_mass().
 
-Tests that require model artifacts (the ~2 GB download) are skipped
+Tests that require model artifacts (the ~0.6 GB download) are skipped
 unless TAXONBODYMASSML_RUN_INTEGRATION=1 is set in the environment.
 """
 
@@ -79,7 +79,7 @@ def test_predict_single_species():
 def test_predict_confidence_interval_true():
     import taxonbodymassml as tbm
 
-    result = tbm.predict_mass("Mus musculus", confidence_interval=True)
+    result = tbm.predict_mass("Mus musculus", confidence_interval=True, lookup=False)
     assert "lower_bound" in result.columns
     assert "upper_bound" in result.columns
     assert result["confidence"].iloc[0] == pytest.approx(0.90)
@@ -91,8 +91,8 @@ def test_predict_confidence_interval_true():
 def test_predict_confidence_interval_custom():
     import taxonbodymassml as tbm
 
-    r90 = tbm.predict_mass("Mus musculus", confidence_interval=0.90)
-    r80 = tbm.predict_mass("Mus musculus", confidence_interval=0.80)
+    r90 = tbm.predict_mass("Mus musculus", confidence_interval=0.90, lookup=False)
+    r80 = tbm.predict_mass("Mus musculus", confidence_interval=0.80, lookup=False)
     width90 = r90["upper_bound"].iloc[0] - r90["lower_bound"].iloc[0]
     width80 = r80["upper_bound"].iloc[0] - r80["lower_bound"].iloc[0]
     assert width90 > width80  # wider interval at higher coverage
@@ -284,3 +284,37 @@ def test_lookup_false_include_source_returns_tbmml_prefix():
 
     result = tbm.predict_mass("Nucella ostrina", lookup=False, include_source=True)
     assert result["source"].iloc[0].startswith("tbmML_")
+
+
+# ---------------------------------------------------------------------------
+# Golden predictions: the XGBoost method must reproduce the training model
+# exactly (guards against column-order, encoding and xgboost-version drift).
+# ---------------------------------------------------------------------------
+_GOLDEN = (
+    __import__("pathlib").Path(__file__).resolve().parents[3]
+    / "predictive_models"
+    / "results"
+    / "golden_predictions.json"
+)
+
+
+@skip_without_artifacts
+@pytest.mark.skipif(not _GOLDEN.exists(), reason="golden_predictions.json not in this checkout")
+@pytest.mark.parametrize(
+    "method,key", [("XGBoost", "log10_mass_g"), ("EntityEmbeddings", "log10_mass_g_ee")]
+)
+def test_matches_golden_predictions(method, key):
+    import json
+
+    import numpy as np
+    import taxonbodymassml as tbm
+
+    cases = json.loads(_GOLDEN.read_text())["cases"]
+    if not all(key in c for c in cases):
+        pytest.skip(f"golden file has no {key}")
+    cols = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
+    df = pd.DataFrame(cases)[cols].rename(columns={"species": "species_resolved"})
+    out = tbm.predict_mass(df, method=method, lookup=False)
+    got = np.log10(out["mass_g"].to_numpy())
+    expected = np.array([c[key] for c in cases])
+    assert np.max(np.abs(got - expected)) < 1e-5

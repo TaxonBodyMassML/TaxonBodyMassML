@@ -3,6 +3,8 @@ Quantify the prediction-error penalty from partial taxonomy resolution (S3).
 
 For each masking level, all test-set species are re-predicted with finer ranks
 set to "UNK". The resulting MAE is compared to the full-taxonomy baseline.
+Species is not a model feature (every test species is unseen by construction),
+so the baseline already corresponds to a genus-level query.
 
 Run from repo root:
   predictive_models/.venv/bin/python scripts/extract_unk_errors.py
@@ -17,6 +19,9 @@ import pandas as pd
 import xgboost as xgb
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "predictive_models"))
+from taxonomy_encoding import encode_categorical  # noqa: E402
+
 DATA = REPO / "data"
 ARTIFACTS = REPO / "artifacts"
 RESULTS = REPO / "predictive_models" / "results"
@@ -32,7 +37,11 @@ model.load_model(str(ARTIFACTS / "model.ubj"))
 with open(ARTIFACTS / "categories.json") as f:
     categories = json.load(f)
 
-RANKS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
+# Column order is dictated by the model itself, never assumed.
+FEATURE_ORDER = model.feature_names
+assert (
+    FEATURE_ORDER
+), "model.ubj carries no feature_names; re-export with scripts/export_artifacts.py"
 
 # ---------------------------------------------------------------------------
 # Load test set
@@ -43,22 +52,10 @@ x_test = test.drop(columns=["mass_g"]).copy()
 
 
 # ---------------------------------------------------------------------------
-# Align categories exactly as done in decision_tree.py
+# Encode exactly as at training time (categories.json == training vocabulary)
 # ---------------------------------------------------------------------------
-def align_to_training(df, categories):
-    """Set category dtype for each column using training-time category lists."""
-    df = df.copy()
-    for col in RANKS:
-        if col not in df.columns:
-            df[col] = "UNK"
-        df[col] = df[col].astype("category")
-        cats = list(categories[col]) + (["UNK"] if "UNK" not in categories[col] else [])
-        df[col] = df[col].cat.set_categories(cats)
-    return df
-
-
 def predict_mae(df):
-    aligned = align_to_training(df, categories)
+    aligned = encode_categorical(df, categories)[FEATURE_ORDER]
     dmat = xgb.DMatrix(aligned, enable_categorical=True)
     preds = model.predict(dmat)
     return float(np.mean(np.abs(y_true_log10 - preds)))
@@ -75,10 +72,6 @@ print(f"  Baseline MAE: {mae_full:.4f} log10 units")
 # Masking levels: progressively replace finer ranks with UNK
 # ---------------------------------------------------------------------------
 masking_levels = [
-    (
-        r"\texttt{species}~$=$~\texttt{``UNK''}",
-        ["species"],
-    ),
     (
         r"\texttt{genus}$+$\texttt{species}~$=$~\texttt{``UNK''}",
         ["genus", "species"],
@@ -97,7 +90,7 @@ masking_levels = [
     ),
 ]
 
-results = [("Full taxonomy", mae_full, 0.0)]
+results = [("Full taxonomy (species unseen)", mae_full, 0.0)]
 
 for label, mask_cols in masking_levels:
     print(f"  Masking {label} ...")

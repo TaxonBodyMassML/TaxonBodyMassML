@@ -211,3 +211,6 @@ artifacts/
 
 # Manuscript files
 ms/
+
+# Optuna tuning databases (resumable local state; results live in tuning_study*.json)
+predictive_models/results/*.db

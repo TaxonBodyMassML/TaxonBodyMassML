@@ -1,6 +1,8 @@
 import argparse
 import datetime
 import json
+import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -9,66 +11,21 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import KFold
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from taxonomy_encoding import (  # noqa: E402
+    MODEL_FEATURES,
+    build_vocab,
+    encode_categorical,
+    encode_codes,
+)
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
-N_TRIALS = 100
+N_TRIALS = int(os.environ.get("TBM_N_TRIALS", 100))
 N_FOLDS = 5
 SEED = 42
-
-TAXONOMY_COLS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
-
-
-# ---------------------------------------------------------------------------
-# Shared helper (copied from decision_tree.py)
-# ---------------------------------------------------------------------------
-
-
-def align_categories(train_df, test_df):
-    """
-    This function ensures that both the test and training set contain
-    all unique categories from both sets for each column.
-    It also adds
-
-    Args:
-        train_df (pandas dataframe): _description_
-        test_df (pandas dataframe): _description_
-
-    Returns:
-        a tuple of the reformatted x_train and x_test with shared
-        categories and UNK added
-    """
-    for col in train_df.select_dtypes(include="str").columns:
-        train_df[col] = train_df[col].astype("category")
-        test_df[col] = test_df[col].astype("category")
-
-        # adds the UNK category and both train and test categories
-        categories = list(
-            set(train_df[col].cat.categories)
-            | set(list(test_df[col].cat.categories))
-            | {"UNK"}  # noqa: E501
-        )
-
-        train_df[col] = train_df[col].cat.set_categories(categories)
-        test_df[col] = test_df[col].cat.set_categories(categories)
-
-    return train_df, test_df
-
-
-# ---------------------------------------------------------------------------
-# GPBoost helper (adapted from gpboost_model.py — single-df, no test alignment)
-# ---------------------------------------------------------------------------
-
-
-def align_gpboost(df, cols):
-    """Convert taxonomy columns to Categorical with UNK sentinel."""
-    out = df[cols].copy()
-    for col in cols:
-        out[col] = out[col].fillna("UNK")
-        cats = sorted(set(out[col].unique()) | {"UNK"})
-        out[col] = pd.Categorical(out[col], categories=cats)
-    return out
 
 
 # ---------------------------------------------------------------------------
@@ -82,29 +39,8 @@ EMB_DIMS = {
     "order": 16,
     "family": 16,
     "genus": 32,
-    "species": 32,
 }
-TOTAL_DIM = sum(EMB_DIMS.values())  # 116
-
-
-def build_vocabs(train_df):
-    """Build per-column vocabulary from training data; UNK always at index 0."""
-    vocabs = {}
-    for col in TAXONOMY_COLS:
-        unique_vals = sorted(train_df[col].dropna().astype(str).unique())
-        vocabs[col] = ["UNK"] + unique_vals  # 0 = UNK
-    return vocabs
-
-
-def encode(df, vocabs):
-    """Map each column to its integer index; unknowns → 0 (UNK)."""
-    n = len(df)
-    out = np.zeros((n, len(TAXONOMY_COLS)), dtype=np.int64)
-    for j, col in enumerate(TAXONOMY_COLS):
-        v2i = {v: i for i, v in enumerate(vocabs[col])}
-        vals = df[col].fillna("UNK").astype(str)
-        out[:, j] = [v2i.get(v, 0) for v in vals]
-    return out
+TOTAL_DIM = sum(EMB_DIMS.values())  # 84
 
 
 def make_emb_features(df, embeddings):
@@ -112,7 +48,7 @@ def make_emb_features(df, embeddings):
     n = len(df)
     X = np.zeros((n, TOTAL_DIM), dtype=np.float32)
     offset = 0
-    for col in TAXONOMY_COLS:
+    for col in MODEL_FEATURES:
         dim = EMB_DIMS[col]
         col_embs = embeddings[col]
         unk_vec = np.array(col_embs["UNK"], dtype=np.float32)
@@ -141,7 +77,7 @@ def _build_embedding_mlp_and_train(X_codes, y, vocabs, device):
             self.emb_layers = nn.ModuleList(
                 [
                     nn.Embedding(len(vocabs[col]), EMB_DIMS[col], padding_idx=None)
-                    for col in TAXONOMY_COLS
+                    for col in MODEL_FEATURES
                 ]
             )
             self.mlp = nn.Sequential(
@@ -153,13 +89,13 @@ def _build_embedding_mlp_and_train(X_codes, y, vocabs, device):
             )
 
         def forward(self, x):
-            embs = [self.emb_layers[j](x[:, j]) for j in range(len(TAXONOMY_COLS))]
+            embs = [self.emb_layers[j](x[:, j]) for j in range(len(MODEL_FEATURES))]
             h = torch.cat(embs, dim=1)
             return self.mlp(h).squeeze(1)
 
         def get_embeddings(self):
             result = {}
-            for j, col in enumerate(TAXONOMY_COLS):
+            for j, col in enumerate(MODEL_FEATURES):
                 W = self.emb_layers[j].weight.detach().cpu().numpy()
                 v2e = {v: W[i].tolist() for i, v in enumerate(vocabs[col])}
                 v2e["UNK"] = (  # noqa: E501
@@ -204,13 +140,12 @@ def _build_embedding_mlp_and_train(X_codes, y, vocabs, device):
 
 def tune_xgboost():
     train = pd.read_csv(REPO_ROOT / "data" / "split" / "train.csv")
-    test = pd.read_csv(REPO_ROOT / "data" / "split" / "test.csv")
     train["mass_g"] = np.log10(train["mass_g"])
 
     y_full = train["mass_g"]
-    x_full = train.drop(["mass_g"], axis=1)
-    x_test = test.drop(["mass_g"], axis=1)
-    x_full, x_test = align_categories(x_full, x_test)
+    # Same encoding contract as decision_tree.py: native categorical features,
+    # vocabulary from the training split only (UNK first, then sorted).
+    x_full = encode_categorical(train, build_vocab(train))
 
     kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=SEED)
 
@@ -275,103 +210,6 @@ def tune_xgboost():
 
 
 # ---------------------------------------------------------------------------
-# GPBoost tuner
-# ---------------------------------------------------------------------------
-
-
-def tune_gpboost():
-    import gpboost as gpb
-
-    GROUP_COLS = ["species", "genus", "family", "order", "class"]
-
-    train = pd.read_csv(REPO_ROOT / "data" / "split" / "train.csv")
-    train["mass_g"] = np.log10(train["mass_g"])
-
-    X_gpb = align_gpboost(train, TAXONOMY_COLS)
-    y_gpb = train["mass_g"].values
-    gd_full = train[GROUP_COLS].fillna("UNK").astype(str).to_numpy()
-
-    kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=SEED)
-
-    def objective(trial):
-        params = {
-            "objective": "regression",
-            "verbose": -1,
-            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.30, log=True),
-            "max_depth": trial.suggest_int("max_depth", 3, 8),
-            "num_leaves": trial.suggest_int("num_leaves", 7, 63),
-            "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 20),
-        }
-        num_boost_round = trial.suggest_int("num_boost_round", 50, 300, step=25)
-        fold_maes = []
-        for train_idx, val_idx in kf.split(X_gpb):
-            X_tr = X_gpb.iloc[train_idx].reset_index(drop=True)
-            X_vl = X_gpb.iloc[val_idx].reset_index(drop=True)
-            y_tr, y_vl = y_gpb[train_idx], y_gpb[val_idx]
-            gd_tr, gd_vl = gd_full[train_idx], gd_full[val_idx]
-            gp_model = gpb.GPModel(group_data=gd_tr, likelihood="gaussian")
-            gp_model.set_optim_params(
-                {"optimizer_cov": "lbfgs", "use_nesterov_acc": True, "maxit": 20}
-            )
-            dataset = gpb.Dataset(X_tr, label=y_tr, free_raw_data=False)
-            booster = gpb.train(
-                params=params,
-                train_set=dataset,
-                gp_model=gp_model,
-                num_boost_round=num_boost_round,
-            )
-            preds = booster.predict(data=X_vl, group_data_pred=gd_vl)["response_mean"]
-            fold_maes.append(float(np.mean(np.abs(y_vl - preds))))
-        return float(np.mean(fold_maes))
-
-    sampler = optuna.samplers.TPESampler(seed=SEED)
-    study = optuna.create_study(
-        study_name="tbml_gpboost",
-        storage="sqlite:///" + str(RESULTS_DIR / "tuning_gpboost.db"),
-        direction="minimize",
-        sampler=sampler,
-        load_if_exists=True,
-    )
-
-    def _stop_at_n(study, trial):
-        done = sum(
-            1 for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE
-        )  # noqa: E501
-        if done >= N_TRIALS:
-            study.stop()
-
-    study.optimize(
-        objective, n_trials=N_TRIALS, show_progress_bar=True, callbacks=[_stop_at_n]
-    )  # noqa: E501
-
-    results = {
-        "best_params": study.best_params,
-        "best_cv_mae": study.best_value,
-        "n_trials": N_TRIALS,
-        "n_folds": N_FOLDS,
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "current_params": {
-            "num_boost_round": 500,
-            "learning_rate": 0.05,
-            "max_depth": 12,
-            "num_leaves": 127,
-            "min_data_in_leaf": 1,
-        },
-        "all_trials": [
-            {"number": t.number, "params": t.params, "cv_mae": t.value}
-            for t in study.trials
-            if t.state == optuna.trial.TrialState.COMPLETE
-        ],
-    }
-    out = RESULTS_DIR / "tuning_study_gpboost.json"
-    with open(out, "w") as f:
-        json.dump(results, f, indent=2)
-    print(f"\nBest CV MAE : {study.best_value:.4f} log10")
-    print(f"Best params : {study.best_params}")
-    print(f"Saved       -> {out}")
-
-
-# ---------------------------------------------------------------------------
 # Entity Embeddings Stage 2 tuner
 # ---------------------------------------------------------------------------
 
@@ -385,8 +223,8 @@ def tune_ee():
     train["mass_g"] = np.log10(train["mass_g"])
     y_full_ee = train["mass_g"].values
 
-    vocabs = build_vocabs(train)
-    X_codes = encode(train, vocabs)
+    vocabs = build_vocab(train)
+    X_codes = encode_codes(train, vocabs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     print("Stage 1: pre-training MLP for EE tuning (done once)...")
@@ -461,7 +299,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model",
-        choices=["xgboost", "gpboost", "ee"],
+        choices=["xgboost", "ee"],
         default="xgboost",
         help="Which model to tune (default: xgboost)",
     )
@@ -469,7 +307,5 @@ if __name__ == "__main__":
 
     if args.model == "xgboost":
         tune_xgboost()
-    elif args.model == "gpboost":
-        tune_gpboost()
     elif args.model == "ee":
         tune_ee()

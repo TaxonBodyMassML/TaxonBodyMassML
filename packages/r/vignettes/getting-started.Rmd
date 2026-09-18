@@ -26,7 +26,7 @@ and pass it to `pak`:
 pak::pkg_install("url::<release-url>")
 ```
 
-Model artifacts (~2 GB) are downloaded automatically the first time you call
+Model artifacts (~0.6 GB) are downloaded automatically the first time you call
 `predict_mass()` or `lookup_taxonomy()`. You can also trigger the download
 manually at any time:
 
@@ -71,6 +71,24 @@ TaxonBodyMassML::predict_mass("Canis lupus", confidence_interval = 0.80)
 ```{r tax-output}
 TaxonBodyMassML::predict_mass("Panthera leo", include_taxonomy = TRUE)
 ```
+
+## Prediction Methods
+
+Two models are shipped; both use only the taxonomy from kingdom to genus as
+features (species is used for the training-data lookup and for identifying
+genus-level queries, not as a model input).
+
+| `method` | Description |
+|---|---|
+| `"EntityEmbeddings"` (default) | Two-stage model: learned per-rank taxonomy embeddings, then XGBoost on the embedding vectors. |
+| `"XGBoost"` | Single XGBoost model with native categorical splits on the taxonomy ranks. |
+
+```{r method}
+TaxonBodyMassML::predict_mass("Nucella lima", method = "XGBoost")
+```
+
+Both methods return the empirical mass for species present in the training
+data unless `lookup = FALSE`.
 
 ## Source Attribution
 

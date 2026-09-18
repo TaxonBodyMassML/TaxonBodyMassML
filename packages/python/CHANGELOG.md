@@ -4,6 +4,50 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.0] - 2026-09-17
+
+### Breaking
+
+- The default `method` is now `"EntityEmbeddings"`, matching the R package.
+  It is the more accurate model on held-out data (MAE 0.329 vs 0.357 log10).
+  Pass `method="XGBoost"` to keep the previous behaviour.
+- `method="GPBoost"` has been removed (model, artifacts and the `gpboost`
+  extra are gone). Use `"EntityEmbeddings"` or `"XGBoost"`.
+- `xgboost>=3.2` is now required. xgboost 3.0.x loads the model files without
+  error but silently drops the intercept (predictions offset by ~0.9 log10);
+  3.1.x fails on the categorical pandas path; 3.2.0 and later are verified to
+  reproduce the training model exactly.
+
+### Model
+
+- Species is no longer a model feature in either method; both models are
+  trained on kingdom .. genus. The training data has one body mass per
+  species, so a species feature could only memorise individual rows, and every
+  species the model is asked about is unseen by construction (known species are
+  returned from the training-data dictionary). Removing it improved held-out
+  accuracy for both methods and makes predictions reproducible. Queries for an
+  unseen species and for its genus now give identical predictions by design.
+- Both models were re-tuned (100 Optuna trials, 5-fold CV) on the new feature
+  set and retrained. The Entity Embeddings feature vector is 84-dimensional
+  (was 116).
+
+### Fixed
+
+- The XGBoost method builds its `DMatrix` from `pd.Categorical` columns whose
+  categories are exactly `categories.json` (`UNK` first, then sorted) and
+  orders columns by the model's own `feature_names`. A model without feature
+  names now raises instead of silently mispredicting.
+- Unseen taxa are always mapped to `UNK` (code 0).
+
+### Changed
+
+- Model artifacts regenerated; checksums updated. `categories.json` no longer
+  carries a `feature_order` key.
+- New golden-prediction integration test for both methods
+  (`tests/test_predict.py::test_matches_golden_predictions`).
+
+---
+
 ## [0.7.0] - 2026-08-27
 
 ### Breaking

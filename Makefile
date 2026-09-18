@@ -2,12 +2,11 @@ DB_CSV    = ../TaxonBodyMass_DB/TaxonBodyMass.csv
 LOCAL_CSV = data/TaxonBodyMass.csv
 SPLIT     = data/split/train.csv
 TUNE_XGB  = predictive_models/results/tuning_study.json
-TUNE_GPB  = predictive_models/results/tuning_study_gpboost.json
 TUNE_EE   = predictive_models/results/tuning_study_ee.json
 
 .PHONY: all fetch split \
-        tune tune-xgboost tune-gpboost tune-gpboost-parallel tune-ee \
-        train train-xgboost train-gpboost train-ee \
+        tune tune-xgboost tune-ee \
+        train train-xgboost train-ee \
         artifacts publish clean-tune
 
 all: artifacts
@@ -22,34 +21,20 @@ $(SPLIT): $(LOCAL_CSV)
 
 split: $(SPLIT)
 
-# ---- Hyperparameter tuning (independent; use -j3 to run in parallel) ---------
+# ---- Hyperparameter tuning (independent; use -j2 to run in parallel) ---------
 $(TUNE_XGB): $(SPLIT)
 	python predictive_models/tune_hyperparameters.py --model xgboost
-
-$(TUNE_GPB): $(SPLIT)
-	python predictive_models/tune_hyperparameters.py --model gpboost
 
 $(TUNE_EE): $(SPLIT)
 	python predictive_models/tune_hyperparameters.py --model ee
 
 tune-xgboost: $(TUNE_XGB)
-tune-gpboost: $(TUNE_GPB)
-tune-gpboost-parallel: $(SPLIT)
-	python -c "import optuna, pathlib; optuna.create_study(study_name='tbml_gpboost', storage='sqlite:///'+str(pathlib.Path('predictive_models/results/tuning_gpboost.db').resolve()), direction='minimize', load_if_exists=True)"
-	python predictive_models/tune_hyperparameters.py --model gpboost & \
-	python predictive_models/tune_hyperparameters.py --model gpboost & \
-	python predictive_models/tune_hyperparameters.py --model gpboost & \
-	wait
-	@echo "GPBoost parallel tuning complete"
 tune-ee: $(TUNE_EE)
 tune: tune-xgboost tune-ee
 
 # ---- Training (each reads best params from its tuning JSON at runtime) --------
 train-xgboost: $(TUNE_XGB)
 	python predictive_models/decision_tree.py
-
-train-gpboost: $(TUNE_GPB)
-	python predictive_models/gpboost_model.py
 
 train-ee: $(TUNE_EE)
 	python predictive_models/entity_embeddings_model.py
@@ -68,7 +53,5 @@ publish: artifacts
 clean-tune:
 	rm -f predictive_models/results/tuning.db \
 	      predictive_models/results/tuning_study.json \
-	      predictive_models/results/tuning_gpboost.db \
-	      predictive_models/results/tuning_study_gpboost.json \
 	      predictive_models/results/tuning_ee.db \
 	      predictive_models/results/tuning_study_ee.json

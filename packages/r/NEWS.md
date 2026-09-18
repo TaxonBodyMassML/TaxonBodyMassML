@@ -1,3 +1,45 @@
+# TaxonBodyMassML 0.10.0
+
+## Breaking changes
+
+* `method = "GPBoost"` has been removed (the GPBoost model, its artifacts and
+  the `gpboost` Suggests dependency are gone). Use `"EntityEmbeddings"` or
+  `"XGBoost"`.
+* `xgboost (>= 3.1.2)` is now required (the oldest 3.x release on CRAN; verified
+  to reproduce the training model exactly). Older xgboost (1.7.x) loads the
+  current model files without error but silently drops the intercept, shifting
+  every prediction by roughly 0.9 log10 units.
+
+## Model changes
+
+* Species is no longer a model feature in either method; both models are
+  trained on kingdom .. genus. The training data has one body mass per
+  species, so a species feature could only memorise individual rows, and every
+  species the model is asked about is unseen by construction (known species are
+  returned from the training-data dictionary). Removing it improved held-out
+  accuracy for both methods and makes predictions reproducible. Queries for an
+  unseen species and for its genus now give identical predictions by design.
+* Both models were re-tuned (100 Optuna trials, 5-fold CV) on the new feature
+  set and retrained. The Entity Embeddings feature vector is 84-dimensional
+  (was 116) and `embeddings.json` is correspondingly smaller.
+
+## Bug fixes
+
+* `method = "XGBoost"` works again in R. The model is trained with native
+  categorical splits on factors whose levels are exactly `categories.json`
+  (`UNK` first, then sorted), and the input columns are ordered by the model's
+  own feature names. Earlier failures were caused by feeding columns in the
+  wrong order, not by categorical splits.
+* Unseen taxa are always mapped to `UNK` (code 0) instead of an arbitrary
+  neighbouring code.
+
+## Internal
+
+* Model artifacts regenerated (checksums updated). `categories.json` no
+  longer carries a `feature_order` key.
+* New golden-prediction test (`tests/testthat/test-predict.R`) checks that the
+  R package reproduces the training model exactly.
+
 # TaxonBodyMassML 0.8.0
 
 ## New features

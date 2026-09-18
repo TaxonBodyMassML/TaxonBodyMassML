@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "taxonbodymassml"
-version = "0.8.0"
+version = "0.10.0"
 description = "Predict species body mass using the TaxonBodyMassML XGBoost model"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,7 +23,7 @@ classifiers = [
   "Intended Audience :: Science/Research",
 ]
 dependencies = [
-  "xgboost>=1.7",
+  "xgboost>=3.2",
   "pandas>=1.5",
   "numpy>=1.24",
   "requests>=2.31",
@@ -33,7 +33,6 @@ dependencies = [
 
 [project.optional-dependencies]
 progress = ["tqdm>=4.65"]
-gpboost = ["gpboost>=1.5"]
 entity-embeddings = ["torch>=2.0"]
 dev = ["black==26.5.1", "flake8", "pytest", "tqdm>=4.65"]
 

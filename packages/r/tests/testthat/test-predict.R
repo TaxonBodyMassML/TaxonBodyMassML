@@ -87,7 +87,7 @@ test_that("predict_mass() returns CI columns when confidence_interval = TRUE", {
                     "Model artifacts not cached; skipping integration test.")
   testthat::skip_if_offline()
 
-  result <- TaxonBodyMassML::predict_mass("Canis lupus", confidence_interval = TRUE)
+  result <- TaxonBodyMassML::predict_mass("Canis lupus", confidence_interval = TRUE, lookup = FALSE)
   expect_true(all(c("lower_bound", "upper_bound", "confidence") %in% names(result)))
   expect_equal(result$confidence, 0.90)
   expect_lt(result$lower_bound, result$mass_g)
@@ -99,7 +99,7 @@ test_that("predict_mass() returns custom CI level", {
                     "Model artifacts not cached; skipping integration test.")
   testthat::skip_if_offline()
 
-  result <- TaxonBodyMassML::predict_mass("Mus musculus", confidence_interval = 0.50)
+  result <- TaxonBodyMassML::predict_mass("Mus musculus", confidence_interval = 0.50, lookup = FALSE)
   expect_equal(result$confidence, 0.50)
 })
 
@@ -140,8 +140,8 @@ test_that("predict_mass() returns wider interval at higher coverage level", {
                     "Model artifacts not cached; skipping integration test.")
   testthat::skip_if_offline()
 
-  r90 <- TaxonBodyMassML::predict_mass("Mus musculus", confidence_interval = 0.90)
-  r80 <- TaxonBodyMassML::predict_mass("Mus musculus", confidence_interval = 0.80)
+  r90 <- TaxonBodyMassML::predict_mass("Mus musculus", confidence_interval = 0.90, lookup = FALSE)
+  r80 <- TaxonBodyMassML::predict_mass("Mus musculus", confidence_interval = 0.80, lookup = FALSE)
   width90 <- r90$upper_bound - r90$lower_bound
   width80 <- r80$upper_bound - r80$lower_bound
   expect_gt(width90, width80)
@@ -345,20 +345,33 @@ test_that("predict_mass() pooled interval returns finite bounds for model-inferr
   expect_gt(result$upper_bound, result$mass_g)
 })
 
-test_that("predict_mass() stratified and pooled intervals differ for model-inferred taxon", {
+test_that("predict_mass() stratified intervals equal pooled at genus level and differ at family level", {
   testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
                     "Model artifacts not cached; skipping integration test.")
-  testthat::skip_if_offline()
 
-  r_strat <- TaxonBodyMassML::predict_mass(
-    "Nucella lima", confidence_interval = TRUE, interval_method = "stratified"
+  # Species is not a model feature, so a genus-level query masks nothing and its
+  # rank-specific residuals are the pooled residuals by design.
+  genus_df <- data.frame(
+    kingdom = "Animalia", phylum = "Mollusca", class = "Gastropoda",
+    order = "Neogastropoda", family = "Muricidae", genus = "Nucella",
+    species_resolved = "Nucella notaspecies", stringsAsFactors = FALSE
   )
-  r_pool  <- TaxonBodyMassML::predict_mass(
-    "Nucella lima", confidence_interval = TRUE, interval_method = "pooled"
-  )
-  width_strat <- r_strat$upper_bound - r_strat$lower_bound
-  width_pool  <- r_pool$upper_bound  - r_pool$lower_bound
-  expect_false(isTRUE(all.equal(width_strat, width_pool)))
+  g_strat <- TaxonBodyMassML::predict_mass(genus_df, confidence_interval = TRUE,
+                                           interval_method = "stratified")
+  g_pool  <- TaxonBodyMassML::predict_mass(genus_df, confidence_interval = TRUE,
+                                           interval_method = "pooled")
+  expect_equal(g_strat$upper_bound - g_strat$lower_bound,
+               g_pool$upper_bound  - g_pool$lower_bound)
+
+  # A family-level query (unknown genus) uses the family-rank residuals.
+  family_df <- genus_df
+  family_df$genus <- "Zzznotagenus"
+  f_strat <- TaxonBodyMassML::predict_mass(family_df, confidence_interval = TRUE,
+                                           interval_method = "stratified")
+  f_pool  <- TaxonBodyMassML::predict_mass(family_df, confidence_interval = TRUE,
+                                           interval_method = "pooled")
+  expect_false(isTRUE(all.equal(f_strat$upper_bound - f_strat$lower_bound,
+                                f_pool$upper_bound  - f_pool$lower_bound)))
 })
 
 test_that("predict_mass() dict hit has NA bounds regardless of interval_method", {
@@ -371,4 +384,27 @@ test_that("predict_mass() dict hit has NA bounds regardless of interval_method",
   )
   expect_true(is.na(r_strat$lower_bound))
   expect_true(is.na(r_strat$upper_bound))
+})
+
+# ---------------------------------------------------------------------------
+# Golden predictions: the XGBoost method must reproduce the training model
+# exactly (guards against column-order, encoding and xgboost-version drift).
+# ---------------------------------------------------------------------------
+
+test_that("predict_mass() matches golden predictions for both methods", {
+  testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
+                    "Model artifacts not cached; skipping integration test.")
+  golden <- file.path(testthat::test_path(), "..", "..", "..", "..",
+                      "predictive_models", "results", "golden_predictions.json")
+  testthat::skip_if_not(file.exists(golden), "golden_predictions.json not in this checkout")
+
+  cases <- jsonlite::fromJSON(golden, simplifyDataFrame = TRUE)$cases
+  df <- cases[, c("kingdom", "phylum", "class", "order", "family", "genus", "species")]
+  names(df)[names(df) == "species"] <- "species_resolved"
+  out <- TaxonBodyMassML::predict_mass(df, method = "XGBoost", lookup = FALSE)
+  expect_lt(max(abs(log10(out$mass_g) - cases$log10_mass_g)), 1e-5)
+  if (!is.null(cases$log10_mass_g_ee)) {
+    out_ee <- TaxonBodyMassML::predict_mass(df, method = "EntityEmbeddings", lookup = FALSE)
+    expect_lt(max(abs(log10(out_ee$mass_g) - cases$log10_mass_g_ee)), 1e-5)
+  }
 })

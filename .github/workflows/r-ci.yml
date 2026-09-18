@@ -63,8 +63,46 @@ jobs:
           if (!(actual == expected)) stop("SHA256 mismatch: got ", actual)
           cat("categories.json checksum OK (r-v", artifact_version, ")\n", sep = "")
 
+  min-xgboost:
+    # The oldest supported xgboost (3.1.2.1, first 3.x release on CRAN) must
+    # reproduce the training model exactly. Builds xgboost from the CRAN
+    # archive and downloads the model artifacts (~0.6 GB).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.4"
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: packages/r
+          extra-packages: |
+            any::remotes
+            any::testthat
+
+      - name: Install the minimum supported xgboost from the CRAN archive
+        run: remotes::install_version("xgboost", "3.1.2.1", repos = "https://cloud.r-project.org", upgrade = "never")
+        shell: Rscript {0}
+
+      - name: Install package
+        run: R CMD INSTALL --no-docs packages/r
+
+      - name: Golden-prediction test against the published artifacts
+        run: |
+          cat("xgboost", as.character(packageVersion("xgboost")), "\n")
+          TaxonBodyMassML::download_model()
+          testthat::test_dir("packages/r/tests/testthat", filter = "predict",
+                             package = "TaxonBodyMassML", load_package = "installed",
+                             stop_on_failure = TRUE)
+        shell: Rscript {0}
+        env:
+          TAXONBODYMASSML_RUN_INTEGRATION: "1"
+
   release:
-    needs: r-cmd-check
+    needs: [r-cmd-check, min-xgboost]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:

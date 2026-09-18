@@ -63,8 +63,35 @@ jobs:
           print(f"categories.json checksum OK (py-v{MODEL_ARTIFACT_VERSION})")
           EOF
 
+  min-deps:
+    # The oldest supported xgboost must reproduce the training model exactly.
+    # xgboost 3.0.x loads the model but silently drops the intercept; this job
+    # is what catches that class of bug. Downloads the model artifacts (~0.6 GB).
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/python
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install package with the minimum supported xgboost
+        run: |
+          pip install -e ".[dev]"
+          pip install "xgboost==3.2.0"
+          python -c "import xgboost; print('xgboost', xgboost.__version__)"
+
+      - name: Golden-prediction test against the published artifacts
+        run: pytest -v tests/test_predict.py -k golden
+        env:
+          TAXONBODYMASSML_RUN_INTEGRATION: "1"
+
   release:
-    needs: lint-and-test
+    needs: [lint-and-test, min-deps]
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     permissions:

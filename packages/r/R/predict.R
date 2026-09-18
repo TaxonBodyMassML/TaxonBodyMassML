@@ -121,8 +121,13 @@
 # Shared UNK mapping for tree-based methods
 # ---------------------------------------------------------------------------
 
+# Model features: kingdom .. genus.  Species is not a feature (the training
+# table has one row per species, so it could only memorise; every queried
+# species is unseen by construction and known species come from the lookup
+# dictionary).  species_resolved is still consulted for genus promotion.
+.MODEL_FEATURES <- c("kingdom", "phylum", "class", "order", "family", "genus")
+
 .apply_unk_mapping <- function(taxonomy_df, cats) {
-  COLS <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
   X <- data.frame(
     kingdom = taxonomy_df$kingdom,
     phylum  = taxonomy_df$phylum,
@@ -133,20 +138,19 @@
     species = taxonomy_df$species_resolved,
     stringsAsFactors = FALSE
   )
-  for (col in COLS) X[[col]] <- iconv(X[[col]], to = "ASCII//TRANSLIT")
+  for (col in c(.MODEL_FEATURES, "species")) X[[col]] <- iconv(X[[col]], to = "ASCII//TRANSLIT")
   # Apply GBIF v2 kingdom remapping after transliteration, matching Python order.
   X$kingdom <- .normalise_kingdom(X$kingdom)
   # Genus names queried via NCBI land in species_resolved with genus left as
-  # "UNK". Promote them to the correct slot so the model uses genus embeddings.
+  # "UNK". Promote them to the correct slot so the model uses the genus.
   promote <- (is.na(X$genus) | X$genus == "UNK") & (X$species %in% setdiff(cats[["genus"]], "UNK"))
-  X$genus[promote]   <- X$species[promote]
-  X$species[promote] <- "UNK"
-  for (col in COLS) {
+  X$genus[promote] <- X$species[promote]
+  for (col in .MODEL_FEATURES) {
     valid    <- cats[[col]]
     X[[col]] <- ifelse(X[[col]] %in% valid, X[[col]], "UNK")
     X[[col]] <- factor(X[[col]], levels = valid)
   }
-  X
+  X[, .MODEL_FEATURES, drop = FALSE]
 }
 
 # ---------------------------------------------------------------------------
@@ -156,21 +160,22 @@
 .predict_xgboost <- function(taxonomy_df, level, include_taxonomy,
                               input_names, include_source,
                               interval_method = "pooled") {
-  # model.ubj was trained in Python with enable_categorical=True, which
-  # embeds categorical bitmask splits that R's xgboost cannot evaluate
-  # correctly regardless of encoding approach.  All inputs route to the
-  # same leaf, producing a constant nonsense prediction.  Use EntityEmbeddings.
-  stop(
-    "The XGBoost method is not usable in R: the Python-trained model uses ",
-    "categorical bitmask splits that R's xgboost cannot evaluate correctly, ",
-    "producing constant wrong predictions for all inputs.\n",
-    "Use method = \"EntityEmbeddings\" (the default) instead.",
-    call. = FALSE
-  )
   cats  <- .load_categories()
   X     <- .apply_unk_mapping(taxonomy_df, cats)
   model <- .load_model()
-  dmat  <- xgboost::xgb.DMatrix(data = X, enable_categorical = TRUE)
+  # The model was trained with native categorical splits on factors whose
+  # levels are exactly categories.json (UNK first, then sorted), so the 0-based
+  # factor codes equal the training codes.  Column order comes from the model
+  # itself: xgboost does not reorder by name, so a wrong order would silently
+  # mispredict.  xgb.DMatrix() treats factor columns as categorical.
+  feature_names <- xgboost::getinfo(model, "feature_name")
+  if (is.null(feature_names) || !all(feature_names %in% names(X)))
+    stop(
+      "model.ubj carries no usable feature names; cannot align input columns. ",
+      "Re-download the artifacts with download_model(force = TRUE).",
+      call. = FALSE
+    )
+  dmat <- xgboost::xgb.DMatrix(data = X[, feature_names, drop = FALSE])
   log_preds <- stats::predict(model, dmat)
   residuals <- if (!is.null(level)) .load_calibration() else NULL
   by_rank   <- if (!is.null(level) && identical(interval_method, "stratified"))
@@ -181,53 +186,12 @@
 }
 
 # ---------------------------------------------------------------------------
-# GPBoost inference
-# ---------------------------------------------------------------------------
-
-.predict_gpboost <- function(taxonomy_df, level, include_taxonomy,
-                              input_names, include_source,
-                              interval_method = "pooled") {
-  if (!requireNamespace("gpboost", quietly = TRUE)) {
-    stop(
-      'Package "gpboost" is required for method = "GPBoost". ',
-      'Install it with: install.packages("gpboost")',
-      call. = FALSE
-    )
-  }
-
-  cats <- .load_categories()
-  X    <- .apply_unk_mapping(taxonomy_df, cats)
-
-  # Group data for nested random effects: species -> genus -> family -> order -> class.
-  # Built from promoted X so genus-level random effects use the promoted name,
-  # not the raw 'UNK' that NCBI genus-rank hits carry in taxonomy_df.
-  group_data <- as.matrix(data.frame(
-    species = as.character(X$species),
-    genus   = as.character(X$genus),
-    family  = as.character(X$family),
-    order   = as.character(X$order),
-    class   = as.character(X$class),
-    stringsAsFactors = FALSE
-  ))
-  group_data[is.na(group_data)] <- "UNK"
-
-  booster   <- .load_gpboost_model()
-  log_preds <- booster$predict(data = X, group_data_pred = group_data)
-  residuals <- if (!is.null(level)) .load_calibration_gpboost() else NULL
-  by_rank   <- if (!is.null(level) && identical(interval_method, "stratified"))
-                 .load_calibration_by_rank_gpboost() else NULL
-  .assemble_output(log_preds, taxonomy_df, level, residuals,
-                   input_names, include_taxonomy, include_source, cats,
-                   interval_method, by_rank)
-}
-
-# ---------------------------------------------------------------------------
 # Entity Embeddings inference
 # ---------------------------------------------------------------------------
 
 .EE_DIMS <- c(kingdom = 4L, phylum = 8L, class = 8L, order = 16L,
-              family = 16L, genus = 32L, species = 32L)
-.EE_TOTAL_DIM <- sum(.EE_DIMS)  # 116L
+              family = 16L, genus = 32L)
+.EE_TOTAL_DIM <- sum(.EE_DIMS)  # 84L
 
 .predict_entity_embeddings <- function(taxonomy_df, level, include_taxonomy,
                                         input_names, include_source,
@@ -236,32 +200,22 @@
   model_ee <- .load_model_ee()
   residuals <- if (!is.null(level)) .load_calibration_ee() else NULL
 
-  col_map <- c(kingdom = "kingdom", phylum = "phylum", class = "class",
-               order = "order", family = "family", genus = "genus",
-               species = "species_resolved")
-
   n     <- nrow(taxonomy_df)
   X_mat <- matrix(0.0, nrow = n, ncol = .EE_TOTAL_DIM)
   offset <- 1L
-  ee_promote_mask <- rep(FALSE, n)
 
   for (col in names(.EE_DIMS)) {
     dim      <- .EE_DIMS[[col]]
     col_embs <- embs[[col]]
     unk_vec  <- unlist(col_embs[["UNK"]])
-    src_col  <- col_map[[col]]
-    vals     <- iconv(as.character(taxonomy_df[[src_col]]), to = "ASCII//TRANSLIT")
+    vals     <- iconv(as.character(taxonomy_df[[col]]), to = "ASCII//TRANSLIT")
     if (identical(col, "kingdom")) vals <- .normalise_kingdom(vals)
     if (identical(col, "genus")) {
-      sp_vals         <- iconv(as.character(taxonomy_df$species_resolved), to = "ASCII//TRANSLIT")
-      genus_vocab     <- setdiff(names(col_embs), "UNK")
-      promote         <- (is.na(vals) | vals == "UNK") & !is.na(sp_vals) & (sp_vals %in% genus_vocab)
-      vals[promote]   <- sp_vals[promote]
-      ee_promote_mask <- promote
-    }
-    if (identical(col, "species") && any(ee_promote_mask)) {
-      # Write UNK into species for rows whose genus was promoted from species_resolved.
-      vals[ee_promote_mask] <- "UNK"
+      # Genus names queried via NCBI land in species_resolved with genus "UNK".
+      sp_vals       <- iconv(as.character(taxonomy_df$species_resolved), to = "ASCII//TRANSLIT")
+      genus_vocab   <- setdiff(names(col_embs), "UNK")
+      promote       <- (is.na(vals) | vals == "UNK") & !is.na(sp_vals) & (sp_vals %in% genus_vocab)
+      vals[promote] <- sp_vals[promote]
     }
     vals[is.na(vals)] <- "UNK"
     for (i in seq_len(n)) {
@@ -287,7 +241,6 @@
 
 .METHODS <- list(
   XGBoost          = .predict_xgboost,
-  GPBoost          = .predict_gpboost,
   EntityEmbeddings = .predict_entity_embeddings
 )
 
@@ -316,10 +269,9 @@
 #'   rank-specific calibration residuals, providing approximate conditional
 #'   coverage per taxonomic rank. `"pooled"` applies a single quantile from all
 #'   calibration residuals, providing the marginal conformal guarantee.
-#' @param method Character. Prediction method: `"EntityEmbeddings"` (default),
-#'   `"GPBoost"`, or `"XGBoost"`. Note: `"XGBoost"` raises an error in R
-#'   because the Python-trained model uses categorical bitmask splits that
-#'   R's xgboost cannot evaluate correctly.
+#' @param method Character. Prediction method: `"EntityEmbeddings"` (default;
+#'   two-stage: taxonomy embeddings + XGBoost on embedding vectors), or
+#'   `"XGBoost"` (direct XGBoost on natively categorical taxonomy features).
 #' @param include_taxonomy Logical. If `TRUE`, append the resolved taxonomy
 #'   columns to the output. Default `FALSE`.
 #' @param fuzzy_match_name Logical. If `TRUE`, species names are first
@@ -379,6 +331,7 @@
 #' TaxonBodyMassML::predict_mass(tax)
 #' }
 #'
+#' @importFrom stats setNames
 #' @export
 predict_mass <- function(taxon,
                     confidence_interval = FALSE,

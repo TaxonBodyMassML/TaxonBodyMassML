@@ -2,14 +2,15 @@
 
 ## Context
 
-`TaxonBodyMass_DB` is the single source of truth for enriched, deduplicated species-level body masses. After any update to the DB (new sources, enrichment re-run, cleaning fixes), the ML pipeline must be re-run from Phase 1 to regenerate training data and retrain all three models.
+`TaxonBodyMass_DB` is the single source of truth for enriched, deduplicated species-level body masses. After any update to the DB (new sources, enrichment re-run, cleaning fixes), the ML pipeline must be re-run from Phase 1 to regenerate training data and retrain all models.
 
-Three model architectures are trained and exported:
-- **XGBoost** — native categorical encoding (`decision_tree.py`)
-- **GPBoost** — LightGBM trees + nested Gaussian process random effects (`gpboost_model.py`)
-- **Entity Embeddings** — PyTorch MLP (Stage 1) + XGBoost on embedding features (Stage 2) (`entity_embeddings_model.py`)
+Two model architectures are trained and exported:
+- **XGBoost** — native categorical encoding of kingdom .. genus (`decision_tree.py`); vocabulary and feature contract in `predictive_models/taxonomy_encoding.py`
+- **Entity Embeddings** — PyTorch MLP (Stage 1) + XGBoost on embedding features (Stage 2) (`entity_embeddings_model.py`), also on kingdom .. genus
 
-**Stop condition after Phase 6:** inspect `predictive_models/results/metrics*.json` for all three models and confirm quality before proceeding to Phases 7–9.
+Species is not a model feature in either model: the training table has one row per species, every queried species is unseen by construction, and known species are served from the `lookup.json` dictionary. See `taxonomy_encoding.MODEL_FEATURES`.
+
+**Stop condition after Phase 6:** inspect `predictive_models/results/metrics*.json` for all models and confirm quality before proceeding to Phases 7–9.
 
 ---
 
@@ -22,17 +23,17 @@ make clean-tune      # discard stale tuning state when training data has changed
 make all             # fetch → split → tune (sequential) → train → export
 ```
 
-To tune all three models concurrently (requires ~3× CPU):
+To tune both models concurrently (requires ~2× CPU):
 
 ```bash
 make clean-tune
 make split
-make tune -j3        # all three tuners in parallel
+make tune -j2        # both tuners in parallel
 make train
 make artifacts
 ```
 
-Individual targets: `make split`, `make tune-xgboost`, `make train-gpboost`, etc.
+Individual targets: `make split`, `make tune-xgboost`, `make train-ee`, etc.
 
 Each training script reads best hyperparameters from its tuning JSON at runtime and falls back to built-in defaults if the JSON is absent.
 
@@ -73,8 +74,8 @@ Drops all provenance/QC columns, ASCII-normalises taxonomy strings, produces a 9
 ## Phase 4 — Hyperparameter tuning
 
 ```bash
-make tune          # sequential: xgboost → gpboost → ee
-make tune -j3      # concurrent: all three in parallel
+make tune          # sequential: xgboost → ee
+make tune -j2      # concurrent: both in parallel
 ```
 
 100 Optuna TPE trials, 5-fold CV MAE in log₁₀ space per model. SQLite backends are resumable (`load_if_exists=True`) — interrupted runs can be continued without losing completed trials.
@@ -83,7 +84,6 @@ Run `make clean-tune` first whenever training data has changed; stale trials fro
 
 **Outputs:**
 - `predictive_models/results/tuning_study.json` — XGBoost best params
-- `predictive_models/results/tuning_study_gpboost.json` — GPBoost best params
 - `predictive_models/results/tuning_study_ee.json` — Entity Embeddings Stage 2 best params
 
 ---
@@ -91,14 +91,13 @@ Run `make clean-tune` first whenever training data has changed; stale trials fro
 ## Phase 5 — Model training
 
 ```bash
-make train   # trains all three sequentially after tuning JSONs exist
+make train   # trains both sequentially after tuning JSONs exist
 ```
 
 Each script loads `best_params` from its tuning JSON and falls back to built-in defaults if absent.
 
 **Outputs:**
-- `regressor_microservice/sliced_model/xgboost_model.pkl.*` — XGBoost pickleslicer bundle (model + conformal `q`)
-- `artifacts/model_gpboost.json` — GPBoost model
+- `regressor_microservice/sliced_model/xgboost_model.pkl.*` — XGBoost pickleslicer bundle (model, conformal `q`, vocabulary, pooled and per-rank calibration residuals, species dictionary); stale slices are removed first
 - `artifacts/model_ee.ubj` — Entity Embeddings Stage 2 XGBoost
 - `artifacts/embeddings.json` — Entity Embeddings lookup tables
 - `artifacts/calibration_*.json` — conformal calibration residuals (pooled + rank-stratified) for each model
@@ -116,17 +115,17 @@ make artifacts   # or triggered automatically by make all
 - `model.ubj` — XGBoost UBJSON binary
 - `calibration.json` — sorted conformal residuals (XGBoost)
 - `calibration_by_rank.json` — rank-stratified residuals (XGBoost)
-- `categories.json` — taxonomy category lists in **training-time integer-code order** (do not sort alphabetically — order must match training-time codes)
+- `categories.json` — per-feature (kingdom .. genus) training vocabulary, `UNK` first then sorted (this **is** the training-time code order; never reorder). Feature order is read from the model's own `feature_names`, not from this file
 - `lookup.json` — species → `{mass_g, source}` lookup table
 - `checksums.json` — SHA-256 hashes for all artifacts
 
-**Verify:** `checksums.json` is non-empty; all artifact files for all three models are present. Run a quick sanity prediction with `scripts/run_examples.py` or `scripts/run_examples.R`.
+**Verify:** `checksums.json` is non-empty; all artifact files for all models are present. Run `scripts/check_parity.py --sync-cache` to confirm the Python package, R package and microservice all reproduce `predictive_models/results/golden_predictions.json`, then a quick sanity prediction with `scripts/run_examples.py` or `scripts/run_examples.R`.
 
 ---
 
 ## STOP HERE — await user approval
 
-Inspect `predictive_models/results/metrics.json`, `metrics_gpboost.json`, `metrics_ee.json`. Confirm R², RMSE, and MAE are satisfactory before proceeding to Phases 7–9.
+Inspect `predictive_models/results/metrics.json`, `metrics_ee.json`. Confirm R², RMSE, and MAE are satisfactory before proceeding to Phases 7–9.
 
 Prior XGBoost baseline (old data): R²=0.9106, RMSE=0.5621, MAE=0.3384 (log₁₀, n_test=3,806)
 
@@ -143,16 +142,19 @@ cd regressor_microservice
 docker compose up --build -d
 ```
 
-Then publish artifacts:
+Then publish artifacts (**explicit approval required**):
 
-1. Upload to Hugging Face:
-   ```bash
-   huggingface-cli upload marknovak/TaxonBodyMassML artifacts/ .
-   ```
+1. Bump the version in `packages/r/DESCRIPTION` and `packages/python/pyproject.toml`
+   (the publish script refuses to reuse an existing Hugging Face tag).
 2. Copy the new SHA-256 from `artifacts/checksums.json` into:
    - `packages/python/taxonbodymassml/_checksums.py`
    - `packages/r/R/model.R`
-3. Tag and release both packages (version bump per semver).
+3. Upload to Hugging Face and tag:
+   ```bash
+   python scripts/publish_artifacts.py        # dry run
+   python scripts/publish_artifacts.py --yes  # publish
+   ```
+4. Tag and release both packages.
 
 ### Phase 8 — Regenerate results (figures and tables)
 

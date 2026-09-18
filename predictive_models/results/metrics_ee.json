@@ -1,9 +1,9 @@
 {
   "method": "EntityEmbeddings",
-  "r2": 0.9132186513839874,
-  "rmse": 0.5820293350454923,
-  "mae": 0.34747790061748457,
-  "stage1_mae": 0.4472203363121185,
+  "r2": 0.9184636018535817,
+  "rmse": 0.564166686721119,
+  "mae": 0.3289442004039092,
+  "stage1_mae": 0.3684960208373362,
   "n_train": 33575,
   "n_test": 3730,
   "log10_space": true,
@@ -16,19 +16,18 @@
     "class": 8,
     "order": 16,
     "family": 16,
-    "genus": 32,
-    "species": 32
+    "genus": 32
   },
-  "total_emb_dim": 116,
+  "total_emb_dim": 84,
   "stage2_params": {
     "objective": "reg:absoluteerror",
     "random_state": 42,
-    "n_estimators": 750,
+    "n_estimators": 800,
     "max_depth": 15,
-    "learning_rate": 0.028298706481936827,
-    "subsample": 0.9434075599763212,
-    "colsample_bytree": 0.6549746882375537,
-    "min_child_weight": 6
+    "learning_rate": 0.0366043247006506,
+    "subsample": 0.7151143172234407,
+    "colsample_bytree": 0.7467813979547293,
+    "min_child_weight": 10
   },
   "vocab_sizes": {
     "kingdom": 7,
@@ -36,8 +35,7 @@
     "class": 116,
     "order": 458,
     "family": 2184,
-    "genus": 9627,
-    "species": 33576
+    "genus": 9627
   },
-  "timestamp": "2026-09-16T02:27:55.395432+00:00"
+  "timestamp": "2026-09-17T16:58:00.469871+00:00"
 }

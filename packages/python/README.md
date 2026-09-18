@@ -23,7 +23,7 @@ pip install "taxonbodymassml[progress]"
 ```python
 import taxonbodymassml as tbm
 
-# Single species — model artifacts are downloaded automatically on first use (~2 GB, once only)
+# Single species — model artifacts are downloaded automatically on first use (~0.6 GB, once only)
 tbm.predict_mass("Haustrum scobina")
 #   taxon     mass_g
 # 0  Haustrum scobina  0.382...
@@ -44,20 +44,23 @@ tbm.predict_mass(tax)
 
 ## API
 
-### `predict_mass(taxon, confidence_interval=False, method="XGBoost", include_taxonomy=False, fuzzy_match_name=False, include_source=False)`
+### `predict_mass(taxon, confidence_interval=False, method="EntityEmbeddings", interval_method="stratified", include_taxonomy=False, fuzzy_match_name=False, include_source=False, lookup=True)`
 
 Predict body mass for one or more taxa. For taxa whose species-level mass
 appears directly in the training data, the empirical value is returned without
-invoking the model.
+invoking the model. Both models use only the taxonomy from kingdom to genus as
+features; species is used for the training-data lookup, not as a model input.
 
 | Parameter | Type | Description |
 |---|---|---|
 | `taxon` | `str`, `list[str]`, or `pd.DataFrame` | Scientific name(s). Pass a DataFrame with resolved taxonomy columns to skip the GBIF/NCBI lookup. |
 | `confidence_interval` | `bool` or `float` | `False`: no interval. `True`: 90% conformal interval. Float in (0, 1): interval at that coverage level. `NaN` for dictionary-sourced rows. |
-| `method` | `str` | `"XGBoost"` (default). Extensible for future models. |
+| `method` | `str` | `"EntityEmbeddings"` (default): two-stage model, learned per-rank taxonomy embeddings followed by XGBoost on the embedding vectors. `"XGBoost"`: single XGBoost model with native categorical splits on the taxonomy ranks. |
+| `interval_method` | `str` | `"stratified"` (default): conformal half-width from calibration residuals of the finest taxonomic rank present in the training data. `"pooled"`: a single quantile from all calibration residuals (marginal guarantee). |
 | `include_taxonomy` | `bool` | Append resolved taxonomy columns to the output. |
 | `fuzzy_match_name` | `bool` | If `True`, correct species names via the GBIF species-match API before lookup, tolerating misspellings and name variants. Appends a `matched_name` column: the originally entered name when a correction was applied or no match was found; `None` when the name was already canonical. Default `False` (exact matching). Ignored when `taxon` is a `pd.DataFrame`. |
 | `include_source` | `bool` | If `True`, append a `source` column with the provenance of each mass value: the original source identifier (e.g., `"fishbase"`) for dictionary-sourced values, or `"tbmML_<rank>"` for model-inferred values indicating the finest training-data rank. |
+| `lookup` | `bool` | `True` (default): taxa found in the training-data dictionary return their empirical mass and bypass the model. `False`: every resolved taxon is passed through the model. |
 
 Returns a `pd.DataFrame` with columns `taxon`, `mass_g` (grams), and optionally `lower_bound`, `upper_bound`, `confidence`, `kingdom` … `species_resolved`, `matched_name`, `source`.
 

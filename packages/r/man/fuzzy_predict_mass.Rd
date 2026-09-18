@@ -24,7 +24,7 @@ instead, which now performs GBIF name correction by default.
 }
 \examples{
 \dontrun{
-# Deprecated — use predict_mass() directly:
+# Deprecated -- use predict_mass() directly:
 predict_mass(c("Ballanus glandula", "Canis lupus"))
 }
 

@@ -13,10 +13,12 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import xgboost as xgb
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "predictive_models"))
+from taxonomy_encoding import MODEL_FEATURES  # noqa: E402
+
 ARTIFACT = REPO / "artifacts" / "model.ubj"
 OUT_DIR = REPO / "predictive_models" / "results"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -30,7 +32,7 @@ print("Model loaded.")
 scores = model.get_score(importance_type="gain")
 
 # Taxonomy columns in hierarchical order
-RANKS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
+RANKS = MODEL_FEATURES
 missing = [r for r in RANKS if r not in scores]
 if missing:
     print(f"Warning: ranks not in scores (zero gain): {missing}")

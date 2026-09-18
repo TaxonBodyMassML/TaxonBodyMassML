@@ -1,9 +1,9 @@
 """
 Two-stage entity embeddings model.
 
-Stage 1: PyTorch MLP with per-taxonomy-column embedding layers.
-         Learns dense representations; singleton species share gradient signal
-         through shared genus/family/order/class embedding tables.
+Stage 1: PyTorch MLP with per-rank embedding layers (kingdom .. genus; species
+         is not a feature, see taxonomy_encoding.MODEL_FEATURES).  Learns dense
+         representations of the taxonomic hierarchy.
 Stage 2: XGBoost trained on the extracted embedding vectors (continuous features,
          no min_child_weight constraint).
 
@@ -16,12 +16,13 @@ Outputs (in artifacts/):
     calibration_ee.json -- {"residuals": [...]} conformal calibration residuals
 
 Requirements:
-    pip install torch>=2.0 xgboost>=1.7
+    pip install torch>=2.0 xgboost>=3.2
 """
 
 import datetime
 import json
 import os
+import sys
 from pathlib import Path
 
 # Prevent libomp crash: XGBoost and PyTorch both call __kmp_fork_call; capping OMP
@@ -39,6 +40,9 @@ from sklearn.model_selection import train_test_split  # noqa: E402
 from torch.optim.lr_scheduler import OneCycleLR  # noqa: E402
 from torch.utils.data import DataLoader, TensorDataset  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from taxonomy_encoding import MODEL_FEATURES, RANKS_FINER, build_vocab, encode_codes  # noqa: E402
+
 torch.set_num_threads(1)
 torch.manual_seed(42)
 np.random.seed(42)
@@ -51,7 +55,7 @@ RESULTS_DIR = REPO_ROOT / "predictive_models" / "results"
 OUT_DIR.mkdir(exist_ok=True)
 RESULTS_DIR.mkdir(exist_ok=True)
 
-TAXONOMY_COLS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
+# Species is not a feature (see taxonomy_encoding.MODEL_FEATURES).
 EMB_DIMS = {
     "kingdom": 4,
     "phylum": 8,
@@ -59,9 +63,8 @@ EMB_DIMS = {
     "order": 16,
     "family": 16,
     "genus": 32,
-    "species": 32,
 }
-TOTAL_DIM = sum(EMB_DIMS.values())  # 116
+TOTAL_DIM = sum(EMB_DIMS.values())  # 84
 
 STAGE1_EPOCHS = 100
 STAGE1_BATCH_SIZE = 256
@@ -95,24 +98,10 @@ STAGE2_PARAMS = {
 # ---------------------------------------------------------------------------
 
 
-def build_vocabs(train_df: pd.DataFrame) -> dict[str, list[str]]:
-    """Build per-column vocabulary from training data; UNK always at index 0."""
-    vocabs = {}
-    for col in TAXONOMY_COLS:
-        unique_vals = sorted(train_df[col].dropna().astype(str).unique())
-        vocabs[col] = ["UNK"] + unique_vals  # 0 = UNK
-    return vocabs
-
-
-def encode(df: pd.DataFrame, vocabs: dict[str, list[str]]) -> np.ndarray:
-    """Map each column to its integer index; unknowns → 0 (UNK)."""
-    n = len(df)
-    out = np.zeros((n, len(TAXONOMY_COLS)), dtype=np.int64)
-    for j, col in enumerate(TAXONOMY_COLS):
-        v2i = {v: i for i, v in enumerate(vocabs[col])}
-        vals = df[col].fillna("UNK").astype(str)
-        out[:, j] = [v2i.get(v, 0) for v in vals]
-    return out
+# Vocabulary/encoding come from the shared contract module (UNK at index 0,
+# then sorted training values); these aliases keep the call sites readable.
+build_vocabs = build_vocab
+encode = encode_codes
 
 
 # ---------------------------------------------------------------------------
@@ -126,7 +115,7 @@ class EmbeddingMLP(nn.Module):
         self.emb_layers = nn.ModuleList(
             [
                 nn.Embedding(len(vocabs[col]), EMB_DIMS[col], padding_idx=None)
-                for col in TAXONOMY_COLS
+                for col in MODEL_FEATURES
             ]
         )
         self.mlp = nn.Sequential(
@@ -138,7 +127,7 @@ class EmbeddingMLP(nn.Module):
         )
 
     def forward(self, x):
-        embs = [self.emb_layers[j](x[:, j]) for j in range(len(TAXONOMY_COLS))]
+        embs = [self.emb_layers[j](x[:, j]) for j in range(len(MODEL_FEATURES))]
         h = torch.cat(embs, dim=1)
         return self.mlp(h).squeeze(1)
 
@@ -147,7 +136,7 @@ class EmbeddingMLP(nn.Module):
     ) -> dict[str, dict[str, list[float]]]:  # noqa: E501
         """Extract embedding lookup tables; UNK = mean of all column embeddings."""
         result = {}
-        for j, col in enumerate(TAXONOMY_COLS):
+        for j, col in enumerate(MODEL_FEATURES):
             W = self.emb_layers[j].weight.detach().cpu().numpy()  # (vocab, dim)
             v2e = {v: W[i].tolist() for i, v in enumerate(vocabs[col])}
             # Override UNK with the mean of all non-UNK embeddings (index 0 was random init)  # noqa: E501
@@ -202,7 +191,7 @@ def make_emb_features(
     n = len(df)
     X = np.zeros((n, TOTAL_DIM), dtype=np.float32)
     offset = 0
-    for col in TAXONOMY_COLS:
+    for col in MODEL_FEATURES:
         dim = EMB_DIMS[col]
         col_embs = embeddings[col]
         unk_vec = np.array(col_embs["UNK"], dtype=np.float32)
@@ -231,7 +220,7 @@ print(f"  Training: {len(y_train):,}  Test: {len(y_test):,}")
 
 # Build vocabulary from training data only (test values become UNK if unseen)
 vocabs = build_vocabs(train)
-vocab_sizes = {col: len(vocabs[col]) for col in TAXONOMY_COLS}
+vocab_sizes = {col: len(vocabs[col]) for col in MODEL_FEATURES}
 print("  Vocab sizes:", vocab_sizes)
 
 X_codes_train = encode(train, vocabs)
@@ -300,16 +289,8 @@ print(f"  q90 = {float(np.quantile(calib_residuals, 0.90)):.4f} log10 units")
 # before building embedding features.  The UNK embedding is used for masked
 # columns, matching the inference condition for coarser-rank queries.
 print("Building rank-stratified calibration residuals for EntityEmbeddings...")
-RANKS_FINER_EE = {
-    "genus": ["species"],
-    "family": ["genus", "species"],
-    "order": ["family", "genus", "species"],
-    "class": ["order", "family", "genus", "species"],
-    "phylum": ["class", "order", "family", "genus", "species"],
-    "kingdom": ["phylum", "class", "order", "family", "genus", "species"],
-}
 by_rank_ee = {}
-for rank, finer_cols in RANKS_FINER_EE.items():
+for rank, finer_cols in RANKS_FINER.items():
     calib_masked = calib_df.copy()
     for col in finer_cols:
         if col in calib_masked.columns:

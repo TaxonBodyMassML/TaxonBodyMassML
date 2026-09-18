@@ -25,12 +25,9 @@ conformal prediction interval), or a numeric in (0, 1) for a custom
 coverage level. Conformal intervals apply only to model-inferred values;
 rows returned from the training-data dictionary receive \code{NA} bounds.}
 
-\item{method}{Character. Prediction method. \code{"EntityEmbeddings"} (default;
-two-stage: taxonomy embeddings + XGBoost on embedding vectors),
-\code{"GPBoost"} (gradient boosting with nested taxonomic random effects;
-requires the \code{gpboost} package), or \code{"XGBoost"} (raises an error in R:
-the Python-trained model uses categorical bitmask splits that R's xgboost
-cannot evaluate correctly).}
+\item{method}{Character. Prediction method: \code{"EntityEmbeddings"} (default;
+two-stage: taxonomy embeddings + XGBoost on embedding vectors), or
+\code{"XGBoost"} (direct XGBoost on natively categorical taxonomy features).}
 
 \item{interval_method}{Character. How the conformal half-width is computed
 when \code{confidence_interval} is not \code{FALSE}. \code{"stratified"} (default) uses
@@ -58,10 +55,10 @@ rank present in the training data (e.g., \code{"tbmML_genus"} if the genus
 was seen during training; \code{"tbmML_order"} if only the order was seen).
 Unresolvable taxa receive \code{NA}. Default \code{FALSE}.}
 
-\item{lookup}{Logical. If \code{TRUE} (default), taxa found in the
-training-data dictionary are returned with their empirical mass and bypass
-the model. If \code{FALSE}, every resolved taxon is passed through the model
-specified by \code{method}.}
+\item{lookup}{Logical. If \code{TRUE} (default), taxa found in the training-data
+dictionary are returned with their empirical mass and bypass the model. If
+\code{FALSE}, every resolved taxon is passed through the model specified by
+\code{method}. Default \code{TRUE}.}
 }
 \value{
 A \code{data.frame} with at minimum columns \code{taxon} and \code{mass_g}
@@ -87,7 +84,7 @@ Pass a \code{data.frame} with pre-resolved taxonomy columns to skip lookup.
 }
 \examples{
 \dontrun{
-# Single taxon — returns empirical mass if in training data, else model
+# Single taxon -- returns empirical mass if in training data, else model
 TaxonBodyMassML::predict_mass("Homo sapiens")
 
 # Multiple taxa with 90\% confidence interval

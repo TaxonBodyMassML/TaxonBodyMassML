@@ -19,10 +19,16 @@ Invisible \code{NULL}. Called for its side-effect of populating the
 cache directory.
 }
 \description{
-Downloads the XGBoost model (\code{model.ubj}, ~2 GB), calibration residuals
-(\code{calibration.json}), and category lists (\code{categories.json}) to the
-local user cache directory. On subsequent calls the files are skipped
-unless \code{force = TRUE} or the SHA256 checksum does not match.
+Downloads all model artifacts (~0.6 GB in total) to the local user cache
+directory: the XGBoost model (\code{model.ubj}) with its pooled and
+rank-stratified calibration residuals (\code{calibration.json},
+\code{calibration_by_rank.json}), the category lists that define the model's
+factor levels (\code{categories.json}), the training-data species dictionary
+(\code{lookup.json}), and the Entity Embeddings model (\code{embeddings.json},
+\code{model_ee.ubj}, \code{calibration_ee.json}, \code{calibration_by_rank_ee.json}).
+Every file is verified against a SHA256 checksum bundled with the package.
+On subsequent calls the files are skipped unless \code{force = TRUE} or the
+checksum does not match.
 }
 \examples{
 \dontrun{

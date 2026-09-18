@@ -19,7 +19,6 @@ chosen values.
 | **Create** | `predictive_models/requirements.txt` |
 | **Update** | `ms/XGBoost_Training_Summary.md` — document the tuning procedure |
 | **Update** | `predictive_models/decision_tree.py` — apply best params after reviewing results |
-| **Output** | `predictive_models/results/tuning_study_gpboost.json` — GPBoost tuning results |
 | **Output** | `predictive_models/results/tuning_study_ee.json` — Entity Embeddings Stage 2 tuning results |
 
 ---
@@ -33,7 +32,7 @@ default env per environment check). Create a dedicated requirements file for the
 ```
 numpy>=1.24
 pandas>=1.5
-xgboost>=1.7
+xgboost>=3.2
 scikit-learn>=1.3
 optuna>=3.0
 pickleslicer
@@ -106,9 +105,9 @@ kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=SEED)
 def objective(trial):
     params = dict(
         objective          = "reg:absoluteerror",  # fixed — matches training
-        enable_categorical = True,                  # fixed — native encoding
+        enable_categorical = True,                  # fixed — native encoding of kingdom..genus (taxonomy_encoding.py)
         random_state       = SEED,
-        n_estimators       = trial.suggest_int  ("n_estimators",     200, 600, step=50),
+        n_estimators       = trial.suggest_int  ("n_estimators",     200, 900, step=50),
         max_depth          = trial.suggest_int  ("max_depth",           5,  50),
         learning_rate      = trial.suggest_float("learning_rate",    0.01, 0.30, log=True),
         subsample          = trial.suggest_float("subsample",         0.5,  1.0),
@@ -125,10 +124,10 @@ def objective(trial):
     return float(np.mean(fold_maes))
 ```
 
-**Why `n_estimators` tops out at 600**: The current hand-tuned value is 600; letting
-Optuna search up to 1,000 would double per-trial wall time for little likely gain. If
-the best trial consistently selects 600, the upper bound can be widened in a follow-up
-run.
+**Why `n_estimators` tops out at 900**: the first study (ceiling 600) selected the
+ceiling, so the range was widened. The species-free study (September 2026) selected
+850 with the top five trials spread over 600–850, so the ceiling is no longer binding.
+Searching further would double per-trial wall time for little likely gain.
 
 **Why `gamma` and `min_child_weight` are included**: `max_depth=40` is unusually large
 and may overfit; these regularization parameters can offset that without forcing a lower
@@ -235,69 +234,7 @@ study = optuna.create_study(
 
 ---
 
-## 5. GPBoost Hyperparameter Tuning
-
-### Context
-
-`gpboost_model.py` uses fixed LightGBM hyperparameters with no automated search. This
-section documents tuning that model via `tune_hyperparameters.py --model gpboost`.
-
-### Running the tuner
-
-```bash
-python predictive_models/tune_hyperparameters.py --model gpboost
-```
-
-Each trial builds one `gpb.GPModel` + `gpb.Dataset` per fold and runs `gpb.train()`.
-The GP covariance parameters are re-estimated inside each fold.
-
-### Search space
-
-| Parameter | Type | Range | Fixed |
-|---|---|---|---|
-| `learning_rate` | float (log) | 0.01 – 0.30 | |
-| `max_depth` | int | 4 – 20 | |
-| `num_leaves` | int | 15 – 255 | |
-| `min_data_in_leaf` | int | 1 – 20 | |
-| `num_boost_round` | int (step 50) | 100 – 800 | |
-| `objective` | — | — | `"regression_l1"` |
-| `verbose` | — | — | `-1` |
-
-`bagging_fraction`, `bagging_freq`, and `feature_fraction` are excluded to keep the
-search space manageable.
-
-### Current baseline (from `gpboost_model.py`)
-
-```python
-NUM_BOOST_ROUND = 500
-PARAMS = {
-    "learning_rate":    0.05,
-    "max_depth":        12,
-    "num_leaves":       127,
-    "min_data_in_leaf": 1,
-}
-```
-
-### Output files
-
-- `predictive_models/results/tuning_gpboost.db` — resumable Optuna SQLite study
-- `predictive_models/results/tuning_study_gpboost.json` — best params, CV MAE, all trials
-
-### Applying results
-
-1. Review `tuning_study_gpboost.json`. Compare `best_cv_mae` against test MAE in
-   `predictive_models/results/metrics_gpboost.json`.
-2. If improved, update `NUM_BOOST_ROUND` and the `PARAMS` dict in `gpboost_model.py`.
-3. Re-run `python predictive_models/gpboost_model.py` to regenerate artifacts.
-
-### Runtime estimate
-
-100 trials × 5 folds × ~30–60 s/fold ≈ **4–8 hours** on a laptop CPU.
-Use `N_TRIALS=3, N_FOLDS=2` for a smoke test first.
-
----
-
-## 6. Entity Embeddings Stage 2 Hyperparameter Tuning
+## 5. Entity Embeddings Stage 2 Hyperparameter Tuning
 
 ### Context
 
@@ -329,8 +266,9 @@ All 100 × 5 Optuna trials operate on the cached embedding matrix.
 | `objective` | — | — | `"reg:absoluteerror"` |
 | `random_state` | — | — | `42` |
 
-`colsample_bytree` is added relative to the current `STAGE2_PARAMS` because with 116
-continuous embedding features it is a meaningful regularizer. `enable_categorical` is
+`colsample_bytree` is added relative to the current `STAGE2_PARAMS` because with 84
+continuous embedding features (kingdom..genus; species is not a feature) it is a
+meaningful regularizer. `enable_categorical` is
 not set (features are continuous floats).
 
 ### Current baseline (from `entity_embeddings_model.py`)

@@ -1,7 +1,7 @@
 # Run the manuscript code examples and print formatted output for §4.3.
 #
 # Requires internet access for GBIF taxonomy lookups on first run.
-# Model artifacts are cached after the first download (~2 GB).
+# Model artifacts are cached after the first download (~0.6 GB).
 #
 # Run from repo root:
 #   Rscript scripts/run_examples.R

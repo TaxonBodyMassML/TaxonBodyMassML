@@ -109,12 +109,9 @@ def _ensure_artifacts() -> None:
 _MODEL_CACHE: xgb.Booster | None = None
 _CALIBRATION_CACHE: list[float] | None = None
 _CALIBRATION_BY_RANK_CACHE: dict[str, list[float]] | None = None
-_CALIBRATION_BY_RANK_GPBOOST_CACHE: dict[str, list[float]] | None = None
 _CALIBRATION_BY_RANK_EE_CACHE: dict[str, list[float]] | None = None
 _CATEGORIES_CACHE: dict[str, list[str]] | None = None
 _LOOKUP_CACHE: dict[str, dict] | None = None
-_GPBOOST_MODEL_CACHE = None
-_CALIBRATION_GPBOOST_CACHE: list[float] | None = None
 _EMBEDDINGS_CACHE: dict | None = None
 _MODEL_EE_CACHE: xgb.Booster | None = None
 _CALIBRATION_EE_CACHE: list[float] | None = None
@@ -143,14 +140,6 @@ def load_calibration_by_rank() -> dict[str, list[float]]:
         with open(_CACHE_DIR / "calibration_by_rank.json") as f:
             _CALIBRATION_BY_RANK_CACHE = json.load(f)
     return _CALIBRATION_BY_RANK_CACHE
-
-
-def load_calibration_by_rank_gpboost() -> dict[str, list[float]]:
-    global _CALIBRATION_BY_RANK_GPBOOST_CACHE
-    if _CALIBRATION_BY_RANK_GPBOOST_CACHE is None:
-        with open(_CACHE_DIR / "calibration_by_rank_gpboost.json") as f:
-            _CALIBRATION_BY_RANK_GPBOOST_CACHE = json.load(f)
-    return _CALIBRATION_BY_RANK_GPBOOST_CACHE
 
 
 def load_calibration_by_rank_ee() -> dict[str, list[float]]:
@@ -188,27 +177,6 @@ def _require_file(filename: str, method: str, training_script: str) -> None:
             f"Then run scripts/export_artifacts.py and copy the new SHA-256 "
             f"checksums into packages/python/taxonbodymassml/_checksums.py."
         )
-
-
-def load_model_gpboost():
-    global _GPBOOST_MODEL_CACHE
-    if _GPBOOST_MODEL_CACHE is None:
-        _require_file("model_gpboost.json", "GPBoost", "gpboost_model.py")
-        import gpboost as gpb
-
-        _GPBOOST_MODEL_CACHE = gpb.Booster(
-            model_file=str(_CACHE_DIR / "model_gpboost.json")
-        )  # noqa: E501
-    return _GPBOOST_MODEL_CACHE
-
-
-def load_calibration_gpboost() -> list[float]:
-    global _CALIBRATION_GPBOOST_CACHE
-    if _CALIBRATION_GPBOOST_CACHE is None:
-        _require_file("calibration_gpboost.json", "GPBoost", "gpboost_model.py")
-        with open(_CACHE_DIR / "calibration_gpboost.json") as f:
-            _CALIBRATION_GPBOOST_CACHE = json.load(f)["residuals"]
-    return _CALIBRATION_GPBOOST_CACHE
 
 
 def load_embeddings() -> dict:

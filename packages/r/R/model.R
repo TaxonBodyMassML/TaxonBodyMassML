@@ -17,20 +17,20 @@ NULL
 # Only advances when make publish is run with new artifacts. Intentionally
 # independent of the package version so code-only releases work without a
 # new HuggingFace upload. Updated automatically by scripts/publish_artifacts.py.
-.MODEL_ARTIFACT_VERSION <- "0.7.2"
+.MODEL_ARTIFACT_VERSION <- "0.10.0"
 
 .CHECKSUMS <- list(
   # XGBoost (original method)
-  "model.ubj"               = "0fdb5d375e6158cd8eed635330f9f06d1d3054af65ee3857ff6890d2e15e94ed",
-  "calibration.json"        = "814fd4dde6421e0509de77d778dfb62f5beab9d129af1744b5f1aa59095bc1bd",
-  "calibration_by_rank.json" = "dd409f4d0f7e544d36309328c89135d8669539e365bd93076b639e5f8be01280",
-  "categories.json"         = "910394f7a8fa2d4d34b3a559ad170f7d6d4909f9ad88167d3820e6701ca0b377",
+  "model.ubj"               = "7ea10b33634f42d81bc566a1986880e59701ef479e052eea78c80a5149aa0b12",
+  "calibration.json"        = "cc0204bd5391b8cc37273443a62c79d5b9b92e4f7e82b141066f726ca156666d",
+  "calibration_by_rank.json" = "232decdce8e29fbda4bd1835c0151d478bd07bbb508a423c3a8a8316cd8e14c9",
+  "categories.json"         = "ac2ab3af8f6d7078ac1c98c57868c4c3eb989bc007028887d8a4449e271f56ec",
   "lookup.json"             = "ba530ab9b34eb5a0c236fd6c1ebba0e6fa04ec3287011887681146282dd6cd46",
   # Entity Embeddings
-  "embeddings.json"              = "cce9b15b709e72a7caf6b1c0d771ea3e0b629085a88de6bf2bc761e5cc9b74c0",
-  "model_ee.ubj"                 = "3bff6e3218f949744f4d1bcbe2cee5cf2bbe60b3886543d7e0c85629502683cc",
-  "calibration_ee.json"          = "cba32526436d1eb3f8f2965bf4f6e12ad105e9baf4d038a44fc5a03937dde1b2",
-  "calibration_by_rank_ee.json"  = "8a1579dd5f3fbf1ab063819f6d8304c60a30064f5bbeb938d2b3ae3217e34fd6"
+  "embeddings.json"              = "eeb1ad2e37cb93324823376581ad6e45da37efcffbc367266168d62d9c3b2a39",
+  "model_ee.ubj"                 = "b4c6be58111d6d6b8ffecb82c918bcbe83c2b4c274754722cece42d7d6dc4310",
+  "calibration_ee.json"          = "415a0dd395611574892efec2b4b54585fabee551b3a5ab7925398c19f8fb027f",
+  "calibration_by_rank_ee.json"  = "59cbf182f4efcf10c7739ef678f45b4af51aca05a285253eb7dd60ac9bc75a48"
 )
 
 .ARTIFACT_FILES <- names(.CHECKSUMS)
@@ -93,10 +93,16 @@ NULL
 
 #' Download TaxonBodyMassML model artifacts from Hugging Face Hub
 #'
-#' Downloads the XGBoost model (`model.ubj`, ~2 GB), calibration residuals
-#' (`calibration.json`), and category lists (`categories.json`) to the
-#' local user cache directory. On subsequent calls the files are skipped
-#' unless `force = TRUE` or the SHA256 checksum does not match.
+#' Downloads all model artifacts (~0.6 GB in total) to the local user cache
+#' directory: the XGBoost model (`model.ubj`) with its pooled and
+#' rank-stratified calibration residuals (`calibration.json`,
+#' `calibration_by_rank.json`), the category lists that define the model's
+#' factor levels (`categories.json`), the training-data species dictionary
+#' (`lookup.json`), and the Entity Embeddings model (`embeddings.json`,
+#' `model_ee.ubj`, `calibration_ee.json`, `calibration_by_rank_ee.json`).
+#' Every file is verified against a SHA256 checksum bundled with the package.
+#' On subsequent calls the files are skipped unless `force = TRUE` or the
+#' checksum does not match.
 #'
 #' @param version Character. HuggingFace revision to download. `"latest"`
 #'   resolves to the default branch (`main`). Pass a specific tag or commit
@@ -152,7 +158,7 @@ download_model <- function(version = "latest", force = FALSE) {
   if (isTRUE(.model_env$artifacts_ok)) return(invisible(NULL))
   if (!.artifacts_cached()) {
     message(
-      "TaxonBodyMassML: downloading model artifacts on first use (~2 GB)...\n",
+      "TaxonBodyMassML: downloading model artifacts on first use (~0.6 GB)...\n",
       "  Files: ", paste(.ARTIFACT_FILES, collapse = ", ")
     )
     download_model()
@@ -188,16 +194,6 @@ download_model <- function(version = "latest", force = FALSE) {
     assign("residuals_by_rank", cal, envir = .model_env)
   }
   .model_env$residuals_by_rank
-}
-
-.load_calibration_by_rank_gpboost <- function() {
-  if (!exists("residuals_by_rank_gpboost", envir = .model_env, inherits = FALSE)) {
-    cal <- jsonlite::fromJSON(
-      file.path(.cache_dir(), "calibration_by_rank_gpboost.json")
-    )
-    assign("residuals_by_rank_gpboost", cal, envir = .model_env)
-  }
-  .model_env$residuals_by_rank_gpboost
 }
 
 .load_calibration_by_rank_ee <- function() {
@@ -243,28 +239,6 @@ download_model <- function(version = "latest", force = FALSE) {
       ),
       call. = FALSE
     )
-}
-
-.load_gpboost_model <- function() {
-  if (!exists("gpboost_model", envir = .model_env, inherits = FALSE)) {
-    .require_method_file("model_gpboost.json", "GPBoost", "gpboost_model.py")
-    bst <- gpboost::gpb.load(
-      file.path(.cache_dir(), "model_gpboost.json")
-    )
-    assign("gpboost_model", bst, envir = .model_env)
-  }
-  .model_env$gpboost_model
-}
-
-.load_calibration_gpboost <- function() {
-  if (!exists("residuals_gpboost", envir = .model_env, inherits = FALSE)) {
-    .require_method_file("calibration_gpboost.json", "GPBoost", "gpboost_model.py")
-    cal <- jsonlite::fromJSON(
-      file.path(.cache_dir(), "calibration_gpboost.json")
-    )
-    assign("residuals_gpboost", cal$residuals, envir = .model_env)
-  }
-  .model_env$residuals_gpboost
 }
 
 .load_embeddings <- function() {

@@ -9,7 +9,7 @@ Unfortunately, although the body mass of thousands of species has been measured,
 
 ## Packages
 
-The pre-trained XGBoost model (~2 GB) is automatically downloaded from [Hugging Face](https://huggingface.co/marknovak/TaxonBodyMassML) on first use of the packages; internet access is also required for taxonomy lookups via the [GBIF](https://www.gbif.org/) fuzzy-match API and the [NCBI Taxonomy database](https://www.ncbi.nlm.nih.gov/taxonomy/).
+The pre-trained models (~0.6 GB in total) are automatically downloaded from [Hugging Face](https://huggingface.co/marknovak/TaxonBodyMassML) on first use of the packages; internet access is also required for taxonomy lookups via the [GBIF](https://www.gbif.org/) fuzzy-match API and the [NCBI Taxonomy database](https://www.ncbi.nlm.nih.gov/taxonomy/).
 
 ### R
 

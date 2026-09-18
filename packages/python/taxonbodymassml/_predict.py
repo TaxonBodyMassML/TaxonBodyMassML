@@ -18,15 +18,12 @@ from ._model import (
     load_calibration,
     load_calibration_by_rank,
     load_calibration_by_rank_ee,
-    load_calibration_by_rank_gpboost,
     load_calibration_ee,
-    load_calibration_gpboost,
     load_categories,
     load_embeddings,
     load_lookup,
     load_model,
     load_model_ee,
-    load_model_gpboost,
 )
 
 _TAXONOMY_INPUT_COLS = [
@@ -40,6 +37,12 @@ _TAXONOMY_INPUT_COLS = [
 ]
 
 _RANK_ORDER = ["genus", "family", "order", "class", "phylum", "kingdom"]
+
+# Model features: kingdom .. genus.  Species is not a feature (the training
+# table has one row per species, so it could only memorise; every queried
+# species is unseen by construction and known species come from the lookup
+# dictionary).  It is still consulted for genus promotion below.
+_MODEL_FEATURES = [c for c in TAXONOMY_COLS if c != "species"]
 
 
 # ---------------------------------------------------------------------------
@@ -93,7 +96,7 @@ _GBIF_KINGDOM_NORM: dict[str, str] = {
 def _apply_unk_mapping(  # noqa: E501
     df: pd.DataFrame, categories: dict[str, list[str]]
 ) -> pd.DataFrame:
-    """Replace unknown category values with 'UNK' and set category dtype."""
+    """Model feature frame (kingdom..genus) as pd.Categorical with training categories."""
     col_map = {
         "kingdom": "kingdom",
         "phylum": "phylum",
@@ -108,7 +111,7 @@ def _apply_unk_mapping(  # noqa: E501
     cols = [c for c in col_map if c in df.columns]
     renamed = df[cols].rename(columns=col_map)
 
-    for col in TAXONOMY_COLS:
+    for col in _MODEL_FEATURES:
         col_data = renamed[col].apply(_ascii_normalize)
         if col == "kingdom":
             col_data = col_data.map(lambda x: _GBIF_KINGDOM_NORM.get(x, x))
@@ -120,12 +123,11 @@ def _apply_unk_mapping(  # noqa: E501
             promote = col_data.isin(["UNK"]) | col_data.isna()
             promote &= sp_data.isin(genus_vocab)
             col_data = col_data.where(~promote, other=sp_data)
-            renamed["species"] = renamed["species"].where(~promote, other="UNK")
         valid = set(categories.get(col, []))
         mapped = col_data.where(col_data.isin(valid), other="UNK")
         renamed[col] = pd.Categorical(mapped, categories=categories[col])
 
-    return renamed[TAXONOMY_COLS]
+    return renamed[_MODEL_FEATURES]
 
 
 # ---------------------------------------------------------------------------
@@ -240,75 +242,21 @@ def _predict_xgboost(
     categories = load_categories()
     model = load_model()
     X = _apply_unk_mapping(taxonomy_df, categories)
-    # model.feature_names may be None when loading across xgboost versions;
-    # _apply_unk_mapping() already outputs columns in training order.
-    fnames = model.feature_names
-    if fnames:
-        X = X[fnames]
-    dmat = xgb.DMatrix(X, enable_categorical=True)
+    # The model was trained with native categorical splits on pd.Categorical
+    # columns whose categories are exactly categories.json (UNK first, then
+    # sorted).  Column order is taken from the model itself: xgboost does not
+    # reorder by name, so a wrong order would silently mispredict.
+    feature_names = model.feature_names
+    if not feature_names:
+        raise RuntimeError(
+            "model.ubj carries no feature_names; cannot align input columns. "
+            "Re-download the artifacts with download_model(force=True)."
+        )
+    dmat = xgb.DMatrix(X[feature_names], enable_categorical=True)
     log_preds = model.predict(dmat)
     residuals = load_calibration() if level is not None else None
     by_rank = (
         load_calibration_by_rank()
-        if (level is not None and interval_method == "stratified")
-        else None
-    )
-    return _assemble_output(
-        log_preds,
-        taxonomy_df,
-        level,
-        residuals,
-        input_names,
-        include_taxonomy,
-        include_source,
-        interval_method,
-        by_rank,
-    )
-
-
-# ---------------------------------------------------------------------------
-# GPBoost predictor
-# ---------------------------------------------------------------------------
-def _predict_gpboost(
-    taxonomy_df: pd.DataFrame,
-    level: Optional[float],
-    include_taxonomy: bool,
-    input_names: list[str],
-    include_source: bool,
-    interval_method: str = "pooled",
-) -> pd.DataFrame:
-    try:
-        import gpboost  # noqa: F401, E501 — presence check only; model loaded via load_model_gpboost
-    except ImportError as exc:
-        raise ImportError(
-            "gpboost is required for method='GPBoost'. "
-            "Install it with: pip install gpboost"  # noqa: E501
-        ) from exc
-
-    _ensure_artifacts()
-    categories = load_categories()
-
-    # Fixed-effect feature matrix — same UNK mapping as XGBoost
-    X = _apply_unk_mapping(taxonomy_df, categories)
-
-    # Group data for nested random effects (species→genus→family→order→class).
-    # Built from promoted X so genus-level random effects use the promoted name,
-    # not the raw 'UNK' that NCBI genus-rank hits carry in taxonomy_df.
-    group_data = pd.DataFrame(
-        {
-            "species": X["species"].astype(str),
-            "genus": X["genus"].astype(str),
-            "family": X["family"].astype(str),
-            "order": X["order"].astype(str),
-            "class": X["class"].astype(str),
-        }
-    ).to_numpy()
-
-    booster = load_model_gpboost()
-    log_preds = booster.predict(data=X, group_data_pred=group_data)
-    residuals = load_calibration_gpboost() if level is not None else None
-    by_rank = (
-        load_calibration_by_rank_gpboost()
         if (level is not None and interval_method == "stratified")
         else None
     )
@@ -335,9 +283,8 @@ _EE_DIMS = {
     "order": 16,
     "family": 16,
     "genus": 32,
-    "species": 32,
 }
-_EE_TOTAL_DIM = sum(_EE_DIMS.values())  # 116
+_EE_TOTAL_DIM = sum(_EE_DIMS.values())  # 84
 
 
 def _predict_entity_embeddings(
@@ -354,18 +301,13 @@ def _predict_entity_embeddings(
     # Map each taxonomy value to its embedding; unseen values → UNK vector
     n = len(taxonomy_df)
     X = np.zeros((n, _EE_TOTAL_DIM), dtype=np.float32)
-    src_col = {"species": "species_resolved"}  # column name remap
     offset = 0
-    ee_promote_mask = pd.Series([False] * n, dtype=bool)
-    for col in TAXONOMY_COLS:
+    for col in _MODEL_FEATURES:
         dim = _EE_DIMS[col]
         col_embs = embeddings[col]
         unk_vec = np.array(col_embs["UNK"], dtype=np.float32)
-        df_col = src_col.get(col, col)
         vals = (
-            taxonomy_df[df_col].fillna("UNK")
-            if df_col in taxonomy_df.columns
-            else pd.Series(["UNK"] * n)
+            taxonomy_df[col].fillna("UNK") if col in taxonomy_df.columns else pd.Series(["UNK"] * n)
         )
         if col == "kingdom":
             # Apply GBIF v2 kingdom remapping (same as _apply_unk_mapping).
@@ -381,14 +323,10 @@ def _predict_entity_embeddings(
             genus_vocab = set(col_embs.keys()) - {"UNK"}
             norm_g = vals.apply(lambda x: _ascii_normalize(x) or "UNK")
             norm_sp = sp_vals.apply(lambda x: _ascii_normalize(x) or "UNK")
-            ee_promote_mask = (norm_g == "UNK") & norm_sp.isin(genus_vocab)
-            if ee_promote_mask.any():
+            promote = (norm_g == "UNK") & norm_sp.isin(genus_vocab)
+            if promote.any():
                 vals = vals.copy()
-                vals[ee_promote_mask] = sp_vals[ee_promote_mask]
-        if col == "species" and ee_promote_mask.any():
-            # Write UNK into species for rows promoted from species_resolved.
-            vals = vals.copy()
-            vals[ee_promote_mask] = "UNK"
+                vals[promote] = sp_vals[promote]
         for i, val in enumerate(vals):
             norm = _ascii_normalize(val) or "UNK"
             X[i, offset : offset + dim] = col_embs.get(norm, unk_vec)
@@ -420,7 +358,6 @@ def _predict_entity_embeddings(
 # ---------------------------------------------------------------------------
 _METHODS = {
     "XGBoost": _predict_xgboost,
-    "GPBoost": _predict_gpboost,
     "EntityEmbeddings": _predict_entity_embeddings,
 }
 
@@ -431,7 +368,7 @@ _METHODS = {
 def predict_mass(
     taxon,
     confidence_interval=False,
-    method: str = "XGBoost",
+    method: str = "EntityEmbeddings",
     interval_method: str = "stratified",
     include_taxonomy: bool = False,
     fuzzy_match_name: bool = False,
@@ -459,10 +396,9 @@ def predict_mass(
         taxonomic rank.  ``"pooled"`` applies a single quantile from all
         calibration residuals, providing the marginal conformal guarantee.
     method : str
-        Prediction method.  ``"XGBoost"`` (default), ``"GPBoost"`` (gradient
-        boosting with nested taxonomic random effects; requires the ``gpboost``
-        package), or ``"EntityEmbeddings"`` (two-stage: taxonomy embeddings +
-        XGBoost on embedding vectors).
+        Prediction method.  ``"EntityEmbeddings"`` (default; two-stage:
+        taxonomy embeddings + XGBoost on embedding vectors) or ``"XGBoost"``
+        (direct XGBoost on natively categorical taxonomy features).
     include_taxonomy : bool
         If ``True``, include the resolved taxonomy columns in the output.
     fuzzy_match_name : bool
@@ -532,14 +468,17 @@ def predict_mass(
                 tax_full["matched_name"] != tax_full["input_name"]
             )
             no_match = tax_full["matched_name"].isna()
-            input_names = (
-                tax_full["matched_name"]
-                .where(corrected, tax_full["input_name"].where(~no_match, other=None))
-                .tolist()
-            )
-            matched_names = (
-                tax_full["input_name"].where(corrected | no_match, other=None).tolist()
-            )  # noqa: E501
+            # Plain lists so "no value" stays None (pandas 3 would coerce to NaN).
+            input_names = [
+                m if c else (None if nm else i)
+                for m, i, c, nm in zip(
+                    tax_full["matched_name"], tax_full["input_name"], corrected, no_match
+                )
+            ]
+            matched_names = [
+                i if (c or nm) else None
+                for i, c, nm in zip(tax_full["input_name"], corrected, no_match)
+            ]
             taxonomy_df = tax_full.drop(columns=["input_name", "matched_name"])
         else:
             taxonomy_df = lookup_taxonomy(names)
