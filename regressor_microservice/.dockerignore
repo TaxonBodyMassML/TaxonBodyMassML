@@ -6,6 +6,7 @@ tests/
 sliced_model/
 data/
 cloudflared/
+.env
 compose.yml
 compose.local.yml
 *.md
