@@ -97,7 +97,7 @@ make train   # trains both sequentially after tuning JSONs exist
 Each script loads `best_params` from its tuning JSON and falls back to built-in defaults if absent.
 
 **Outputs:**
-- `regressor_microservice/sliced_model/xgboost_model.pkl.*` — XGBoost pickleslicer bundle (model, conformal `q`, vocabulary, pooled and per-rank calibration residuals, species dictionary); stale slices are removed first
+- `regressor_microservice/sliced_model/xgboost_model.pkl.*` — XGBoost pickleslicer bundle (model, conformal `q`, vocabulary, pooled and per-rank calibration residuals, species dictionary); stale slices are removed first. This is a git-ignored local handoff to Phase 6; the microservice no longer reads it
 - `artifacts/model_ee.ubj` — Entity Embeddings Stage 2 XGBoost
 - `artifacts/embeddings.json` — Entity Embeddings lookup tables
 - `artifacts/calibration_*.json` — conformal calibration residuals (pooled + rank-stratified) for each model
@@ -119,7 +119,7 @@ make artifacts   # or triggered automatically by make all
 - `lookup.json` — species → `{mass_g, source}` lookup table
 - `checksums.json` — SHA-256 hashes for all artifacts
 
-**Verify:** `checksums.json` is non-empty; all artifact files for all models are present. Run `scripts/check_parity.py --sync-cache` to confirm the Python package, R package and microservice all reproduce `predictive_models/results/golden_predictions.json`, then a quick sanity prediction with `scripts/run_examples.py` or `scripts/run_examples.R`.
+**Verify:** `checksums.json` is non-empty; all artifact files for all models are present. Run `python scripts/sync_checksums.py` first (the packages re-download the published artifacts when their compiled-in checksums do not match the cache, so parity must be checked with the new checksums in place), reinstall the R package, then run `scripts/check_parity.py --sync-cache` to confirm the Python package, R package and microservice all reproduce `predictive_models/results/golden_predictions.json` (golden cases flagged `expect_na` have no rank in the vocabulary and must come back NA/null from every consumer), then a quick sanity prediction with `scripts/run_examples.py` or `scripts/run_examples.R`.
 
 ---
 
@@ -133,45 +133,39 @@ Prior XGBoost baseline (old data): R²=0.9106, RMSE=0.5621, MAE=0.3384 (log₁�
 
 ## Subsequent phases — DO NOT EXECUTE until approved
 
-### Phase 7 — Rebuild microservice and publish artifacts
+### Phase 7 — Publish artifacts, release the packages, redeploy the microservice
 
-The Flask microservice (`regressor_microservice/`) bakes `sliced_model/xgboost_model.pkl` into the Docker image at build time. After Phase 5 updates the pkl, rebuild and restart:
-
-```bash
-cd regressor_microservice
-docker compose up --build -d
-```
-
-Then publish artifacts (**explicit approval required**):
+The Flask microservice (`regressor_microservice/`) serves predictions through the released Python package: its image installs the package wheel pinned in `regressor_microservice/dockerfile` and downloads the matching Hugging Face artifacts at build time. The order therefore matters (**explicit approval required at every release step**):
 
 1. Bump the version in `packages/r/DESCRIPTION` and `packages/python/pyproject.toml`
-   (the publish script refuses to reuse an existing Hugging Face tag).
-2. Copy the new SHA-256 from `artifacts/checksums.json` into:
-   - `packages/python/taxonbodymassml/_checksums.py`
-   - `packages/r/R/model.R`
-3. Upload to Hugging Face and tag:
+   (the publish script refuses to reuse an existing Hugging Face tag) and add the
+   `NEWS.md` / `CHANGELOG.md` entries.
+2. Copy the new SHA-256 values into both packages: `python scripts/sync_checksums.py`.
+3. Upload to Hugging Face and tag (rewrites `MODEL_ARTIFACT_VERSION` in both packages):
    ```bash
    python scripts/publish_artifacts.py        # dry run
    python scripts/publish_artifacts.py --yes  # publish
    ```
-4. Tag and release both packages.
+4. Commit and push; CI creates the `python-v<version>` and `r-v<version>` GitHub releases and updates `latest`.
+5. Bump the `TBM_WHEEL` default in `regressor_microservice/dockerfile` to the new wheel URL and commit.
+6. On the deployment host, follow the runbook in `regressor_microservice/README.md`:
+   `docker compose up --build -d`, check `/health`, read the new tunnel URL from the
+   `cloudflared` logs, paste it into `web_dev/index.js`, push (CI syncs `web_dev/` to the
+   Pages repository).
 
-### Phase 8 — Regenerate results (figures and tables)
+### Phase 8 — Regenerate results (tables, figures, numbers)
 
 ```bash
-python scripts/extract_test_metrics.py
-python scripts/extract_training_stats.py
-python scripts/extract_feature_importance.py
-python scripts/extract_unk_errors.py
-bash ms/copy_results.sh
+python scripts/check_parity.py --sync-cache   # the package cache must hold the artifacts being evaluated
+make results
 ```
+
+`make results` runs, in order: `scripts/extract_training_stats.py` (kingdom/class tables, `data_stats.json`), `scripts/evaluate_models.py` (both models through `taxonbodymassml.predict_mass`: metrics, scatter figures, rank-masking errors, empirical conformal coverage; Entity Embeddings tables for the main text and `*_cmp.tex` comparison tables for the supplement), `scripts/extract_feature_importance.py`, `scripts/extract_hyperparameters.py` (search ranges are read from `predictive_models/tune_hyperparameters.py`), `scripts/format_data_sources.py`, `scripts/make_numbers_tex.py` (one `\newcommand` per quoted number) and finally `ms/copy_results.sh`, which copies everything into `ms/`.
 
 ### Phase 9 — Update manuscript
 
-**Requires Phase 7 complete first** (Hugging Face upload + package checksum update).
+**Requires Phase 7 complete first** (Hugging Face upload + package checksum update), because `numbers.tex` records the package and artifact versions.
 
-Update all values in `ms/manuscript.tex` that depend on model performance metrics, training dataset statistics, feature importance rankings, hyperparameter values, and conformal interval width (`q`).
-
-Regenerate R example output (lines 504–529 of `manuscript.tex`) by running `Rscript scripts/run_examples.R` with the updated package and pasting the console output into the two `lstlisting` blocks.
-
-Compile `ms/manuscript.tex` to confirm no broken references or layout regressions.
+- All numbers in `ms/manuscript.tex` come from `numbers.tex` macros; edit prose only. `make check-ms` lists unused/undefined macros, remaining margin notes and any hard-coded numerals.
+- Regenerate the R example output by running `Rscript scripts/run_examples.R` with the released package and pasting the console output into the `lstlisting` blocks of the Examples subsection.
+- `make -C ms pdf` builds the development PDF; `make submission` writes the single-file, macro-free `ms/submission/manuscript_submission.tex` (tables and bibliography inlined) and verifies with `pdftotext` that it renders identically. Submit that file, not the development source.

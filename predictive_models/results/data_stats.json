@@ -1,0 +1,94 @@
+{
+  "n_db": 37255,
+  "n_used": 37248,
+  "n_dropped_missing_rank": 7,
+  "n_source_records": 80280,
+  "n_sources_distinct": 368,
+  "top_single_source_contributors": [
+    [
+      "Feldman_etal_2016",
+      2571
+    ],
+    [
+      "Brose_etal_2018",
+      1794
+    ],
+    [
+      "Cai_etal_2025",
+      1781
+    ],
+    [
+      "fishbase",
+      1586
+    ],
+    [
+      "Wilman_etal_2014",
+      1023
+    ],
+    [
+      "Faurby_etal_2018",
+      768
+    ]
+  ],
+  "n_lookup_species": 37255,
+  "kingdoms": {
+    "Animalia": 36943,
+    "Chromista": 140,
+    "Bacteria": 124,
+    "Protozoa": 40,
+    "Archaea": 1
+  },
+  "pct_animalia": 99.18116408934708,
+  "top_classes": [
+    [
+      "Aves",
+      10485
+    ],
+    [
+      "Reptilia",
+      10083
+    ],
+    [
+      "Mammalia",
+      5945
+    ],
+    [
+      "Actinopterygii",
+      5184
+    ],
+    [
+      "Insecta",
+      1069
+    ],
+    [
+      "Amphibia",
+      828
+    ]
+  ],
+  "n_classes": 117,
+  "n_orders": 465,
+  "n_families": 2253,
+  "n_genera": 10135,
+  "mass_min": {
+    "species": "Francisella tularensis",
+    "mass_g": 1e-14,
+    "kingdom": "Bacteria",
+    "class": "Gammaproteobacteria"
+  },
+  "mass_max": {
+    "species": "Balaenoptera musculus",
+    "mass_g": 118800000.0,
+    "kingdom": "Animalia",
+    "class": "Mammalia"
+  },
+  "mass_median_g": 26.814999999999998,
+  "orders_of_magnitude": 22.074816440645176,
+  "resolution_chain": {
+    "pass_file": "/Users/novakm/Git/FracFeed/TaxonBodyMass_DB/sources/passes/TaxonBodyMass_Wikidata_pass.csv",
+    "n_names_submitted": 40880,
+    "n_names_resolved": 40675,
+    "n_names_autotroph": 650,
+    "n_species_after_filter": 37255,
+    "note": "applies the v5.1.0 filter rule to the pre-filter, pre-deduplication pass file; may differ by a few records from the released CSV (later manual overrides)"
+  }
+}

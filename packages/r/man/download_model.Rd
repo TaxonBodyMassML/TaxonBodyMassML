@@ -19,7 +19,7 @@ Invisible \code{NULL}. Called for its side-effect of populating the
 cache directory.
 }
 \description{
-Downloads all model artifacts (~0.6 GB in total) to the local user cache
+Downloads all model artifacts (~0.4 GB in total) to the local user cache
 directory: the XGBoost model (\code{model.ubj}) with its pooled and
 rank-stratified calibration residuals (\code{calibration.json},
 \code{calibration_by_rank.json}), the category lists that define the model's

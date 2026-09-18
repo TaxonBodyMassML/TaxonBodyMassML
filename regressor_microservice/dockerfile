@@ -2,17 +2,34 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# The taxonbodymassml package caches its model artifacts under
+# $XDG_CACHE_HOME/TaxonBodyMassML (platformdirs).  Fix the location before the
+# download so the 0.4 GB layer is reused across code-only rebuilds.
+ENV XDG_CACHE_HOME=/app/.cache \
+    PYTHONUNBUFFERED=1
+
+# Release wheel of the Python package.  Bump with every Python package release;
+# the wheel embeds the checksums of the matching Hugging Face artifact tag.
+# For a pre-release build pass e.g.
+#   --build-arg TBM_WHEEL=https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.10.0/taxonbodymassml-0.10.0-py3-none-any.whl
+ARG TBM_WHEEL=https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.11.0/taxonbodymassml-0.11.0-py3-none-any.whl
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt "taxonbodymassml @ ${TBM_WHEEL}"
+
+# Download and verify the model artifacts (~0.4 GB) at build time so the
+# container starts offline.
+RUN python -c "import taxonbodymassml as t; t.download_model()"
 
 COPY . .
 
-RUN useradd --no-create-home --shell /bin/false appuser
+RUN useradd --no-create-home --shell /bin/false appuser \
+ && chown -R appuser:appuser /app/.cache
 USER appuser
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
-CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "regressor:create_wsgi_app()"]
+CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "--timeout", "120", "regressor:create_wsgi_app()"]

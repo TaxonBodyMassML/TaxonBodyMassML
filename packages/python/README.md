@@ -23,7 +23,7 @@ pip install "taxonbodymassml[progress]"
 ```python
 import taxonbodymassml as tbm
 
-# Single species — model artifacts are downloaded automatically on first use (~0.6 GB, once only)
+# Single species — model artifacts are downloaded automatically on first use (~0.4 GB, once only)
 tbm.predict_mass("Haustrum scobina")
 #   taxon     mass_g
 # 0  Haustrum scobina  0.382...
@@ -64,7 +64,7 @@ features; species is used for the training-data lookup, not as a model input.
 
 Returns a `pd.DataFrame` with columns `taxon`, `mass_g` (grams), and optionally `lower_bound`, `upper_bound`, `confidence`, `kingdom` … `species_resolved`, `matched_name`, `source`.
 
-Species that cannot be resolved to taxonomy emit a warning and return `NaN`.
+Species that cannot be resolved to taxonomy emit a warning and return `NaN`. So do resolved taxa whose kingdom-to-genus classification shares no value with the training data (for example plants and fungi, which the training set excludes): predicting them would be an extrapolation from all-unknown features, so the row is `NaN`, its `source` is `"tbmML_UNK"`, and a warning names it.
 
 > **Note:** `fuzzy_predict_mass()` is deprecated as of v0.2.1. Replace any calls to it with `predict_mass(..., fuzzy_match_name=True)`.
 

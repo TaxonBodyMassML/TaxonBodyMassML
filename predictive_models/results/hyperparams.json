@@ -1,0 +1,119 @@
+{
+  "XGBoost": {
+    "best_params": {
+      "n_estimators": 750,
+      "max_depth": 32,
+      "learning_rate": 0.10490750079222567,
+      "subsample": 0.5051742194845482,
+      "colsample_bytree": 0.6950887285132329,
+      "gamma": 0.79391439282331,
+      "min_child_weight": 2
+    },
+    "best_cv_mae": 0.34413389374042,
+    "n_trials": 100,
+    "n_folds": 5,
+    "at_bound": {},
+    "search_space": {
+      "n_estimators": [
+        "int",
+        200,
+        900,
+        50
+      ],
+      "max_depth": [
+        "int",
+        5,
+        50
+      ],
+      "learning_rate": [
+        "float_log",
+        0.01,
+        0.3
+      ],
+      "subsample": [
+        "float",
+        0.5,
+        1.0
+      ],
+      "colsample_bytree": [
+        "float",
+        0.5,
+        1.0
+      ],
+      "gamma": [
+        "float",
+        0.0,
+        1.0
+      ],
+      "min_child_weight": [
+        "int",
+        1,
+        10
+      ]
+    }
+  },
+  "EntityEmbeddings": {
+    "best_params": {
+      "n_estimators": 750,
+      "max_depth": 12,
+      "learning_rate": 0.05061087564118453,
+      "subsample": 0.6858104292245208,
+      "colsample_bytree": 0.7481165187056286,
+      "min_child_weight": 10
+    },
+    "best_cv_mae": 0.316860036087108,
+    "n_trials": 100,
+    "n_folds": 5,
+    "at_bound": {
+      "min_child_weight": "upper"
+    },
+    "search_space": {
+      "n_estimators": [
+        "int",
+        200,
+        800,
+        50
+      ],
+      "max_depth": [
+        "int",
+        4,
+        15
+      ],
+      "learning_rate": [
+        "float_log",
+        0.01,
+        0.3
+      ],
+      "subsample": [
+        "float",
+        0.5,
+        1.0
+      ],
+      "colsample_bytree": [
+        "float",
+        0.5,
+        1.0
+      ],
+      "min_child_weight": [
+        "int",
+        1,
+        10
+      ]
+    },
+    "emb_dims": {
+      "kingdom": 4,
+      "phylum": 8,
+      "class": 8,
+      "order": 16,
+      "family": 16,
+      "genus": 32
+    },
+    "total_emb_dim": 84,
+    "stage1": {
+      "epochs": 100,
+      "batch": 256,
+      "lr": 0.001,
+      "mae": 0.3617755358872129
+    }
+  }
+}

@@ -1,0 +1,22 @@
+\begin{tabular}{lrr}
+\toprule
+Rank & Training vocabulary (excl.\ UNK) & Embedding dimensions \\
+\midrule
+\texttt{kingdom} & 5 & 4 \\
+\texttt{phylum} & 37 & 8 \\
+\texttt{class} & 113 & 8 \\
+\texttt{order} & 453 & 16 \\
+\texttt{family} & 2{,}166 & 16 \\
+\texttt{genus} & 9{,}602 & 32 \\
+Concatenated input & & 84 \\
+\midrule
+\multicolumn{3}{l}{\textit{Stage 1 network and training}} \\
+Hidden layers & \multicolumn{2}{r}{84 $\rightarrow$ 64 $\rightarrow$ 32 $\rightarrow$ 1, ReLU} \\
+Loss & \multicolumn{2}{r}{L1 (MAE in $\log_{10}$ g)} \\
+Optimiser & \multicolumn{2}{r}{Adam, learning rate 0.001, OneCycleLR schedule} \\
+Epochs / batch size & \multicolumn{2}{r}{100 / 256} \\
+Seeds & \multicolumn{2}{r}{PyTorch and NumPy 42} \\
+UNK vector & \multicolumn{2}{r}{mean of the rank's learned embeddings} \\
+Stage 1 test MAE & \multicolumn{2}{r}{0.362 $\log_{10}$ g} \\
+\bottomrule
+\end{tabular}

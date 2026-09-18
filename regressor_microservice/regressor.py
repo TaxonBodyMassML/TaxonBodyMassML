@@ -1,53 +1,91 @@
 """
-pasquang
-pasquang@oregonstate.edu
-4/10/2026
+TaxonBodyMassML prediction microservice (backend of https://taxonbodymassml.github.io).
+
+The service answers every request with ``taxonbodymassml.predict_mass`` from
+the released Python package, so the web interface, the R package and the
+Python package share one inference implementation.  The package is installed
+from its release wheel (see the dockerfile) and the model artifacts are
+downloaded from Hugging Face at image build time, so the container starts
+offline.  Endpoint paths and the response schema are unchanged from the
+original XGBoost-only service so the front end keeps working.
+
+Run locally (after ``pip install -r requirements.txt`` and the package):
+    gunicorn -w 1 -b 127.0.0.1:8000 'regressor:create_wsgi_app()'
+
+Environment:
+    TBM_METHOD   prediction method served: "EntityEmbeddings" (default) or "XGBoost"
+
+Response schema (one object per taxonomy):
+    taxonomy      the seven ranks after normalisation (unseen values -> "UNK")
+    prediction    grams; null when no rank of the taxonomy is in the training data
+    lower_bound,  90% rank-stratified conformal interval in grams (equal to the
+    upper_bound   prediction for species taken from the training-data dictionary;
+                  null when prediction is null)
+    confidence    0.90 for model predictions, null otherwise
+    source        data-source label for dictionary species, "tbmML_<rank>" for
+                  model predictions, "tbmML_UNK" when nothing is represented
+    model         "EntityEmbeddings" / "XGBoost" for model predictions, else null
+    warning       present only when prediction is null
 """
 
-# run using: gunicorn -w 1 -b 127.0.0.1:8000 'regressor:create_wsgi_app()'
-
+import math
 import os
 import traceback
 import unicodedata
+import warnings
+from importlib import metadata
 
 import pandas as pd
-import pickleslicer
+import taxonbodymassml
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-MODEL_READ_FILE = "./sliced_model/xgboost_model.pkl"
+# These helpers are private to the package.  The service pins the package
+# version (dockerfile ARG TBM_WHEEL), so relying on them is safe; they provide
+# the UNK-mapped taxonomy echo and the dictionary that the response schema needs.
+from taxonbodymassml._checksums import MODEL_ARTIFACT_VERSION
+from taxonbodymassml._model import _ensure_artifacts, load_categories, load_lookup
+
 TAXONOMY_COLS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
 # Model features: kingdom .. genus.  Species is not a feature; it is used for the
 # training-data dictionary lookup and for genus promotion only.
 MODEL_FEATURES = ["kingdom", "phylum", "class", "order", "family", "genus"]
-RANK_ORDER = ["genus", "family", "order", "class", "phylum", "kingdom"]
 UNK = "UNK"
+METHODS = ("EntityEmbeddings", "XGBoost")
+METHOD = os.environ.get("TBM_METHOD", "EntityEmbeddings")
+INTERVAL_METHOD = "stratified"
+CONFIDENCE = 0.90
+UNREPRESENTED_WARNING = (
+    "No rank of the supplied taxonomy is represented in the training data; "
+    "no prediction is possible"
+)
 _GBIF_KINGDOM_NORM: dict[str, str] = {
     "Metazoa": "Animalia",
     "Plantae": "Viridiplantae",
 }
 
 
-class ModelState:
-    """Everything derived from the pickle bundle, computed once at startup."""
+def _package_version() -> str:
+    try:
+        return metadata.version("taxonbodymassml")
+    except metadata.PackageNotFoundError:  # editable/source checkouts
+        return getattr(taxonbodymassml, "__version__", "unknown")
 
-    def __init__(self, bundle):
-        self.model = bundle["model"]
-        self.q = float(bundle["q"])
-        vocab = bundle["vocab"]  # {feature: [UNK, sorted training values...]}
-        self.vocab = vocab
-        self.valid = {col: set(vocab[col]) for col in MODEL_FEATURES}
+
+class ModelState:
+    """Everything the request handlers need, prepared once at startup."""
+
+    def __init__(self, method: str = METHOD):
+        if method not in METHODS:
+            raise ValueError(f"TBM_METHOD must be one of {METHODS}; got {method!r}")
+        self.method = method
+        _ensure_artifacts()  # verifies the cached artifacts against the package checksums
+        self.categories = load_categories()  # {feature: [UNK, sorted training values...]}
+        self.valid = {col: set(self.categories[col]) for col in MODEL_FEATURES}
         self.genus_vocab = self.valid["genus"] - {UNK}
-        self.dtypes = {col: pd.CategoricalDtype(categories=vocab[col]) for col in MODEL_FEATURES}
-        # species -> {mass_g, source} from the training data (same as lookup.json)
-        self.lookup = bundle["lookup"]
-        # Column order is dictated by the model; never assume MODEL_FEATURES.
-        self.feature_names = list(self.model.get_booster().feature_names or [])
-        if set(self.feature_names) != set(MODEL_FEATURES):
-            raise RuntimeError(
-                f"Model feature_names {self.feature_names} do not match {MODEL_FEATURES}; "
-                "retrain with predictive_models/decision_tree.py"
-            )
+        self.lookup = load_lookup()  # species -> {mass_g, source}
+        self.package_version = _package_version()
+        self.artifact_version = MODEL_ARTIFACT_VERSION
 
 
 def _ascii_normalize(x):
@@ -58,7 +96,7 @@ def _ascii_normalize(x):
 
 
 def _normalize_taxonomy(df, state):
-    """Return df[TAXONOMY_COLS] as strings after ASCII normalization, UNK mapping, genus promotion.
+    """Return df[TAXONOMY_COLS] as strings after ASCII normalisation, UNK mapping, genus promotion.
 
     Model features are mapped to the training vocabulary (unseen -> UNK); the
     species column is kept as the normalised input (or UNK) for the dictionary
@@ -84,18 +122,8 @@ def _normalize_taxonomy(df, state):
     return df[TAXONOMY_COLS]
 
 
-def _encode_taxonomy(df_str, state):
-    """Categorical frame (categories == training vocab) in the model's feature order."""
-    encoded = pd.DataFrame({col: df_str[col].astype(state.dtypes[col]) for col in MODEL_FEATURES})
-    return encoded[state.feature_names]
-
-
-def _source_rank(row, state):
-    """'tbmML_<finest rank present in training>' for a model-inferred row."""
-    for rank in RANK_ORDER:
-        if row[rank] != UNK:
-            return f"tbmML_{rank}"
-    return "tbmML_UNK"
+def _is_missing(value) -> bool:
+    return value is None or (isinstance(value, float) and math.isnan(value))
 
 
 def _validate_records(data):
@@ -109,21 +137,50 @@ def _validate_records(data):
 
 
 def _predict_rows(records, state):
-    """One result per record.
+    """One result per record, in input order.
 
     Species with a recorded mass in the training data return that value with a
-    degenerate interval and their data source (mirrors the packages' dictionary
-    lookup).  Everything else is model-inferred from kingdom..genus with a 90%
-    conformal interval.
+    degenerate interval and their data source.  Everything else is predicted by
+    the package from kingdom..genus with a 90% rank-stratified conformal
+    interval.  Taxa with no rank in the training data get a null prediction and
+    a warning instead of an extrapolation from all-unknown features.
     """
     df_str = _normalize_taxonomy(pd.DataFrame(records), state)
-    preds = state.model.predict(_encode_taxonomy(df_str, state))
+    df_in = df_str.rename(columns={"species": "species_resolved"})
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # unrepresented rows are reported per item below
+        out = taxonbodymassml.predict_mass(
+            df_in,
+            confidence_interval=CONFIDENCE,
+            method=state.method,
+            interval_method=INTERVAL_METHOD,
+            include_source=True,
+            lookup=True,
+        )
+
     results = []
-    for row_dict, pred in zip(df_str.to_dict(orient="records"), preds):
+    for row_dict, res in zip(df_str.to_dict(orient="records"), out.to_dict(orient="records")):
         taxonomy = {col: str(row_dict[col]) for col in TAXONOMY_COLS}
-        hit = state.lookup.get(row_dict["species"])
-        if hit is not None:
-            mass = float(hit["mass_g"])
+        source = res.get("source")
+        mass = res.get("mass_g")
+
+        if _is_missing(mass) or source == "tbmML_UNK" or source is None:
+            results.append(
+                {
+                    "taxonomy": taxonomy,
+                    "prediction": None,
+                    "lower_bound": None,
+                    "upper_bound": None,
+                    "confidence": None,
+                    "source": "tbmML_UNK",
+                    "model": None,
+                    "warning": UNREPRESENTED_WARNING,
+                }
+            )
+            continue
+
+        mass = float(mass)
+        if not str(source).startswith("tbmML_"):  # training-data dictionary hit
             results.append(
                 {
                     "taxonomy": taxonomy,
@@ -131,34 +188,35 @@ def _predict_rows(records, state):
                     "lower_bound": mass,
                     "upper_bound": mass,
                     "confidence": None,
-                    "source": str(hit["source"]),
+                    "source": str(source),
+                    "model": None,
                 }
             )
             continue
-        pred = float(pred)
+
+        lower, upper = res.get("lower_bound"), res.get("upper_bound")
         results.append(
             {
                 "taxonomy": taxonomy,
-                "prediction": float(10**pred),
-                "lower_bound": float(10 ** (pred - state.q)),
-                "upper_bound": float(10 ** (pred + state.q)),
-                "confidence": 0.90,
-                "source": _source_rank(row_dict, state),
+                "prediction": mass,
+                "lower_bound": mass if _is_missing(lower) else float(lower),
+                "upper_bound": mass if _is_missing(upper) else float(upper),
+                "confidence": CONFIDENCE,
+                "source": str(source),
+                "model": state.method,
             }
         )
     return results
 
 
 def _load_state():
-    bundle = pickleslicer.load(MODEL_READ_FILE)
-    if not bundle.get("model"):
-        print("Model not loaded successfully.")
-        raise RuntimeError("Model not loaded successfully.")
-    state = ModelState(bundle)
-    print("Model loaded successfully.")
-
-    # Warm up XGBoost's OpenMP thread pool so the first real request isn't penalized.
-    _predict_rows([{col: UNK for col in TAXONOMY_COLS}], state)
+    state = ModelState()
+    print(
+        f"Model loaded successfully: method={state.method}, "
+        f"taxonbodymassml {state.package_version}, artifacts {state.artifact_version}."
+    )
+    # Warm up the model and XGBoost's thread pool so the first request isn't penalized.
+    _predict_rows([{"kingdom": "Animalia"}], state)
     return state
 
 
@@ -169,7 +227,17 @@ def create_app(state):
 
     @app.route("/health", methods=["GET"])
     def health():
-        return jsonify({"status": "ok"}), 200
+        return (
+            jsonify(
+                {
+                    "status": "ok",
+                    "method": state.method,
+                    "package_version": state.package_version,
+                    "model_artifact_version": state.artifact_version,
+                }
+            ),
+            200,
+        )
 
     @app.route("/xgb_pred_single", methods=["POST"])
     def xgb_pred_single():
@@ -207,12 +275,12 @@ def create_app(state):
     <!DOCTYPE html>
     <html>
         <head>
-            <title>Model API</title>
+            <title>TaxonBodyMassML API</title>
         </head>
         <body>
             <h1>Model server is running!</h1>
-            <p>The very first prediction request may take a little while to complete.
-               Subsequent requests will be significantly faster.</p>
+            <p>POST a taxonomy to /xgb_pred_single or a list to /xgb_pred_multi;
+               GET /health for the served method and versions.</p>
         </body>
     </html>
     """

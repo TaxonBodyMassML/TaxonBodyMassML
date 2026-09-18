@@ -138,13 +138,27 @@ def _infer_source_rank(row: pd.Series, categories: dict[str, list[str]]) -> str:
     # GBIF matches at genus rank. Check before iterating the standard ranks.
     sr = _ascii_normalize(row.get("species_resolved"))
     g = _ascii_normalize(row.get("genus"))
-    if sr and (not g or g == "UNK") and sr in set(categories.get("genus", [])):
+    if sr and sr != "UNK" and (not g or g == "UNK") and sr in set(categories.get("genus", [])):
         return "tbmML_genus"
     for rank in _RANK_ORDER:
         val = _ascii_normalize(row.get(rank))
         if val and val != "UNK" and val in set(categories.get(rank, [])):
             return f"tbmML_{rank}"
     return "tbmML_UNK"
+
+
+def _unrepresented_mask(taxonomy_df: pd.DataFrame, categories: dict[str, list[str]]) -> list[bool]:
+    """True for rows whose kingdom..genus share no value with the training vocabulary.
+
+    Such rows would be scored on all-UNK features, which is a meaningless
+    extrapolation, so predict_mass() returns NaN for them instead.  Uses the
+    same rank inference as ``source``, so the test matches what the model sees
+    (ASCII normalisation, GBIF kingdom remap, genus promotion).
+    """
+    return [
+        _infer_source_rank(taxonomy_df.iloc[i], categories) == "tbmML_UNK"
+        for i in range(len(taxonomy_df))
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -417,7 +431,9 @@ def predict_mass(
         values it is ``"tbmML_"`` followed by the finest taxonomic rank
         present in the training data (e.g., ``"tbmML_genus"`` if the genus
         was seen during training; ``"tbmML_order"`` if only the order was
-        seen).  Unresolvable taxa receive ``None``.  Default ``False``.
+        seen).  Taxa whose resolved taxonomy shares no rank with the training
+        data receive ``"tbmML_UNK"``; unresolvable taxa receive ``None``.
+        Default ``False``.
     lookup : bool
         If ``True`` (default), taxa found in the training-data dictionary are
         returned with their empirical mass and bypass the model.  If
@@ -435,7 +451,9 @@ def predict_mass(
         entered name if corrected or unmatched; ``None`` if no correction was
         needed).
         With ``include_source=True``: also ``source``.
-        Rows for unresolvable species have ``NaN`` for numeric columns.
+        Rows for unresolvable species, and rows whose resolved taxonomy shares
+        no rank with the training data (a warning lists them), have ``NaN``
+        for numeric columns.
     """
     if method not in _METHODS:
         raise ValueError(f"Unknown method {method!r}. Available: {list(_METHODS)}")
@@ -553,16 +571,58 @@ def predict_mass(
         if model_indices:
             model_sub = sub.iloc[model_indices].reset_index(drop=True)
             model_names = [sub_names[i] for i in model_indices]
-            good_df = _METHODS[method](
-                model_sub,
-                level,
-                include_taxonomy,
-                model_names,
-                include_source,
-                interval_method,  # noqa: E501
-            )
-            good_df["_orig_idx"] = [resolved_pos[i] for i in model_indices]
-            result_rows.append(good_df)
+
+            # Taxa whose kingdom..genus share no value with the training
+            # vocabulary would be scored on all-UNK features: return NaN for
+            # them (with a warning), as for unresolvable names.
+            unrep = _unrepresented_mask(model_sub, load_categories())
+            unrep_pos = [i for i, u in enumerate(unrep) if u]
+            keep_pos = [i for i, u in enumerate(unrep) if not u]
+
+            if unrep_pos:
+                unrep_names = [model_names[i] for i in unrep_pos]
+                shown = ", ".join(repr(n) for n in unrep_names[:10])
+                if len(unrep_names) > 10:
+                    shown += f", ... ({len(unrep_names) - 10} more)"
+                warnings.warn(
+                    f"{len(unrep_names)} taxon/taxa resolved to a taxonomy with no rank "
+                    f"present in the training data; returning NaN: {shown}",
+                    stacklevel=2,
+                )
+                unrep_rows = []
+                for i, name in zip(unrep_pos, unrep_names):
+                    row = {"taxon": name, "mass_g": float("nan")}
+                    if level is not None:
+                        row.update(
+                            {
+                                "lower_bound": float("nan"),
+                                "upper_bound": float("nan"),
+                                "confidence": float("nan"),
+                            }
+                        )
+                    if include_taxonomy:
+                        for col in _TAXONOMY_INPUT_COLS:
+                            row[col] = model_sub[col].iloc[i] if col in model_sub.columns else None
+                    if include_source:
+                        row["source"] = "tbmML_UNK"
+                    unrep_rows.append(row)
+                unrep_df = pd.DataFrame(unrep_rows)
+                unrep_df["_orig_idx"] = [resolved_pos[model_indices[i]] for i in unrep_pos]
+                result_rows.append(unrep_df)
+
+            if keep_pos:
+                keep_sub = model_sub.iloc[keep_pos].reset_index(drop=True)
+                keep_names = [model_names[i] for i in keep_pos]
+                good_df = _METHODS[method](
+                    keep_sub,
+                    level,
+                    include_taxonomy,
+                    keep_names,
+                    include_source,
+                    interval_method,
+                )
+                good_df["_orig_idx"] = [resolved_pos[model_indices[i]] for i in keep_pos]
+                result_rows.append(good_df)
 
     if not resolved_mask.all():
         nan_names = [input_names[i] for i in unresolved_pos]

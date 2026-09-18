@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.11.0] - 2026-09-18
+
+### Model and data
+
+- Training data updated to TaxonBodyMass_DB v5.1.0 (37,255 species; was
+  37,312). The database's autotroph filter now uses the rank names that GBIF
+  and NCBI actually return, so 21 cyanobacteria, 33 photosynthetic
+  dinoflagellates and 3 photosynthetic euglenids that had slipped through are
+  gone, and one lizard that NCBI had matched to a plant genus is corrected.
+  Both models were re-split, re-tuned (100 Optuna trials, 5-fold CV) and
+  retrained; artifact checksums updated (Hugging Face tags `r-v0.11.0` /
+  `py-v0.11.0`).
+
+### Changed
+
+- Taxa whose kingdom..genus classification shares no value with the training
+  vocabulary (for example plants and fungi, which the training data exclude)
+  now return `NaN` with a warning and `source = "tbmML_UNK"` instead of a
+  prediction from all-`UNK` features, which was a meaningless extrapolation
+  wrapped in an ordinary-looking interval. Kingdom-level matches are still
+  predicted. Golden cases of this kind are flagged `expect_na`.
+- The web interface's prediction service (`regressor_microservice/`) now calls
+  this package, so all three interfaces share one inference implementation.
+
+### Fixed
+
+- A bare `"UNK"` species string was treated as a known genus when inferring the
+  source rank (the vocabulary lists start with `UNK`), so such rows were
+  labelled `tbmML_genus`.
+
 ## [0.10.0] - 2026-09-17
 
 ### Breaking

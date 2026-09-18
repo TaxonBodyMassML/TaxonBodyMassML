@@ -7,7 +7,8 @@ TUNE_EE   = predictive_models/results/tuning_study_ee.json
 .PHONY: all fetch split \
         tune tune-xgboost tune-ee \
         train train-xgboost train-ee \
-        artifacts publish clean-tune
+        artifacts publish clean-tune \
+        results check-ms submission
 
 all: artifacts
 
@@ -48,6 +49,26 @@ artifacts: train
 # ---- Publish to HuggingFace (upload + versioned tag) -------------------------
 publish: artifacts
 	python scripts/publish_artifacts.py
+
+# ---- Manuscript results (after `make artifacts` and check_parity.py --sync-cache) ----
+# Tables, figures and numbers.tex from the artifacts in the package cache, then
+# copied into ms/.  Every number the manuscript quotes comes from numbers.tex.
+results:
+	python scripts/extract_training_stats.py
+	python scripts/evaluate_models.py
+	python scripts/extract_feature_importance.py
+	python scripts/extract_hyperparameters.py
+	python scripts/format_data_sources.py
+	python scripts/make_numbers_tex.py
+	bash ms/copy_results.sh
+
+# Cross-check ms/manuscript.tex against numbers.tex (unused/undefined macros, margin notes)
+check-ms:
+	python scripts/check_manuscript_numbers.py
+
+# Single-file, macro-free submission copy (ms/submission/), verified by a pdftotext diff
+submission:
+	$(MAKE) -C ms submission
 
 # ---- Discard stale tuning state (re-run after data changes) ------------------
 clean-tune:

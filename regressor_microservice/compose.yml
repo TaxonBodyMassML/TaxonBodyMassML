@@ -1,21 +1,20 @@
-version: "3.9"
-
 services:
   regressor:
     build: .
     container_name: regressor_api
+    # Only reachable through the tunnel in production; for local testing add
+    # `-f compose.yml -f compose.local.yml` to publish port 8000.
     expose:
       - "8000"
-    command: >
-      gunicorn
-      -w 1
-      -b 0.0.0.0:8000
-      'regressor:create_wsgi_app()'
+    environment:
+      TBM_METHOD: EntityEmbeddings
     restart: unless-stopped
 
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
+    # Quick tunnel: a new random *.trycloudflare.com hostname on every start.
+    # See README.md for switching to a named tunnel with a stable hostname.
     command: tunnel --url http://regressor:8000
     restart: unless-stopped
     volumes:

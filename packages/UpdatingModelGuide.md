@@ -1,6 +1,6 @@
 # Updating the Model Packages
 
-Follow these steps after retraining or otherwise updating the XGBoost model.
+Follow these steps after retraining or otherwise updating the models.
 The two packages — `python/` and `r/` — both embed SHA-256 checksums for the
 model artifacts. Those checksums must be kept in sync with whatever is live on
 Hugging Face, or the packages will refuse to load.
@@ -31,6 +31,14 @@ Everything that touches taxonomy features imports
   `categories.json`, and orders columns by the **model's own** `feature_names`.
   There is no `feature_order` key; xgboost does not reorder by name, so
   reading the order from anywhere else would silently mispredict.
+* Unseen values map to `UNK`. A taxon whose kingdom..genus share **no** value
+  with the vocabulary (e.g. plants and fungi, which the training data exclude)
+  would be scored on all-UNK features, a meaningless extrapolation, so every
+  consumer returns NA/null for it with a warning and `source = "tbmML_UNK"`
+  instead of calling the model. Kingdom-only matches are still predicted; the
+  rank-stratified interval carries their (large) uncertainty. The golden file
+  flags such cases with `expect_na` and `scripts/check_parity.py` asserts the
+  NA rather than comparing numbers.
 
 ---
 
@@ -50,8 +58,9 @@ pooled and per-rank calibration residuals, and the species dictionary — to:
 regressor_microservice/sliced_model/xgboost_model.pkl.*
 ```
 
-Stale `.pkl.N` slices from earlier runs are deleted first. Commit the new
-slices and `git rm` any that no longer exist.
+Stale `.pkl.N` slices from earlier runs are deleted first. The bundle is a
+git-ignored local handoff to Step 2; nothing else reads it (the microservice
+serves predictions through the released Python package).
 
 ---
 
@@ -73,7 +82,7 @@ sorted), and regenerates these files in `artifacts/`:
 | `calibration.json` | Sorted pooled conformal residuals |
 | `calibration_by_rank.json` | Rank-stratified conformal residuals |
 | `categories.json` | Training vocabulary per model feature, kingdom .. genus (UNK first, then sorted; index == code) |
-| `lookup.json` | Species → `{mass_g, source}` dictionary from training data (also carried in the pickle bundle for the microservice) |
+| `lookup.json` | Species → `{mass_g, source}` dictionary built from the full database (all species, including the test split) |
 | `checksums.json` | SHA-256 hashes of the above plus the Entity Embeddings files — the source of truth |
 
 It also writes `predictive_models/results/golden_predictions.json`: reference
@@ -82,17 +91,26 @@ masking, all-UNK, unseen taxa). Every consumer must reproduce them. Because
 species is not a feature, a test row and the same row with species masked
 give the same value by design.
 
-### Step 2b — Check parity before touching checksums
+### Step 2b — Sync the checksums, then check parity
 
 ```bash
+python scripts/sync_checksums.py                       # local source edit only; publishes nothing
+(cd packages/r && R CMD INSTALL .)                     # the R check uses the installed package
 predictive_models/.venv/bin/python scripts/check_parity.py --sync-cache --no-service
 regressor_microservice/.venv/bin/python scripts/check_parity.py --no-r
 ```
 
-`--sync-cache` copies `artifacts/` into the Python and R package cache
-directories so the packages can be tested against the new model before it is
-published. The check fails if the Python package, the R package or the
-microservice differ from the golden values by more than 1e-5 log10 units.
+The checksums must be synced **before** parity: both packages verify every
+cached artifact against the checksums compiled into them and re-download the
+published (old) files on a mismatch, so with stale checksums the check would
+silently test the previous release. `--sync-cache` then copies `artifacts/`
+into the Python and R package cache directories so the packages can be tested
+against the new model before it is published. The check fails if the Python
+package, the R package or the microservice (which serves whichever method
+`TBM_METHOD` selects, Entity Embeddings by default) differ from the golden
+values by more than 1e-5 log10 units, or return a number for a case flagged
+`expect_na`. Steps 4 and 5 below are therefore already done by
+`sync_checksums.py`; they document what it edits.
 
 ---
 
@@ -173,8 +191,9 @@ the package.
 ## Updating the Entity Embeddings Model
 
 The Entity Embeddings model writes its artifacts directly to `artifacts/`
-when the training script is run. It is not yet processed by `export_artifacts.py`
-and is not currently referenced by the Python or R packages.
+when the training script is run. `export_artifacts.py` checksums them and adds
+their golden values, and both packages (and the microservice) serve the model
+as the default `method`.
 
 ### Hyperparameter tuning (optional, before retraining)
 

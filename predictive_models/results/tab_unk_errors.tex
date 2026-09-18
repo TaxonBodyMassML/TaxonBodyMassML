@@ -1,12 +1,12 @@
-\begin{tabular}{lrr}
+\begin{tabular}{lrrr}
 \toprule
-Taxonomy resolution & MAE ($\log_{10}$ g) & $\Delta$MAE \\
+Finest known rank & MAE ($\log_{10}$ g) & $\Delta$MAE & median factor \\
 \midrule
-Full taxonomy & 0.3511 & --- \\
-\texttt{species}~$=$~\texttt{``UNK''} & 0.3507 & $-0.000$ \\
-\texttt{genus}$+$\texttt{species}~$=$~\texttt{``UNK''} & 0.4674 & $+0.116$ \\
-\texttt{family}$+$\texttt{genus}$+$\texttt{species}~$=$~\texttt{``UNK''} & 0.6779 & $+0.327$ \\
-\texttt{order}$+\ldots+$\texttt{species}~$=$~\texttt{``UNK''} & 0.9198 & $+0.569$ \\
-\texttt{class}$+\ldots+$\texttt{species}~$=$~\texttt{``UNK''} & 1.0261 & $+0.675$ \\
+\texttt{genus} (species unseen; baseline) & 0.323 & --- & 2.10$\times$ \\
+\texttt{family} (genus $=$ UNK) & 0.459 & $+0.136$ & 2.88$\times$ \\
+\texttt{order} & 0.628 & $+0.305$ & 4.25$\times$ \\
+\texttt{class} & 1.247 & $+0.924$ & 17.66$\times$ \\
+\texttt{phylum} & 1.156 & $+0.832$ & 14.31$\times$ \\
+\texttt{kingdom} & 5.020 & $+4.697$ & 104748.85$\times$ \\
 \bottomrule
 \end{tabular}

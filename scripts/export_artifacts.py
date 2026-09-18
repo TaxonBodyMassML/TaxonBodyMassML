@@ -175,6 +175,10 @@ X_golden = encode_categorical(pd.DataFrame(cases), vocab)[exported.feature_names
 golden_preds = exported.predict(xgb.DMatrix(X_golden, enable_categorical=True))
 for case, pred in zip(cases, golden_preds):
     case["log10_mass_g"] = float(pred)
+    # No model feature of this case is in the vocabulary: the packages and the
+    # microservice return NA/null for such taxa instead of the all-UNK
+    # extrapolation.  The Booster values are still recorded to document it.
+    case["expect_na"] = all(case[c] == UNK or case[c] not in vocab[c] for c in MODEL_FEATURES)
 
 # Entity Embeddings golden values (if its artifacts are present): features are
 # the concatenated per-rank embedding vectors, unseen values -> UNK vector.

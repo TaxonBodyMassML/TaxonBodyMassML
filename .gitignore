@@ -214,3 +214,6 @@ ms/
 
 # Optuna tuning databases (resumable local state; results live in tuning_study*.json)
 predictive_models/results/*.db
+
+# Microservice pickle bundle: local training->export handoff (decision_tree.py -> export_artifacts.py), not distributed
+regressor_microservice/sliced_model/

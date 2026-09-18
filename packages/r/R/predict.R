@@ -37,7 +37,8 @@
     # GBIF matches at genus rank. Check before iterating the standard ranks.
     sr <- iconv(row[["species_resolved"]], to = "ASCII//TRANSLIT")
     g  <- iconv(row[["genus"]], to = "ASCII//TRANSLIT")
-    if (!is.na(sr) && (is.na(g) || identical(g, "UNK")) && sr %in% cats[["genus"]])
+    if (!is.na(sr) && sr != "UNK" && (is.na(g) || identical(g, "UNK")) &&
+        sr %in% cats[["genus"]])
       return("tbmML_genus")
     for (rank in ranks) {
       val <- iconv(row[[rank]], to = "ASCII//TRANSLIT")
@@ -288,7 +289,8 @@
 #'   model-inferred values it is `"tbmML_"` followed by the finest taxonomic
 #'   rank present in the training data (e.g., `"tbmML_genus"` if the genus
 #'   was seen during training; `"tbmML_order"` if only the order was seen).
-#'   Unresolvable taxa receive `NA`. Default `FALSE`.
+#'   Taxa whose resolved taxonomy shares no rank with the training data
+#'   receive `"tbmML_UNK"`; unresolvable taxa receive `NA`. Default `FALSE`.
 #' @param lookup Logical. If `TRUE` (default), taxa found in the training-data
 #'   dictionary are returned with their empirical mass and bypass the model. If
 #'   `FALSE`, every resolved taxon is passed through the model specified by
@@ -304,7 +306,9 @@
 #'     entered name if corrected or unmatched; `NA` if no correction was
 #'     needed).
 #'   - When `include_source = TRUE`: also `source`.
-#'   - Rows for unresolvable inputs contain `NA` for all numeric columns.
+#'   - Rows for unresolvable inputs, and rows whose resolved taxonomy shares no
+#'     rank with the training data (a warning lists them), contain `NA` for all
+#'     numeric columns.
 #'
 #' @examples
 #' \dontrun{
@@ -470,10 +474,49 @@ predict_mass <- function(taxon,
     if (length(model_pos) > 0L) {
       model_sub   <- sub[model_pos, , drop = FALSE]
       model_names <- sub_names[model_pos]
-      good <- .METHODS[[method]](model_sub, level, include_taxonomy,
-                                 model_names, include_source, interval_method)
-      good$..orig_idx.. <- resolved_pos[model_pos]
-      rows[[length(rows) + 1L]] <- good
+
+      # Taxa whose kingdom..genus share no value with the training vocabulary
+      # would be scored on all-UNK features (a meaningless extrapolation):
+      # return NA for them, with a warning, as for unresolvable names.
+      unrep <- .infer_source_rank(model_sub, .load_categories()) == "tbmML_UNK"
+
+      if (any(unrep)) {
+        unrep_names <- model_names[unrep]
+        shown <- paste(sQuote(utils::head(unrep_names, 10L), q = FALSE), collapse = ", ")
+        if (length(unrep_names) > 10L)
+          shown <- paste0(shown, ", ... (", length(unrep_names) - 10L, " more)")
+        warning(sprintf(
+          paste0("%d taxon/taxa resolved to a taxonomy with no rank present in the ",
+                 "training data; returning NA: %s"),
+          length(unrep_names), shown), call. = FALSE)
+        unrep_df <- data.frame(
+          taxon  = unrep_names,
+          mass_g = NA_real_,
+          stringsAsFactors = FALSE
+        )
+        if (!is.null(level)) {
+          unrep_df$lower_bound <- NA_real_
+          unrep_df$upper_bound <- NA_real_
+          unrep_df$confidence  <- NA_real_
+        }
+        if (include_taxonomy) {
+          tax_cols <- c("kingdom", "phylum", "class", "order", "family",
+                        "genus", "species_resolved")
+          unrep_df <- cbind(unrep_df, model_sub[unrep, tax_cols, drop = FALSE])
+          rownames(unrep_df) <- NULL
+        }
+        if (include_source) unrep_df$source <- "tbmML_UNK"
+        unrep_df$..orig_idx.. <- resolved_pos[model_pos[unrep]]
+        rows[[length(rows) + 1L]] <- unrep_df
+      }
+
+      if (any(!unrep)) {
+        good <- .METHODS[[method]](model_sub[!unrep, , drop = FALSE], level,
+                                   include_taxonomy, model_names[!unrep],
+                                   include_source, interval_method)
+        good$..orig_idx.. <- resolved_pos[model_pos[!unrep]]
+        rows[[length(rows) + 1L]] <- good
+      }
     }
   }
 

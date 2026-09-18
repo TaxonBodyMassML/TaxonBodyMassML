@@ -1,0 +1,18 @@
+\begin{tabular}{lrlp{5.2cm}}
+\toprule
+Parameter & Value & Search range & Description \\
+\midrule
+\texttt{objective} & \texttt{reg:absoluteerror} & fixed & MAE loss, $\log_{10}$ space \\
+\texttt{enable\_categorical} & \texttt{True} & fixed & Native categorical splits \\
+\texttt{random\_state} & 42 & fixed & Reproducibility seed \\
+\texttt{n\_estimators} & 750 & 200--900 (step 50) & Trees in ensemble \\
+\texttt{max\_depth} & 32 & 5--50 & Maximum tree depth \\
+\texttt{learning\_rate} & 0.1049 & 0.01--0.3 (log) & Step size per tree \\
+\texttt{subsample} & 0.5052 & 0.5--1 & Row sampling fraction per tree \\
+\texttt{colsample\_bytree} & 0.6951 & 0.5--1 & Feature sampling fraction per tree \\
+\texttt{gamma} & 0.7939 & 0--1 & Min.\ loss reduction to split a node \\
+\texttt{min\_child\_weight} & 2 & 1--10 & Minimum sum of instance weight in a leaf \\
+\texttt{reg\_alpha} & 0 & default & L1 regularisation on leaf weights \\
+\texttt{reg\_lambda} & 1 & default & L2 regularisation on leaf weights \\
+\bottomrule
+\end{tabular}

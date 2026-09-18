@@ -17,16 +17,16 @@ knitr::opts_chunk$set(
 
 ## Installation
 
-Install the package from the latest release. Copy the `.tar.gz` URL from the
-[GitHub releases page](https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases)
-and pass it to `pak`:
+Install the package from the latest GitHub release with `pak` (the `latest`
+release always points at the newest version; specific versions are listed on
+the [releases page](https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases)):
 
 ```{r install}
 # install.packages("pak")
-pak::pkg_install("url::<release-url>")
+pak::pkg_install("url::https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/latest/download/TaxonBodyMassML_latest.tar.gz")
 ```
 
-Model artifacts (~0.6 GB) are downloaded automatically the first time you call
+Model artifacts (~0.4 GB) are downloaded automatically the first time you call
 `predict_mass()` or `lookup_taxonomy()`. You can also trigger the download
 manually at any time:
 
@@ -42,18 +42,21 @@ TaxonBodyMassML::download_model()
 library(TaxonBodyMassML)
 
 TaxonBodyMassML::predict_mass("Homo sapiens")
-#>          taxon   mass_g
-#> 1 Homo sapiens 73512.41
+#>          taxon mass_g
+#> 1 Homo sapiens  67290
 ```
+
+*Homo sapiens* has a recorded mass in the database, so the value returned is
+that measurement rather than a model prediction (see Source Attribution below).
 
 ### Multiple species
 
 ```{r multiple}
 TaxonBodyMassML::predict_mass(c("Canis lupus", "Panthera leo", "Mus musculus"))
-#>          taxon     mass_g
-#> 1  Canis lupus  31452.21
-#> 2 Panthera leo 163241.87
-#> 3  Mus musculus     20.14
+#>          taxon    mass_g
+#> 1  Canis lupus  11848.59
+#> 2 Panthera leo 162700.00
+#> 3  Mus musculus     17.91
 ```
 
 ### With confidence interval
@@ -61,9 +64,13 @@ TaxonBodyMassML::predict_mass(c("Canis lupus", "Panthera leo", "Mus musculus"))
 ```{r ci}
 # 90% conformal prediction interval (default when confidence_interval = TRUE)
 TaxonBodyMassML::predict_mass("Canis lupus", confidence_interval = TRUE)
+#>         taxon   mass_g lower_bound upper_bound confidence
+#> 1 Canis lupus 11848.59    1610.678    87161.45        0.9
 
 # Custom coverage level
 TaxonBodyMassML::predict_mass("Canis lupus", confidence_interval = 0.80)
+#>         taxon   mass_g lower_bound upper_bound confidence
+#> 1 Canis lupus 11848.59    3439.058    40821.94        0.8
 ```
 
 ### Include resolved taxonomy in output
@@ -85,10 +92,19 @@ genus-level queries, not as a model input).
 
 ```{r method}
 TaxonBodyMassML::predict_mass("Nucella lima", method = "XGBoost")
+#>          taxon   mass_g
+#> 1 Nucella lima 3.103961
 ```
 
 Both methods return the empirical mass for species present in the training
 data unless `lookup = FALSE`.
+
+Two kinds of input come back as `NA` with a warning: names that cannot be
+resolved to a taxonomy at all, and names whose kingdom-to-genus classification
+shares no value with the training data (for example plants and fungi, which
+the training data exclude). Predicting the latter would mean extrapolating
+from entirely unknown features, so no prediction is made and, with
+`include_source = TRUE`, the `source` column reads `"tbmML_UNK"`.
 
 ## Source Attribution
 
@@ -104,9 +120,9 @@ TaxonBodyMassML::predict_mass(
     "Nucella lima"),    # not in training data — model infers from genus
   include_source = TRUE
 )
-#>             taxon  mass_g       source
-#> 1 Nucella ostrina    0.70 Novak_unpubl
-#> 2     Nucella lima  X.XXX  tbmML_genus
+#>             taxon   mass_g       source
+#> 1 Nucella ostrina 0.700000 Novak_unpubl
+#> 2    Nucella lima 2.012565  tbmML_genus
 ```
 
 Note that for species in the training data, `mass_g` is the empirical measured
@@ -123,14 +139,14 @@ always holds the GBIF-canonical name used for prediction.
 
 ```{r fuzzy}
 # Enable fuzzy correction — misspelled name is corrected automatically
-TaxonBodyMassML::predict_mass("Canis lupuss", fuzzy_match_name = TRUE)
+TaxonBodyMassML::predict_mass("Canis lupis", fuzzy_match_name = TRUE)
 #>         taxon   mass_g matched_name
-#> 1 Canis lupus 31452.21 Canis lupuss
+#> 1 Canis lupus 11848.59  Canis lupis
 
 # Default: exact name matching (no correction step)
 TaxonBodyMassML::predict_mass("Canis lupus")
 #>         taxon   mass_g
-#> 1 Canis lupus 31452.21
+#> 1 Canis lupus 11848.59
 ```
 
 `fuzzy_predict_mass()` is deprecated as of v0.2.1. Replace any calls to it
@@ -168,13 +184,18 @@ coverage guarantees calibrated on held-out residuals.
 
 ```{r ci-demo}
 TaxonBodyMassML::predict_mass(
-  c("Homo sapiens", "Mus musculus"),
+  c("Canis lupus", "Nucella lima"),  # neither has a recorded mass, so both are model predictions
   confidence_interval = 0.95
 )
-#>          taxon    mass_g lower_bound upper_bound confidence
-#> 1 Homo sapiens 73512.41    4823.61   1120423.2       0.95
-#> 2  Mus musculus    20.14       1.32       307.1       0.95
+#>          taxon       mass_g lower_bound  upper_bound confidence
+#> 1  Canis lupus 11848.587295 675.4931068 207831.90749       0.95
+#> 2 Nucella lima     2.012565   0.1147372     35.30169       0.95
 ```
+
+By default the interval is calibrated for the finest taxonomic rank that the
+query resolved to (`interval_method = "stratified"`), so a query known only to
+family or order level receives a correspondingly wider interval;
+`interval_method = "pooled"` uses a single calibration set instead.
 
 ## Disk Cache
 

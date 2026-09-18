@@ -134,6 +134,48 @@ def _build_embedding_mlp_and_train(X_codes, y, vocabs, device):
 
 
 # ---------------------------------------------------------------------------
+# Search spaces (the single source of truth; scripts/extract_hyperparameters.py
+# imports them for the manuscript tables, so edit them here only).
+# Each entry: ("int", low, high[, step]) or ("float", low, high) or
+# ("float_log", low, high).
+# ---------------------------------------------------------------------------
+XGB_FIXED = {"objective": "reg:absoluteerror", "enable_categorical": True, "random_state": "SEED"}
+XGB_SPACE = {
+    "n_estimators": ("int", 200, 900, 50),
+    "max_depth": ("int", 5, 50),
+    "learning_rate": ("float_log", 0.01, 0.30),
+    "subsample": ("float", 0.5, 1.0),
+    "colsample_bytree": ("float", 0.5, 1.0),
+    "gamma": ("float", 0.0, 1.0),
+    "min_child_weight": ("int", 1, 10),
+}
+EE_FIXED = {"objective": "reg:absoluteerror", "random_state": "SEED"}
+EE_SPACE = {
+    "n_estimators": ("int", 200, 800, 50),
+    "max_depth": ("int", 4, 15),
+    "learning_rate": ("float_log", 0.01, 0.30),
+    "subsample": ("float", 0.5, 1.0),
+    "colsample_bytree": ("float", 0.5, 1.0),
+    "min_child_weight": ("int", 1, 10),
+}
+
+
+def _suggest_all(trial, space):
+    out = {}
+    for name, spec in space.items():
+        kind, low, high = spec[0], spec[1], spec[2]
+        if kind == "int":
+            out[name] = trial.suggest_int(name, low, high, step=spec[3] if len(spec) > 3 else 1)
+        elif kind == "float":
+            out[name] = trial.suggest_float(name, low, high)
+        elif kind == "float_log":
+            out[name] = trial.suggest_float(name, low, high, log=True)
+        else:
+            raise ValueError(f"unknown search-space kind {kind!r} for {name}")
+    return out
+
+
+# ---------------------------------------------------------------------------
 # XGBoost tuner
 # ---------------------------------------------------------------------------
 
@@ -154,13 +196,7 @@ def tune_xgboost():
             objective="reg:absoluteerror",
             enable_categorical=True,
             random_state=SEED,
-            n_estimators=trial.suggest_int("n_estimators", 200, 900, step=50),
-            max_depth=trial.suggest_int("max_depth", 5, 50),
-            learning_rate=trial.suggest_float("learning_rate", 0.01, 0.30, log=True),
-            subsample=trial.suggest_float("subsample", 0.5, 1.0),
-            colsample_bytree=trial.suggest_float("colsample_bytree", 0.5, 1.0),
-            gamma=trial.suggest_float("gamma", 0.0, 1.0),
-            min_child_weight=trial.suggest_int("min_child_weight", 1, 10),
+            **_suggest_all(trial, XGB_SPACE),
         )
         fold_maes = []
         for train_idx, val_idx in kf.split(x_full):
@@ -238,12 +274,7 @@ def tune_ee():
         params = dict(
             objective="reg:absoluteerror",
             random_state=SEED,
-            n_estimators=trial.suggest_int("n_estimators", 200, 800, step=50),
-            max_depth=trial.suggest_int("max_depth", 4, 15),
-            learning_rate=trial.suggest_float("learning_rate", 0.01, 0.30, log=True),
-            subsample=trial.suggest_float("subsample", 0.5, 1.0),
-            colsample_bytree=trial.suggest_float("colsample_bytree", 0.5, 1.0),
-            min_child_weight=trial.suggest_int("min_child_weight", 1, 10),
+            **_suggest_all(trial, EE_SPACE),
         )
         fold_maes = []
         for train_idx, val_idx in kf.split(X_emb_full):

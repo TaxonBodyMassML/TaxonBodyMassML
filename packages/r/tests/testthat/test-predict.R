@@ -283,6 +283,61 @@ test_that("predict_mass() preserves order with mixed dict/model/unresolved rows"
 })
 
 # ---------------------------------------------------------------------------
+# Taxonomy with no rank represented in the training data -> NA + warning
+# ---------------------------------------------------------------------------
+
+.tax_row <- function(kingdom, phylum, class, order, family, genus, species) {
+  data.frame(kingdom = kingdom, phylum = phylum, class = class, order = order,
+             family = family, genus = genus, species_resolved = species,
+             stringsAsFactors = FALSE)
+}
+
+test_that("predict_mass() returns NA and warns when no rank is in the training data", {
+  testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
+                    "Model artifacts not cached; skipping integration test.")
+  fungus <- .tax_row("Fungi", "Basidiomycota", "Agaricomycetes", "Agaricales",
+                     "Agaricaceae", "Agaricus", "Agaricus bisporus")
+  expect_warning(
+    result <- TaxonBodyMassML::predict_mass(fungus, confidence_interval = TRUE,
+                                            include_source = TRUE),
+    "no rank present in the training data"
+  )
+  expect_true(is.na(result$mass_g))
+  expect_true(is.na(result$lower_bound))
+  expect_true(is.na(result$upper_bound))
+  expect_equal(result$source, "tbmML_UNK")
+})
+
+test_that("predict_mass() still predicts a kingdom-only taxonomy", {
+  testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
+                    "Model artifacts not cached; skipping integration test.")
+  animal <- .tax_row("Animalia", "UNK", "UNK", "UNK", "UNK", "UNK", "UNK")
+  result <- TaxonBodyMassML::predict_mass(animal, include_source = TRUE, lookup = FALSE)
+  expect_true(result$mass_g > 0)
+  expect_equal(result$source, "tbmML_kingdom")
+})
+
+test_that("predict_mass() keeps unrepresented rows in position within mixed input", {
+  testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
+                    "Model artifacts not cached; skipping integration test.")
+  mixed <- rbind(
+    .tax_row("Animalia", "Mollusca", "Gastropoda", "Neogastropoda", "Muricidae",
+             "Nucella", "Nucella lima"),
+    .tax_row("Fungi", "Basidiomycota", "Agaricomycetes", "Agaricales", "Agaricaceae",
+             "Agaricus", "Agaricus bisporus"),
+    .tax_row("Animalia", "Mollusca", "Gastropoda", "Neogastropoda", "Muricidae",
+             "Nucella", "Nucella ostrina")
+  )
+  suppressWarnings(result <- TaxonBodyMassML::predict_mass(mixed, include_source = TRUE))
+  expect_equal(result$taxon, c("Nucella lima", "Agaricus bisporus", "Nucella ostrina"))
+  expect_true(result$mass_g[1L] > 0)
+  expect_equal(result$source[1L], "tbmML_genus")
+  expect_true(is.na(result$mass_g[2L]))
+  expect_equal(result$source[2L], "tbmML_UNK")
+  expect_equal(result$mass_g[3L], 0.7)
+})
+
+# ---------------------------------------------------------------------------
 # lookup parameter
 # ---------------------------------------------------------------------------
 
@@ -387,8 +442,9 @@ test_that("predict_mass() dict hit has NA bounds regardless of interval_method",
 })
 
 # ---------------------------------------------------------------------------
-# Golden predictions: the XGBoost method must reproduce the training model
-# exactly (guards against column-order, encoding and xgboost-version drift).
+# Golden predictions: both methods must reproduce the training model exactly
+# (guards against column-order, encoding and xgboost-version drift).  Cases
+# flagged expect_na have no rank in the vocabulary and must come back NA.
 # ---------------------------------------------------------------------------
 
 test_that("predict_mass() matches golden predictions for both methods", {
@@ -401,10 +457,16 @@ test_that("predict_mass() matches golden predictions for both methods", {
   cases <- jsonlite::fromJSON(golden, simplifyDataFrame = TRUE)$cases
   df <- cases[, c("kingdom", "phylum", "class", "order", "family", "genus", "species")]
   names(df)[names(df) == "species"] <- "species_resolved"
-  out <- TaxonBodyMassML::predict_mass(df, method = "XGBoost", lookup = FALSE)
-  expect_lt(max(abs(log10(out$mass_g) - cases$log10_mass_g)), 1e-5)
-  if (!is.null(cases$log10_mass_g_ee)) {
-    out_ee <- TaxonBodyMassML::predict_mass(df, method = "EntityEmbeddings", lookup = FALSE)
-    expect_lt(max(abs(log10(out_ee$mass_g) - cases$log10_mass_g_ee)), 1e-5)
+  expect_na <- if (is.null(cases$expect_na)) rep(FALSE, nrow(cases)) else
+    (!is.na(cases$expect_na) & cases$expect_na)
+
+  check <- function(method, expected) {
+    out <- suppressWarnings(  # expect_na cases warn by design
+      TaxonBodyMassML::predict_mass(df, method = method, lookup = FALSE))
+    got <- log10(out$mass_g)
+    expect_true(all(is.na(got[expect_na])))
+    expect_lt(max(abs(got[!expect_na] - expected[!expect_na])), 1e-5)
   }
+  check("XGBoost", cases$log10_mass_g)
+  if (!is.null(cases$log10_mass_g_ee)) check("EntityEmbeddings", cases$log10_mass_g_ee)
 })

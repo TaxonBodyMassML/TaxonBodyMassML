@@ -3,7 +3,9 @@ __pycache__/
 *.pyc
 .pytest_cache/
 tests/
-regressor_test.py
-regressor_test_multi.py
+sliced_model/
+data/
 cloudflared/
 compose.yml
+compose.local.yml
+*.md

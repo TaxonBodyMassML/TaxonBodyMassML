@@ -1,7 +1,7 @@
+# Web layer only.  The prediction package (taxonbodymassml) is installed from
+# the release wheel pinned by the TBM_WHEEL build argument in the dockerfile;
+# it brings numpy, pandas and xgboost>=3.2 with it.  For local development:
+#   pip install -r requirements.txt -e ../packages/python
 flask
 flask-cors
 gunicorn
-numpy
-pandas
-xgboost>=3.2
-pickleslicer

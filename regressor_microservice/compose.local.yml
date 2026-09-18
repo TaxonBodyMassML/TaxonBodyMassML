@@ -1,0 +1,8 @@
+# Local smoke test: publishes the API on localhost:8000.
+#   docker compose -f compose.yml -f compose.local.yml up --build -d regressor
+#   curl -s localhost:8000/health
+#   docker compose -f compose.yml -f compose.local.yml down
+services:
+  regressor:
+    ports:
+      - "8000:8000"

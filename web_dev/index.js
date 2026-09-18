@@ -42,6 +42,14 @@ if (sessionStorage.getItem('introSeen') === 'true') {
 
 // function definitions
 
+// The prediction service returns null (with a `warning`) when no rank of the
+// taxonomy occurs in the training data.  Never call toFixed on those.
+const NOT_PREDICTABLE = 'Not predictable: no rank of this taxonomy occurs in the training data'
+const fmtGrams = (value) =>
+  (value === null || value === undefined || Number.isNaN(value)) ? 'NA' : `${value.toFixed(2)} g`
+const fmtCsv = (value) =>
+  (value === null || value === undefined || Number.isNaN(value)) ? 'NA' : value.toFixed(2)
+
 // makes output box visible and generates output based on input
 const handleGoClick = async (event) => {
   inputBox.classList.add('moved')
@@ -101,11 +109,17 @@ const handleGoClick = async (event) => {
 
       data.results.forEach(item => {
 
+        if (item.prediction === null) {
+          massResults += `${item.taxonomy.species}: ${item.warning || NOT_PREDICTABLE};\n`
+          confidenceResults += `${item.taxonomy.species}: NA;\n`
+          return
+        }
+
         massResults +=
-          `${item.taxonomy.species}: ${item.prediction.toFixed(2)} g;\n`
+          `${item.taxonomy.species}: ${fmtGrams(item.prediction)};\n`
 
         confidenceResults +=
-          `${item.taxonomy.species}: ${item.lower_bound.toFixed(2)} g - ${item.upper_bound.toFixed(2)} g;\n`
+          `${item.taxonomy.species}: ${fmtGrams(item.lower_bound)} - ${fmtGrams(item.upper_bound)};\n`
 
       })
 
@@ -125,9 +139,9 @@ const handleGoClick = async (event) => {
 
     csvContent +=
       `"${item.taxonomy.species}",` +
-      `${item.prediction.toFixed(2)},` +
-      `${item.lower_bound.toFixed(2)},` +
-      `${item.upper_bound.toFixed(2)}\n`
+      `${fmtCsv(item.prediction)},` +
+      `${fmtCsv(item.lower_bound)},` +
+      `${fmtCsv(item.upper_bound)}\n`
 
   })
 
@@ -260,10 +274,18 @@ if (rawTaxonomy.species === "UNK") {
   	}
     }
 
+    if (predictionData.prediction === null) {
+      return {
+        status: "success",
+        message: predictionData.warning || NOT_PREDICTABLE,
+        confidence: "NA"
+      }
+    }
+
     return {
       status: "success",
-      message: `${predictionData.prediction.toFixed(2)} g`,
-      confidence: `${predictionData.lower_bound.toFixed(2)} g - ${predictionData.upper_bound.toFixed(2)} g`
+      message: fmtGrams(predictionData.prediction),
+      confidence: `${fmtGrams(predictionData.lower_bound)} - ${fmtGrams(predictionData.upper_bound)}`
     }
 
   }

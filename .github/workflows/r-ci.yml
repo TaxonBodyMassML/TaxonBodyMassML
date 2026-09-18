@@ -66,7 +66,7 @@ jobs:
   min-xgboost:
     # The oldest supported xgboost (3.1.2.1, first 3.x release on CRAN) must
     # reproduce the training model exactly. Builds xgboost from the CRAN
-    # archive and downloads the model artifacts (~0.6 GB).
+    # archive and downloads the model artifacts (~0.4 GB).
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

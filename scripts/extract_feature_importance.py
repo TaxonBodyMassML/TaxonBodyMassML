@@ -1,82 +1,135 @@
 """
-Extract XGBoost gain-based feature importances for Supplementary S2.
+Gain-based feature importance per taxonomic rank for both models.
 
-Outputs:
-  - Console: normalized % importance per taxonomy rank
-  - predictive_models/results/feature_importance.png
+XGBoost: the model's six categorical features are the ranks themselves.
+Entity Embeddings: the Stage 2 booster sees 84 embedding dimensions (f0..f83);
+their gains are summed per rank block using emb_dims from metrics_ee.json.
+Both are normalised to 100%.  Note the EE aggregation is biased toward ranks
+with more embedding dimensions (kingdom 4 .. genus 32).
+
+Outputs (predictive_models/results/):
+  tab_feature_importance.tex      Entity Embeddings only (main supplement)
+  tab_feature_importance_cmp.tex  both models
+  feature_importance.png          grouped bars, both models
+  feature_importance.json         the percentages (for make_numbers_tex.py)
 
 Run from repo root:
   predictive_models/.venv/bin/python scripts/extract_feature_importance.py
 """
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import xgboost as xgb
 
-REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "predictive_models"))
-from taxonomy_encoding import MODEL_FEATURES  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _results_common import (  # noqa: E402
+    ARTIFACTS,
+    METHOD_TITLE,
+    METHODS,
+    MODEL_FEATURES,
+    RESULTS,
+    read_json,
+    write_json,
+    write_tex,
+)
 
-ARTIFACT = REPO / "artifacts" / "model.ubj"
-OUT_DIR = REPO / "predictive_models" / "results"
-OUT_DIR.mkdir(parents=True, exist_ok=True)
-RESULTS = OUT_DIR
+HIER = MODEL_FEATURES  # kingdom .. genus
 
-print(f"Loading model from {ARTIFACT} ...")
-model = xgb.Booster()
-model.load_model(str(ARTIFACT))
-print("Model loaded.")
 
-scores = model.get_score(importance_type="gain")
+def xgb_gain_by_rank() -> dict[str, float]:
+    booster = xgb.Booster()
+    booster.load_model(str(ARTIFACTS / "model.ubj"))
+    scores = booster.get_score(importance_type="gain")
+    total = sum(scores.values())
+    return {r: 100.0 * scores.get(r, 0.0) / total for r in HIER}
 
-# Taxonomy columns in hierarchical order
-RANKS = MODEL_FEATURES
-missing = [r for r in RANKS if r not in scores]
-if missing:
-    print(f"Warning: ranks not in scores (zero gain): {missing}")
 
-total = sum(scores.values())
-pct = {r: 100.0 * scores.get(r, 0.0) / total for r in RANKS}
+def ee_gain_by_rank() -> dict[str, float]:
+    emb_dims = read_json(RESULTS / "metrics_ee.json")["emb_dims"]
+    booster = xgb.Booster()
+    booster.load_model(str(ARTIFACTS / "model_ee.ubj"))
+    scores = booster.get_score(importance_type="gain")
+    names = booster.feature_names or [f"f{i}" for i in range(sum(emb_dims.values()))]
+    assert len(names) == sum(emb_dims.values()), (len(names), emb_dims)
+    block_of = {}
+    offset = 0
+    for rank in HIER:
+        for j in range(emb_dims[rank]):
+            block_of[names[offset + j]] = rank
+        offset += emb_dims[rank]
+    by_rank = {r: 0.0 for r in HIER}
+    for feat, gain in scores.items():
+        by_rank[block_of[feat]] += gain
+    total = sum(by_rank.values())
+    return {r: 100.0 * v / total for r, v in by_rank.items()}
 
-print("\n=== Feature importances (gain, normalised to 100%) ===")
-for rank in RANKS:
-    bar = "#" * int(pct[rank] / 2)
-    print(f"  {rank:<10s} {pct[rank]:6.2f}%  {bar}")
 
-# Write LaTeX tabular to ms/results/tab_feature_importance.tex
-lines = [
-    r"\begin{tabular}{lr}",
-    r"\toprule",
-    r"Taxonomy rank & Relative importance (\%) \\",
-    r"\midrule",
-]
-for rank in RANKS:
-    lines.append(f"\\texttt{{{rank}}} & {pct[rank]:.1f} \\\\")
-lines += [r"\bottomrule", r"\end{tabular}", ""]
-out_tex = RESULTS / "tab_feature_importance.tex"
-out_tex.write_text("\n".join(lines))
-print(f"\nWrote {out_tex}")
+def tab(importance: dict[str, dict[str, float]], methods) -> list[str]:
+    cols = "l" + "r" * len(methods)
+    lines = [f"\\begin{{tabular}}{{{cols}}}", r"\toprule"]
+    if len(methods) == 1:
+        lines.append(r"Taxonomy rank & Relative importance (\%) \\")
+    else:
+        lines.append(
+            "Taxonomy rank & " + " & ".join(f"{METHOD_TITLE[m]} (\\%)" for m in methods) + r" \\"
+        )
+    lines.append(r"\midrule")
+    for rank in HIER:
+        lines.append(
+            f"\\texttt{{{rank}}} & "
+            + " & ".join(f"{importance[m][rank]:.1f}" for m in methods)
+            + r" \\"
+        )
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    return lines
 
-# Figure
-fig, ax = plt.subplots(figsize=(5, 3.5))
-vals = [pct[r] for r in RANKS]
-colors = ["#4a90d9" if r in ("species", "genus") else "#aacde8" for r in RANKS]
-bars = ax.barh(RANKS, vals, color=colors, edgecolor="white", height=0.65)
-ax.set_xlabel("Relative importance (%, gain)")
-ax.set_xlim(0, max(vals) * 1.15)
-for bar, v in zip(bars, vals):
-    ax.text(
-        v + max(vals) * 0.01,
-        bar.get_y() + bar.get_height() / 2,
-        f"{v:.1f}%",
-        va="center",
-        fontsize=8,
-    )
-ax.invert_yaxis()
-ax.spines[["top", "right"]].set_visible(False)
-plt.tight_layout()
-out_path = OUT_DIR / "feature_importance.png"
-plt.savefig(out_path, dpi=180)
-print(f"\nFigure saved to {out_path}")
+
+def figure(importance, path):
+    fig, ax = plt.subplots(figsize=(5.5, 3.5))
+    y = np.arange(len(HIER))
+    h = 0.38
+    colors = {"EntityEmbeddings": "#4a90d9", "XGBoost": "#aacde8"}
+    for k, m in enumerate(METHODS):
+        vals = [importance[m][r] for r in HIER]
+        ax.barh(
+            y + (k - 0.5) * h,
+            vals,
+            height=h,
+            color=colors[m],
+            edgecolor="white",
+            label=METHOD_TITLE[m],
+        )
+        for yy, v in zip(y + (k - 0.5) * h, vals):
+            ax.text(v + 0.5, yy, f"{v:.1f}%", va="center", fontsize=7)
+    ax.set_yticks(y)
+    ax.set_yticklabels(HIER)
+    ax.invert_yaxis()
+    ax.set_xlabel("Relative importance (%, gain)")
+    ax.set_xlim(0, max(max(importance[m].values()) for m in METHODS) * 1.2)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(frameon=False, fontsize=8, loc="upper right")
+    plt.tight_layout()
+    plt.savefig(path, dpi=180)
+    plt.close(fig)
+    print(f"Wrote {path.relative_to(path.parents[2])}")
+
+
+def main():
+    importance = {"EntityEmbeddings": ee_gain_by_rank(), "XGBoost": xgb_gain_by_rank()}
+    for m in METHODS:
+        print(f"\n{METHOD_TITLE[m]} (gain, % of total)")
+        for rank in HIER:
+            print(f"  {rank:<8s} {importance[m][rank]:6.1f}")
+    write_tex(RESULTS / "tab_feature_importance.tex", tab(importance, ["EntityEmbeddings"]))
+    write_tex(RESULTS / "tab_feature_importance_cmp.tex", tab(importance, METHODS))
+    write_json(RESULTS / "feature_importance.json", importance)
+    figure(importance, RESULTS / "feature_importance.png")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,9 +1,10 @@
 """
-Generate a formatted LaTeX bibliography for S4 (training data sources).
+Generate a formatted LaTeX bibliography for the training-data-sources supplement.
 
 Reads data/Citations_BodyMass.bib and writes a standalone
 \\begin{thebibliography}...\\end{thebibliography} block to
-predictive_models/results/tab_data_sources.tex.
+predictive_models/results/tab_data_sources.tex.  The number of entries is the
+manuscript's "number of sources" (make_numbers_tex.py counts the same file).
 
 Entries are sorted alphabetically by first author surname and formatted
 in apalike style: Author(s). (Year). Title. *Journal*, vol(num):pages.
@@ -15,7 +16,6 @@ Run from repo root:
 from pathlib import Path
 
 import bibtexparser
-from bibtexparser.bwriter import BibTexWriter
 from bibtexparser.bparser import BibTexParser
 
 REPO = Path(__file__).resolve().parents[1]
@@ -117,7 +117,7 @@ def _format_entry(e: dict) -> str:
         parts.append(f"\\url{{{url}}}")
 
     body = " ".join(parts)
-    return f"\\bibitem[{natbib_label}]{{{key}}}\n{body}"
+    return f"\\bibitem[{natbib_label}]{{{key}-src}}\n{body}"  # -src avoids key clashes
 
 
 def main():

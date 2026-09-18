@@ -53,7 +53,8 @@ source identifier (e.g., \code{"fishbase"}, \code{"Novak_unpubl"}). For
 model-inferred values it is \code{"tbmML_"} followed by the finest taxonomic
 rank present in the training data (e.g., \code{"tbmML_genus"} if the genus
 was seen during training; \code{"tbmML_order"} if only the order was seen).
-Unresolvable taxa receive \code{NA}. Default \code{FALSE}.}
+Taxa whose resolved taxonomy shares no rank with the training data
+receive \code{"tbmML_UNK"}; unresolvable taxa receive \code{NA}. Default \code{FALSE}.}
 
 \item{lookup}{Logical. If \code{TRUE} (default), taxa found in the training-data
 dictionary are returned with their empirical mass and bypass the model. If
@@ -72,7 +73,9 @@ and \code{confidence} (NA for dictionary-sourced rows).
 entered name if corrected or unmatched; \code{NA} if no correction was
 needed).
 \item When \code{include_source = TRUE}: also \code{source}.
-\item Rows for unresolvable inputs contain \code{NA} for all numeric columns.
+\item Rows for unresolvable inputs, and rows whose resolved taxonomy shares no
+rank with the training data (a warning lists them), contain \code{NA} for all
+numeric columns.
 }
 }
 \description{

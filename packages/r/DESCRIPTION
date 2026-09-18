@@ -1,6 +1,6 @@
 Package: TaxonBodyMassML
 Title: Predict Species Body Mass Using the TaxonBodyMassML XGBoost Model
-Version: 0.10.0
+Version: 0.11.0
 Authors@R: c(
     person("Grant", "Pasquantonio", role = "aut"),
     person("Anish Chowdary", "Pendurti", role = "aut"),
@@ -11,7 +11,7 @@ Description: Predicts body mass for species from taxonomic identity using an
     XGBoost machine learning model trained on published and unpublished body
     mass data spanning the tree of life. Taxonomy is resolved automatically
     via the GBIF fuzzy-match API with an NCBI Entrez fallback. Model artifacts
-    (~0.6 GB) are downloaded from Hugging Face Hub on first use and cached
+    (~0.4 GB) are downloaded from Hugging Face Hub on first use and cached
     locally. Internet access is required on first use for artifact download and
     for taxonomy lookups.
 License: MIT + file LICENSE

@@ -1,23 +1,38 @@
 # Data
 
-## Raw data
+All files here are copies of, or derived from, the
+[TaxonBodyMass_DB](https://github.com/TaxonBodyMassML/TaxonBodyMass_DB)
+repository, which is the single source of truth for the compiled body-mass
+database (parsing of each source, name cleaning, taxonomic enrichment through
+GBIF, NCBI, WoRMS, Catalogue of Life, ITIS and Wikidata, autotroph removal and
+deduplication all happen there). `make data/TaxonBodyMass.csv` in the
+repository root runs `scripts/fetch_source_data.py`, which copies the current
+database outputs into this directory.
 
-**`BodyMass.csv`** — Raw (unprocessed) body mass data compiled from 34+ literature sources and taxonomic databases by the *TaxonBodyMass_DB* project.
+## Fetched from TaxonBodyMass_DB
 
-GitHub repository: [TaxonBodyMass_DB](https://github.com/marknovak/TaxonBodyMass_DB)
+**`TaxonBodyMass.csv`** — one row per accepted species with its body mass in
+grams, full kingdom-to-genus classification and provenance. Columns: `genus`,
+`species`, `taxon`, `taxon_provided`, `log10_range`, `mass_g`, `source_mass`,
+`n`, `kingdom`, `phylum`, `class`, `order`, `family`, `taxonomy_source`,
+`gbif_confidence`, `gbif_status`, `gbif_family`, `gbif_order`,
+`species_changed`. `source_mass` lists the contributing sources (`;`-separated)
+and `n` the number of source records averaged. This file also feeds
+`artifacts/lookup.json`, the species-to-mass dictionary the packages consult
+before calling a model.
 
-Columns: `taxon`, `mass_g`, `source_mass`, `n`
+**`Citations_BodyMass.bib`** — BibTeX references for every body-mass data
+source (the manuscript's "number of sources" is the number of entries).
 
-## Processed data
+**`TaxonBodyMass_CitationCiteIDs.csv`** — maps `source_mass` labels to BibTeX
+keys.
 
-**`BodyMass_curated.csv`** — Body mass data after taxonomic enrichment through a sequential pipeline (GBIF → NCBI → WoRMS → COL ChecklistBank → Wikidata SPARQL → ITIS) and removal of non-animal eukaryotes (Plantae, Chromista, Viridiplantae, Fungi). Columns added: `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species`, `confidence`, `subspecies`, `form`.
+## Derived here
 
-**`BodyMass_<DB>_pass.csv`** — Intermediate files from sequential taxonomic name resolution passes through each external taxonomic database (`COL`, `GBIF`, `ITIS`, `NCBI`, `Wikidata`, `WoRMS`).
-
-**`missed_species_<DB>.txt`** — Taxa not resolved during the corresponding taxonomic name resolution pass.
-
-**`Citations_BodyMass.bib`** — BibTeX references for the body mass data sources.
-
-## Model data
-
-**`train.csv`** / **`test.csv`** — Training and test splits used for the XGBoost body mass prediction model. Columns: `mass_g`, `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species`.
+**`split/train.csv`** / **`split/test.csv`** — random 90/10 split
+(`data_partition/data_split_visualization.py`, seed 42) of the rows with a
+complete kingdom-to-genus classification. Columns: `genus`, `species`,
+`mass_g`, `kingdom`, `phylum`, `class`, `order`, `family`. Both models are
+trained on `kingdom` .. `genus` from `train.csv`; `species` is not a feature
+(see `predictive_models/taxonomy_encoding.py`). Test species never occur in
+the training split.

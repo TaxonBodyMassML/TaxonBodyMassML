@@ -1,7 +1,7 @@
 """
 Tests for taxonbodymassml.predict_mass().
 
-Tests that require model artifacts (the ~0.6 GB download) are skipped
+Tests that require model artifacts (the ~0.4 GB download) are skipped
 unless TAXONBODYMASSML_RUN_INTEGRATION=1 is set in the environment.
 """
 
@@ -287,8 +287,103 @@ def test_lookup_false_include_source_returns_tbmml_prefix():
 
 
 # ---------------------------------------------------------------------------
-# Golden predictions: the XGBoost method must reproduce the training model
-# exactly (guards against column-order, encoding and xgboost-version drift).
+# Taxonomy with no rank represented in the training data -> NaN + warning
+# ---------------------------------------------------------------------------
+_TAX_COLS = ["kingdom", "phylum", "class", "order", "family", "genus", "species_resolved"]
+
+
+def _frame(*values):
+    return pd.DataFrame([dict(zip(_TAX_COLS, values))])
+
+
+@skip_without_artifacts
+def test_unrepresented_taxonomy_returns_nan_with_warning():
+    """A fungus resolves cleanly but no rank is in the vocabulary: NaN, not an extrapolation."""
+    import math
+
+    import taxonbodymassml as tbm
+
+    fungus = _frame(
+        "Fungi",
+        "Basidiomycota",
+        "Agaricomycetes",
+        "Agaricales",
+        "Agaricaceae",
+        "Agaricus",
+        "Agaricus bisporus",
+    )
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = tbm.predict_mass(fungus, confidence_interval=True, include_source=True)
+    assert any("no rank present in the training data" in str(x.message) for x in w)
+    assert math.isnan(result["mass_g"].iloc[0])
+    assert math.isnan(result["lower_bound"].iloc[0])
+    assert math.isnan(result["upper_bound"].iloc[0])
+    assert result["source"].iloc[0] == "tbmML_UNK"
+
+
+@skip_without_artifacts
+def test_kingdom_only_taxonomy_is_still_predicted():
+    """Kingdom-level matches keep their estimate; the wide interval conveys the uncertainty."""
+    import taxonbodymassml as tbm
+
+    animal = _frame("Animalia", "UNK", "UNK", "UNK", "UNK", "UNK", "UNK")
+    result = tbm.predict_mass(animal, include_source=True, lookup=False)
+    assert result["mass_g"].iloc[0] > 0
+    assert result["source"].iloc[0] == "tbmML_kingdom"
+
+
+@skip_without_artifacts
+def test_unrepresented_rows_keep_their_position_in_mixed_input():
+    import math
+
+    import taxonbodymassml as tbm
+
+    mixed = pd.concat(
+        [
+            _frame(
+                "Animalia",
+                "Mollusca",
+                "Gastropoda",
+                "Neogastropoda",
+                "Muricidae",
+                "Nucella",
+                "Nucella lima",
+            ),
+            _frame(
+                "Fungi",
+                "Basidiomycota",
+                "Agaricomycetes",
+                "Agaricales",
+                "Agaricaceae",
+                "Agaricus",
+                "Agaricus bisporus",
+            ),
+            _frame(
+                "Animalia",
+                "Mollusca",
+                "Gastropoda",
+                "Neogastropoda",
+                "Muricidae",
+                "Nucella",
+                "Nucella ostrina",
+            ),
+        ],
+        ignore_index=True,
+    )
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always")
+        result = tbm.predict_mass(mixed, include_source=True)
+    assert list(result["taxon"]) == ["Nucella lima", "Agaricus bisporus", "Nucella ostrina"]
+    assert result["mass_g"].iloc[0] > 0 and result["source"].iloc[0] == "tbmML_genus"
+    assert math.isnan(result["mass_g"].iloc[1]) and result["source"].iloc[1] == "tbmML_UNK"
+    assert result["mass_g"].iloc[2] == pytest.approx(0.7)
+
+
+# ---------------------------------------------------------------------------
+# Golden predictions: both methods must reproduce the training model exactly
+# (guards against column-order, encoding and xgboost-version drift).  Cases
+# flagged expect_na have no rank in the vocabulary and must come back NaN.
 # ---------------------------------------------------------------------------
 _GOLDEN = (
     __import__("pathlib").Path(__file__).resolve().parents[3]
@@ -314,7 +409,11 @@ def test_matches_golden_predictions(method, key):
         pytest.skip(f"golden file has no {key}")
     cols = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
     df = pd.DataFrame(cases)[cols].rename(columns={"species": "species_resolved"})
-    out = tbm.predict_mass(df, method=method, lookup=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # expect_na cases warn by design
+        out = tbm.predict_mass(df, method=method, lookup=False)
     got = np.log10(out["mass_g"].to_numpy())
     expected = np.array([c[key] for c in cases])
-    assert np.max(np.abs(got - expected)) < 1e-5
+    expect_na = np.array([bool(c.get("expect_na", False)) for c in cases])
+    assert np.all(np.isnan(got[expect_na]))
+    assert np.max(np.abs(got[~expect_na] - expected[~expect_na])) < 1e-5
