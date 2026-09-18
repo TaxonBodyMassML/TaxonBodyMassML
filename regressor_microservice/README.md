@@ -8,7 +8,7 @@ wheel at image build time and the model artifacts (~0.4 GB) are downloaded from
 Hugging Face during the build, so the container starts without network access.
 
 | | |
-|---|---|
+| --- | --- |
 | Model served | Entity Embeddings by default (`TBM_METHOD=XGBoost` switches) |
 | Intervals | 90 % rank-stratified conformal intervals |
 | Known species | recorded mass from the training-data dictionary, degenerate interval |
@@ -70,8 +70,8 @@ Before a Python package release exists for the version pinned in the
 docker compose build --build-arg TBM_WHEEL=https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.10.0/taxonbodymassml-0.10.0-py3-none-any.whl regressor
 ```
 
-Images built on an Apple-silicon Mac are `linux/arm64`; for an x86 host build
-there or add `--platform linux/amd64`.
+Images built on an Apple-silicon Mac are `linux/arm64`, which also runs on a
+64-bit Raspberry Pi; for an x86 host build there or add `--platform linux/amd64`.
 
 ## Deployment runbook
 
@@ -79,7 +79,7 @@ Applies to the machine that runs the compose stack (the "host"), not to a
 development machine. The stack is two containers on a private Docker network:
 
 | Container | Image | Role |
-|---|---|---|
+| --- | --- | --- |
 | `regressor_api` | built from `dockerfile` | gunicorn + Flask API on port 8000, reachable only inside the compose network (`expose`, not `ports`) |
 | `cloudflared` | `cloudflare/cloudflared:latest` | outbound Cloudflare tunnel that publishes `http://regressor:8000` under a public HTTPS hostname |
 
@@ -107,8 +107,23 @@ no-op and step 5 always applies.
   (Flask, gunicorn) and `huggingface.co` (the artifacts). At run time only
   `cloudflared` needs outbound access, to Cloudflare's edge; the API container
   makes no network calls.
-- Build on the host itself so the image matches its CPU architecture (see the
-  `--platform` note above if you must build elsewhere).
+- CPU architecture: the image must match the host. Building on the host
+  guarantees this; an image built on an Apple-silicon Mac is `linux/arm64` and
+  also runs on a 64-bit Raspberry Pi (see the transfer alternative in step 3).
+- Raspberry Pi: a Pi 4 or 5 with 2 GB or more is sufficient (the service uses
+  about 320 MB), but the OS must be 64-bit, because xgboost publishes Linux
+  wheels only for `x86_64` and `aarch64`. On a 32-bit system the build fails at
+  `pip install` after a long wait. Both checks must pass; some older
+  installations pair a 64-bit kernel with a 32-bit userland:
+
+  ```bash
+  uname -m                     # aarch64, not armv7l
+  dpkg --print-architecture    # arm64, not armhf
+  ```
+
+  If Docker's data lives on an SD card, prefer transferring a ready-built image
+  (step 3) over building on the Pi: a build there is slow and leaves several
+  GB of cache behind.
 - A clone of this repository with push access if the host is where you will
   edit `web_dev/index.js` (step 5); otherwise make that edit on your
   workstation.
@@ -154,10 +169,34 @@ with checksum verification. The running containers are untouched. Failures to
 expect:
 
 | Build output | Meaning | Action |
-|---|---|---|
+| --- | --- | --- |
 | `ERROR: HTTP error 404 while getting https://github.com/...whl` | wheel not published, or wrong pin | step 1 |
 | `RuntimeError: SHA256 mismatch for <file>` | the Hugging Face tag does not match the wheel's checksums | do not deploy; the release itself needs fixing (`scripts/publish_artifacts.py`) |
 | `no space left on device` | Docker disk full | `docker builder prune -f`, `docker image prune -f`, retry |
+
+**Alternative: build elsewhere and transfer the image.** A Raspberry Pi builds
+slowly and fills its SD card with build cache. Any machine of the same
+architecture can build the image and hand it over as a file; an Apple-silicon
+Mac with Docker Desktop builds `linux/arm64` by default, which is what a 64-bit
+Pi runs. The compressed image is about 0.9 GB (3.1 GB uncompressed), so a USB
+stick or a wired copy beats Wi-Fi.
+
+```bash
+# on the build machine, after `docker compose build regressor`
+docker image inspect regressor_microservice-regressor:latest --format '{{.Os}}/{{.Architecture}}'   # linux/arm64 for a 64-bit Pi
+docker save regressor_microservice-regressor:latest | gzip > tbm-regressor-<version>.tar.gz          # ~20 s
+
+# on the host, in regressor_microservice/ after `git pull --ff-only` and step 2
+gunzip -c tbm-regressor-<version>.tar.gz | docker load                                              # prints "Loaded image: regressor_microservice-regressor:latest"
+docker compose up -d --no-build
+```
+
+Run step 2 before `docker load`: loading moves the `latest` tag to the new
+image, and an untagged old image is lost to the next `docker image prune`.
+Compose derives the image name from the directory name, so the checkout on the
+host must also be in a directory called `regressor_microservice`; otherwise add
+`-p regressor_microservice` to every `docker compose` command. Continue with the
+checks in step 4.
 
 ### 4. Switch to the new image and check it
 
@@ -317,7 +356,7 @@ well; `./cloudflared/` is git-ignored for that purpose.
 ### Troubleshooting
 
 | Symptom | Likely cause | Fix |
-|---|---|---|
+| --- | --- | --- |
 | Website: the prediction request fails ("Failed to fetch"); `curl https://<hostname>/health` fails too | tunnel hostname changed (cloudflared restarted), or the stack is down | `docker compose ps`; step 5 |
 | Website: the name lookup fails before any prediction is requested | the separate lookup service (`look-up-service.onrender.com`) is asleep or down; its free-tier cold start takes up to a minute | retry; check the Render dashboard |
 | `regressor_api` is `unhealthy` or restarts in a loop | startup exception (see `docker compose logs regressor`), typically a wheel/artifact mismatch or out-of-memory | rebuild from a consistent release; check `docker stats` and host RAM |
@@ -326,11 +365,13 @@ well; `./cloudflared/` is git-ignored for that purpose.
 | Build fails with `SHA256 mismatch` | Hugging Face artifacts and wheel checksums disagree | do not deploy; fix the release |
 | `[ERROR] Control server error: ... Permission denied: '/home/appuser'` in the gunicorn log | image built from a `dockerfile` older than 2026-09-18 (service user had no home directory) | `git pull` and rebuild; serving is unaffected meanwhile |
 | Requests hang for a few seconds right after a start | checksum verification of the 0.4 GB artifacts and the model warm-up run before the worker accepts connections | wait for "Model loaded successfully" |
+| Build fails at `pip install` with `No matching distribution found for xgboost`, or starts compiling xgboost from source | 32-bit OS (`armhf`) on a Raspberry Pi; xgboost has no 32-bit wheels | install 64-bit Raspberry Pi OS, or transfer an `linux/arm64` image (step 3) |
+| `docker compose up -d --no-build` after `docker load` still tries to build, or says the image is missing | the checkout is not in a directory named `regressor_microservice`, so Compose looks for a differently named image | add `-p regressor_microservice` to the `docker compose` commands |
 
 ## Files
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `regressor.py` | Flask app; normalises the taxonomy, calls the package, maps the result to the response schema |
 | `requirements.txt` | Flask, flask-cors, gunicorn; the package itself (with numpy, pandas, xgboost) comes from the wheel pinned in the `dockerfile` |
 | `dockerfile`, `compose.yml`, `compose.local.yml` | image, production stack (API + Cloudflare tunnel), local port mapping |
