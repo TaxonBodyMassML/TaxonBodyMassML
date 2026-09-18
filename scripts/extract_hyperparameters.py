@@ -113,10 +113,13 @@ def hyperparam_table(best: dict, fixed: dict, space: dict, seed: int) -> tuple[l
         r"Parameter & Value & Search range & Description \\",
         r"\midrule",
     ]
+    # Backslashes are not allowed inside f-string expressions before Python 3.12,
+    # so the TeX-escaped parameter name is built outside the f-strings.
     for name, val in fixed.items():
         v = seed if val == "SEED" else val
+        tex = name.replace("_", r"\_")
         lines.append(
-            f"\\texttt{{{name.replace('_', r'\_')}}} & {fmt_value(v)} & fixed & {DESCRIPTION.get(name, '')} \\\\"  # noqa: E501
+            f"\\texttt{{{tex}}} & {fmt_value(v)} & fixed & {DESCRIPTION.get(name, '')} \\\\"
         )
     bounds = {}
     for name in TUNED_ORDER:
@@ -125,14 +128,14 @@ def hyperparam_table(best: dict, fixed: dict, space: dict, seed: int) -> tuple[l
         b = at_bound(best[name], space[name])
         bounds[name] = b
         note = "$^{*}$" if b else ""
+        tex = name.replace("_", r"\_")
         lines.append(
-            f"\\texttt{{{name.replace('_', r'\_')}}} & {fmt_value(best[name])} & "
+            f"\\texttt{{{tex}}} & {fmt_value(best[name])} & "
             f"{fmt_range(space[name])}{note} & {DESCRIPTION.get(name, '')} \\\\"
         )
     for name, v in DEFAULTS.items():
-        lines.append(
-            f"\\texttt{{{name.replace('_', r'\_')}}} & {v} & default & {DESCRIPTION[name]} \\\\"  # noqa: E501
-        )
+        tex = name.replace("_", r"\_")
+        lines.append(f"\\texttt{{{tex}}} & {v} & default & {DESCRIPTION[name]} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     return lines, bounds
 

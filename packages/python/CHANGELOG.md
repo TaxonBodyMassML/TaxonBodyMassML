@@ -33,6 +33,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A bare `"UNK"` species string was treated as a known genus when inferring the
   source rank (the vocabulary lists start with `UNK`), so such rows were
   labelled `tbmML_genus`.
+- On a fresh install the first `predict_mass()` call failed with
+  `FileNotFoundError` because the dictionary lookup (and, new in this release,
+  the vocabulary check) read `lookup.json` / `categories.json` before the
+  artifacts had been downloaded. The artifacts are now ensured before either
+  step; a regression test simulates an empty cache.
 
 ## [0.10.0] - 2026-09-17
 

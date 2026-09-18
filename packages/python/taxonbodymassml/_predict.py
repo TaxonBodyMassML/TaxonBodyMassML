@@ -533,6 +533,12 @@ def predict_mass(
         sub = taxonomy_df[resolved_mask].reset_index(drop=True)
         sub_names = [input_names[i] for i in resolved_pos]
 
+        # Download/verify the artifacts before any loader runs: the dictionary
+        # lookup and the vocabulary check below read lookup.json and
+        # categories.json ahead of the model functions (which ensure again,
+        # cheaply).  Without this a fresh install failed with FileNotFoundError.
+        _ensure_artifacts()
+
         # ---- Dictionary lookup (optional): return empirical mass for known species ---
         if lookup:
             lkp = load_lookup()

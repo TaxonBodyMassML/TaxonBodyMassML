@@ -381,6 +381,59 @@ def test_unrepresented_rows_keep_their_position_in_mixed_input():
 
 
 # ---------------------------------------------------------------------------
+# Fresh install: the first predict_mass() call must fetch the artifacts before
+# the dictionary lookup and the vocabulary check read them.  Simulated with an
+# empty cache directory and a download_model() that copies the verified files
+# from the real cache (no network).
+# ---------------------------------------------------------------------------
+@skip_without_artifacts
+def test_first_call_on_empty_cache_downloads_before_lookup(tmp_path, monkeypatch):
+    import shutil
+
+    import taxonbodymassml as tbm
+    from taxonbodymassml import _model
+
+    real_cache = _model._CACHE_DIR
+    copied = []
+
+    def fake_download(version="latest", force=False):
+        for name in _model._ARTIFACT_FILES:
+            shutil.copy2(real_cache / name, tmp_path / name)
+            copied.append(name)
+
+    monkeypatch.setattr(_model, "_CACHE_DIR", tmp_path)
+    monkeypatch.setattr(_model, "_ARTIFACTS_VERIFIED", False)
+    monkeypatch.setattr(_model, "download_model", fake_download)
+    for attr in [a for a in vars(_model) if a.endswith("_CACHE") and a != "_CACHE_DIR"]:
+        monkeypatch.setattr(_model, attr, None)  # forget anything loaded by earlier tests
+
+    nucella = _frame(
+        "Animalia",
+        "Mollusca",
+        "Gastropoda",
+        "Neogastropoda",
+        "Muricidae",
+        "Nucella",
+        "Nucella ostrina",
+    )
+    # lookup=True (default): the dictionary is read first
+    result = tbm.predict_mass(nucella)
+    assert result["mass_g"].iloc[0] == pytest.approx(0.7)
+    assert set(copied) == set(_model._ARTIFACT_FILES)
+
+    # lookup=False: the vocabulary check is the first reader (the CI min-deps path)
+    monkeypatch.setattr(_model, "_ARTIFACTS_VERIFIED", False)
+    for attr in [a for a in vars(_model) if a.endswith("_CACHE") and a != "_CACHE_DIR"]:
+        monkeypatch.setattr(_model, attr, None)
+    for name in _model._ARTIFACT_FILES:
+        (tmp_path / name).unlink()
+    copied.clear()
+    result = tbm.predict_mass(nucella, lookup=False, include_source=True)
+    assert result["mass_g"].iloc[0] > 0 and result["source"].iloc[0] == "tbmML_genus"
+    assert set(copied) == set(_model._ARTIFACT_FILES)
+
+
+# ---------------------------------------------------------------------------
 # Golden predictions: both methods must reproduce the training model exactly
 # (guards against column-order, encoding and xgboost-version drift).  Cases
 # flagged expect_na have no rank in the vocabulary and must come back NaN.
