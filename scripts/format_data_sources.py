@@ -13,6 +13,7 @@ Run from repo root:
   predictive_models/.venv/bin/python scripts/format_data_sources.py
 """
 
+import re
 from pathlib import Path
 
 import bibtexparser
@@ -26,10 +27,13 @@ OUT_TEX = RESULTS / "tab_data_sources.tex"
 
 
 def _escape(text: str) -> str:
-    """Minimal cleanup: strip surrounding braces added by bibtexparser."""
+    """Minimal cleanup: strip surrounding braces added by bibtexparser and
+    escape bare underscores (e.g. dataset names such as VertNet_Aves_Sept2016),
+    which would otherwise break the LaTeX build."""
     text = text.strip()
     if text.startswith("{") and text.endswith("}"):
         text = text[1:-1]
+    text = re.sub(r"(?<!\\)_", r"\\_", text)
     return text
 
 
