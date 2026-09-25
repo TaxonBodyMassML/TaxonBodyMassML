@@ -12,7 +12,7 @@ ENV XDG_CACHE_HOME=/app/.cache \
 # the wheel embeds the checksums of the matching Hugging Face artifact tag.
 # For a pre-release build pass e.g.
 #   --build-arg TBM_WHEEL=https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.10.0/taxonbodymassml-0.10.0-py3-none-any.whl
-ARG TBM_WHEEL=https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.11.0/taxonbodymassml-0.11.0-py3-none-any.whl
+ARG TBM_WHEEL=https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/download/python-v0.12.0/taxonbodymassml-0.12.0-py3-none-any.whl
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt "taxonbodymassml @ ${TBM_WHEEL}"
