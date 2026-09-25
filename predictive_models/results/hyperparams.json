@@ -1,15 +1,15 @@
 {
   "XGBoost": {
     "best_params": {
-      "n_estimators": 750,
+      "n_estimators": 350,
       "max_depth": 32,
-      "learning_rate": 0.10490750079222567,
-      "subsample": 0.5051742194845482,
-      "colsample_bytree": 0.6950887285132329,
-      "gamma": 0.79391439282331,
+      "learning_rate": 0.08800831415930338,
+      "subsample": 0.5782264852857015,
+      "colsample_bytree": 0.7948392179208831,
+      "gamma": 0.2004066218721704,
       "min_child_weight": 2
     },
-    "best_cv_mae": 0.34413389374042,
+    "best_cv_mae": 0.34756300780164123,
     "n_trials": 100,
     "n_folds": 5,
     "at_bound": {},
@@ -54,17 +54,18 @@
   },
   "EntityEmbeddings": {
     "best_params": {
-      "n_estimators": 750,
+      "n_estimators": 800,
       "max_depth": 12,
-      "learning_rate": 0.05061087564118453,
-      "subsample": 0.6858104292245208,
-      "colsample_bytree": 0.7481165187056286,
+      "learning_rate": 0.05900233083832773,
+      "subsample": 0.6795508863142737,
+      "colsample_bytree": 0.7329329219912272,
       "min_child_weight": 10
     },
-    "best_cv_mae": 0.316860036087108,
+    "best_cv_mae": 0.3209770046722603,
     "n_trials": 100,
     "n_folds": 5,
     "at_bound": {
+      "n_estimators": "upper",
       "min_child_weight": "upper"
     },
     "search_space": {
@@ -113,7 +114,7 @@
       "epochs": 100,
       "batch": 256,
       "lr": 0.001,
-      "mae": 0.3617755358872129
+      "mae": 0.39158577745403855
     }
   }
 }

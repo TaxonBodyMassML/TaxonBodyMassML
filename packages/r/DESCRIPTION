@@ -1,6 +1,6 @@
 Package: TaxonBodyMassML
 Title: Predict Species Body Mass Using the TaxonBodyMassML XGBoost Model
-Version: 0.11.0
+Version: 0.12.0
 Authors@R: c(
     person("Grant", "Pasquantonio", role = "aut"),
     person("Anish Chowdary", "Pendurti", role = "aut"),
@@ -38,4 +38,4 @@ Suggests:
 VignetteBuilder: knitr
 URL: https://taxonbodymassml.github.io, https://github.com/TaxonBodyMassML/TaxonBodyMassML
 BugReports: https://github.com/TaxonBodyMassML/TaxonBodyMassML/issues
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0

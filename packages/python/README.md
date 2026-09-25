@@ -85,6 +85,15 @@ path = tbm.get_citations()
 # /path/to/taxonbodymassml/data/Citations_BodyMass.bib
 ```
 
+### `create_bib(x, file="TaxonBodyMass_sources.bib")`
+
+Write a `.bib` file containing only the data sources cited in the `source` column of a `predict_mass(..., include_source=True)` result, so you can cite exactly the empirical body-mass sources behind your own predictions. Multi-source values (`"Feldman_etal_2016; Meiri_2018"`) are split, model-inferred rows (`tbmML_*`) are skipped, and a `UserWarning` lists any label that has no citation mapping. Returns the `pathlib.Path` written.
+
+```python
+res = tbm.predict_mass(["Nucella ostrina", "Anolis carolinensis"], include_source=True)
+tbm.create_bib(res, "my_sources.bib")
+```
+
 ### `tbm_options(**kwargs)`
 
 Configure package behaviour:

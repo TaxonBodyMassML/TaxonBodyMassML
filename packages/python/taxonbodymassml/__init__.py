@@ -8,13 +8,15 @@ Quick start::
     tbm.predict_mass(["Haustrum scobina", "Mus musculus"], confidence_interval=True)
 """
 
-from importlib.metadata import PackageNotFoundError, version as _pkg_version
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 
 try:
     __version__ = _pkg_version("taxonbodymassml")
 except PackageNotFoundError:
     __version__ = "unknown"
 
+from ._citations import create_bib, get_citations
 from ._fuzzy import correct_species_names, fuzzy_lookup_taxonomy, fuzzy_predict_mass
 from ._lookup import lookup_taxonomy, tbm_clear_cache, tbm_options
 from ._model import download_model
@@ -28,23 +30,7 @@ __all__ = [
     "fuzzy_predict_mass",
     "download_model",
     "get_citations",
+    "create_bib",
     "tbm_options",
     "tbm_clear_cache",
 ]
-
-
-def get_citations():
-    """Return the path to the bundled Citations_BodyMass.bib file.
-
-    The BibTeX file lists all data sources used to train the TaxonBodyMassML
-    model.  Pass the path to ``bibtexparser.load()`` or open it in any
-    reference manager (Zotero, BibDesk, JabRef, etc.).
-
-    Returns
-    -------
-    pathlib.Path
-        Absolute path to ``taxonbodymassml/data/Citations_BodyMass.bib``.
-    """
-    from pathlib import Path
-
-    return Path(__file__).parent / "data" / "Citations_BodyMass.bib"

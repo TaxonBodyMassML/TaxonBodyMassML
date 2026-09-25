@@ -211,7 +211,7 @@ test_that("predict_mass() returns empirical mass for species in training data", 
                     "Model artifacts not cached; skipping integration test.")
   testthat::skip_if_offline()
 
-  # Nucella ostrina is in training data with mass_g = 0.7, source = "Novak_unpubl"
+  # Nucella ostrina is in training data with mass_g = 0.7, source = "Novak_2017"
   result <- TaxonBodyMassML::predict_mass("Nucella ostrina")
   expect_equal(result$mass_g, 0.7)
 })
@@ -223,7 +223,7 @@ test_that("predict_mass() with include_source returns source for dictionary hit"
 
   result <- TaxonBodyMassML::predict_mass("Nucella ostrina", include_source = TRUE)
   expect_true("source" %in% names(result))
-  expect_equal(result$source, "Novak_unpubl")
+  expect_equal(result$source, "Novak_2017")
 })
 
 test_that("predict_mass() dict hit with CI has NA bounds", {
@@ -275,7 +275,7 @@ test_that("predict_mass() preserves order with mixed dict/model/unresolved rows"
   expect_equal(nrow(result), 3L)
   expect_equal(result$taxon[1L], "Nucella ostrina")
   expect_equal(result$mass_g[1L], 0.7)
-  expect_equal(result$source[1L], "Novak_unpubl")
+  expect_equal(result$source[1L], "Novak_2017")
   expect_false(is.na(result$mass_g[2L]))
   expect_true(startsWith(result$source[2L], "tbmML_"))
   expect_true(is.na(result$mass_g[3L]))

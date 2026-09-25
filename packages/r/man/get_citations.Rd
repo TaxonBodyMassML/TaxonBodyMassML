@@ -25,3 +25,7 @@ refs <- bibtex::read.bib(get_citations())
 }
 
 }
+\seealso{
+\code{\link[=create_bib]{create_bib()}} to export only the sources cited by a particular
+set of predictions.
+}

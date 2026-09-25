@@ -11,6 +11,10 @@
 library(TaxonBodyMassML)
 cat("TaxonBodyMassML", as.character(packageVersion("TaxonBodyMassML")), "\n")
 
+# Print data frames on one set of lines (the manuscript lstlisting fits ~105
+# characters at \scriptsize); R's default width of 80 wraps trailing columns.
+options(width = 100)
+
 # ---------------------------------------------------------------------------
 # Example 1 — single-taxon queries: recorded mass vs forced model prediction
 # ---------------------------------------------------------------------------
@@ -38,8 +42,17 @@ predict_mass(
 # Example 3 — include_source: provenance of each returned mass value
 # ---------------------------------------------------------------------------
 cat("\n=== Example 3: predict_mass() with include_source = TRUE ===\n")
-predict_mass(
-  c("Nucella ostrina",  # mass recorded in the database; returns the measurement
+res <- predict_mass(
+  c("Haustrum haustorium",  # mass recorded in the database; returns the measurement
     "Nucella lima"),    # not in the database; model infers from genus
   include_source = TRUE
 )
+res
+
+# ---------------------------------------------------------------------------
+# Example 4 — create_bib(): BibTeX file of the sources behind the predictions
+# ---------------------------------------------------------------------------
+cat("\n=== Example 4: create_bib() on the Example 3 result ===\n")
+bib_file <- file.path(tempdir(), "my_sources.bib")
+create_bib(res, file = bib_file)
+readLines(bib_file)

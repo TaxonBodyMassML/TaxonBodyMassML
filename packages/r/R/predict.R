@@ -275,9 +275,11 @@
 #'   `"XGBoost"` (direct XGBoost on natively categorical taxonomy features).
 #' @param include_taxonomy Logical. If `TRUE`, append the resolved taxonomy
 #'   columns to the output. Default `FALSE`.
-#' @param fuzzy_match_name Logical. If `TRUE`, species names are first
+#' @param fuzzy_match_name Logical. If `TRUE`, taxon names are first
 #'   corrected via the GBIF species-match API before taxonomy lookup,
-#'   tolerating misspellings and minor name variants. A `matched_name` column
+#'   tolerating misspellings and minor name variants. Single-word names not
+#'   recognised as a species are retried at genus through kingdom rank, so
+#'   misspelled higher-rank names are also corrected. A `matched_name` column
 #'   is appended to the output: it contains the originally entered name when a
 #'   correction was applied or no GBIF match was found; `NA` when the name was
 #'   already canonical. Default `FALSE` (exact name matching). Ignored when
@@ -285,7 +287,7 @@
 #' @param include_source Logical. If `TRUE`, append a `source` column
 #'   identifying the provenance of each returned mass value. For taxa returned
 #'   directly from the training-data dictionary the value is the original
-#'   source identifier (e.g., `"fishbase"`, `"Novak_unpubl"`). For
+#'   source identifier (e.g., `"fishbase"`, `"Novak_2017"`). For
 #'   model-inferred values it is `"tbmML_"` followed by the finest taxonomic
 #'   rank present in the training data (e.g., `"tbmML_genus"` if the genus
 #'   was seen during training; `"tbmML_order"` if only the order was seen).

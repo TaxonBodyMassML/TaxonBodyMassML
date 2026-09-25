@@ -1,5 +1,7 @@
 """
-Copy source data files from the sibling TaxonBodyMass_DB repository into data/.
+Copy source data files from the sibling TaxonBodyMass_DB repository into data/,
+and copy the citation files on into the R and Python packages, which bundle
+them for get_citations() and create_bib().
 
 Run from the TaxonBodyMassML root:
     python scripts/fetch_source_data.py
@@ -14,6 +16,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent.parent
 TBM_DB_ROOT = REPO_ROOT.parent / "TaxonBodyMass_DB"
 DST_DIR = REPO_ROOT / "data"
+PKG_DATA_DIRS = [
+    REPO_ROOT / "packages" / "r" / "inst" / "extdata",
+    REPO_ROOT / "packages" / "python" / "taxonbodymassml" / "data",
+]
 
 SOURCES = [
     (TBM_DB_ROOT / "TaxonBodyMass.csv", DST_DIR / "TaxonBodyMass.csv"),
@@ -26,6 +32,10 @@ SOURCES = [
         DST_DIR / "Citations_BodyMass.bib",
     ),
 ]
+# Citation files that each package bundles (copied from data/ after the sync).
+PACKAGED = ["TaxonBodyMass_CitationCiteIDs.csv", "Citations_BodyMass.bib"]
+for pkg_dir in PKG_DATA_DIRS:
+    SOURCES += [(DST_DIR / name, pkg_dir / name) for name in PACKAGED]
 
 for src, dst in SOURCES:
     if not src.exists():

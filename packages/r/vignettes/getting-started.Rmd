@@ -43,7 +43,7 @@ library(TaxonBodyMassML)
 
 TaxonBodyMassML::predict_mass("Homo sapiens")
 #>          taxon mass_g
-#> 1 Homo sapiens  67290
+#> 1 Homo sapiens  66300
 ```
 
 *Homo sapiens* has a recorded mass in the database, so the value returned is
@@ -54,9 +54,9 @@ that measurement rather than a model prediction (see Source Attribution below).
 ```{r multiple}
 TaxonBodyMassML::predict_mass(c("Canis lupus", "Panthera leo", "Mus musculus"))
 #>          taxon    mass_g
-#> 1  Canis lupus  11848.59
-#> 2 Panthera leo 162700.00
-#> 3  Mus musculus     17.91
+#> 1  Canis lupus  10090.06
+#> 2 Panthera leo 160500.00
+#> 3  Mus musculus     18.02
 ```
 
 ### With confidence interval
@@ -65,12 +65,12 @@ TaxonBodyMassML::predict_mass(c("Canis lupus", "Panthera leo", "Mus musculus"))
 # 90% conformal prediction interval (default when confidence_interval = TRUE)
 TaxonBodyMassML::predict_mass("Canis lupus", confidence_interval = TRUE)
 #>         taxon   mass_g lower_bound upper_bound confidence
-#> 1 Canis lupus 11848.59    1610.678    87161.45        0.9
+#> 1 Canis lupus 10090.06    1310.773    77671.24        0.9
 
 # Custom coverage level
 TaxonBodyMassML::predict_mass("Canis lupus", confidence_interval = 0.80)
 #>         taxon   mass_g lower_bound upper_bound confidence
-#> 1 Canis lupus 11848.59    3439.058    40821.94        0.8
+#> 1 Canis lupus 10090.06    2964.959    34337.52        0.8
 ```
 
 ### Include resolved taxonomy in output
@@ -93,7 +93,7 @@ genus-level queries, not as a model input).
 ```{r method}
 TaxonBodyMassML::predict_mass("Nucella lima", method = "XGBoost")
 #>          taxon   mass_g
-#> 1 Nucella lima 3.103961
+#> 1 Nucella lima 1.583428
 ```
 
 Both methods return the empirical mass for species present in the training
@@ -120,14 +120,15 @@ TaxonBodyMassML::predict_mass(
     "Nucella lima"),    # not in training data — model infers from genus
   include_source = TRUE
 )
-#>             taxon   mass_g       source
-#> 1 Nucella ostrina 0.700000 Novak_unpubl
-#> 2    Nucella lima 2.012565  tbmML_genus
+#>             taxon   mass_g      source
+#> 1 Nucella ostrina 0.700000  Novak_2017
+#> 2    Nucella lima 1.341924 tbmML_genus
 ```
 
 Note that for species in the training data, `mass_g` is the empirical measured
 value (not a model prediction), and confidence interval columns (if requested)
-will be `NA`.
+will be `NA`. See `create_bib()` (under Citation, below) to export the cited
+sources as a BibTeX file.
 
 ## Fuzzy Name Matching
 
@@ -141,12 +142,12 @@ always holds the GBIF-canonical name used for prediction.
 # Enable fuzzy correction — misspelled name is corrected automatically
 TaxonBodyMassML::predict_mass("Canis lupis", fuzzy_match_name = TRUE)
 #>         taxon   mass_g matched_name
-#> 1 Canis lupus 11848.59  Canis lupis
+#> 1 Canis lupus 10090.06  Canis lupis
 
 # Default: exact name matching (no correction step)
 TaxonBodyMassML::predict_mass("Canis lupus")
 #>         taxon   mass_g
-#> 1 Canis lupus 11848.59
+#> 1 Canis lupus 10090.06
 ```
 
 `fuzzy_predict_mass()` is deprecated as of v0.2.1. Replace any calls to it
@@ -188,8 +189,8 @@ TaxonBodyMassML::predict_mass(
   confidence_interval = 0.95
 )
 #>          taxon       mass_g lower_bound  upper_bound confidence
-#> 1  Canis lupus 11848.587295 675.4931068 207831.90749       0.95
-#> 2 Nucella lima     2.012565   0.1147372     35.30169       0.95
+#> 1  Canis lupus 10090.062404  531.096793 191696.43012       0.95
+#> 2 Nucella lima     1.341924    0.070633     25.49459       0.95
 ```
 
 By default the interval is calibrated for the finest taxonomic rank that the
@@ -393,4 +394,17 @@ package):
 
 ```{r bibtex}
 refs <- bibtex::read.bib(TaxonBodyMassML::get_citations())
+```
+
+To cite only the sources behind a particular set of predictions, pass the
+result of `predict_mass(..., include_source = TRUE)` to `create_bib()`. It
+writes a `.bib` file containing the entries for every training-data source
+named in the `source` column; model-inferred rows (`tbmML_*`) are skipped.
+
+```{r create-bib}
+res <- TaxonBodyMassML::predict_mass(
+  c("Nucella ostrina", "Anolis carolinensis", "Nucella lima"),
+  include_source = TRUE
+)
+TaxonBodyMassML::create_bib(res, file = "my_sources.bib")
 ```

@@ -30,6 +30,7 @@ See the [Python package readme](packages/python/README.md) for the full API refe
 
 ## Data Sources
 Training data sources are listed in [data/Citations_BodyMass.bib](data/Citations_BodyMass.bib), including the [FracFeed: Global database of the fraction of feeding predators](https://github.com/marknovak/FracFeed_DB), which motivated the compilation of the body mass data.
+Both packages bundle this bibliography (`get_citations()`) and, via `create_bib()`, can write a `.bib` file containing only the sources behind a given set of `predict_mass(..., include_source = TRUE)` results.
 
 ---
 ---

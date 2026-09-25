@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.12.0] - 2026-09-25
+
+### Added
+
+- `create_bib(x, file="TaxonBodyMass_sources.bib")` writes a BibTeX file
+  containing only the data sources cited in the `source` column of a
+  `predict_mass(..., include_source=True)` result. Multi-source values
+  (`"A; B"`) are split, model-inferred rows (`tbmML_*`) are skipped, and
+  labels are matched to BibTeX keys through the newly bundled
+  `data/TaxonBodyMass_CitationCiteIDs.csv`. Labels and keys are compared after
+  normalising dashes and diacritics to ASCII. A `UserWarning` lists any label
+  without a mapping.
+
+### Model and data
+
+- Training data updated to TaxonBodyMass_DB v6.0.0 (36,573 species; was
+  37,255). The database adds FishBase, SeaLifeBase, VertNet and Hrycik et
+  al. 2024 as sources, drops juvenile and larval records from five parsers,
+  removes taxa whose per-source masses span more than an order of magnitude,
+  and normalises every source label to ASCII. Both models were re-split and
+  retrained on the new data (hyperparameters from the v0.11.0 Optuna study
+  retained); artifact checksums updated (Hugging Face tags `r-v0.12.0` /
+  `py-v0.12.0`).
+
+### Changed
+
+- Bundled bibliography `Citations_BodyMass.bib` refreshed from
+  TaxonBodyMass_DB (393 entries; was 324), and every `source_mass` label in
+  the training data and in `lookup.json` now has a citation mapping.
+- `get_citations()` moved to the new `_citations` module; it is still exported
+  from the package namespace.
+
 ## [0.11.0] - 2026-09-18
 
 ### Model and data

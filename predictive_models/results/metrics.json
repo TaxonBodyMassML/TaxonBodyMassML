@@ -1,9 +1,9 @@
 {
-  "r2": 0.8961692070602061,
-  "rmse": 0.610801340298283,
-  "mae": 0.35253758381387673,
-  "n_train": 33523,
-  "n_test": 3725,
+  "r2": 0.893633568175548,
+  "rmse": 0.6077654579375618,
+  "mae": 0.35347439929056507,
+  "n_train": 32916,
+  "n_test": 3657,
   "log10_space": true,
   "features": [
     "kingdom",
@@ -14,25 +14,25 @@
     "genus"
   ],
   "encoding": "native categorical (enable_categorical=True); vocab = UNK + sorted train values",
-  "q90": 0.8716634694753419,
+  "q90": 0.8660424442933845,
   "hyperparameters": {
     "objective": "reg:absoluteerror",
     "enable_categorical": true,
     "random_state": 42,
-    "n_estimators": 750,
+    "n_estimators": 350,
     "max_depth": 32,
-    "learning_rate": 0.10490750079222567,
-    "subsample": 0.5051742194845482,
-    "colsample_bytree": 0.6950887285132329,
-    "gamma": 0.79391439282331,
+    "learning_rate": 0.08800831415930338,
+    "subsample": 0.5782264852857015,
+    "colsample_bytree": 0.7948392179208831,
+    "gamma": 0.2004066218721704,
     "min_child_weight": 2
   },
-  "timestamp": "2026-09-18T17:08:26.837661+00:00",
+  "timestamp": "2026-09-25T23:42:41.044254+00:00",
   "filtered_gt0p1g": {
-    "r2": 0.7461874320402397,
-    "rmse": 0.5814834413649382,
-    "mae": 0.3334820840024777,
-    "n": 3449,
+    "r2": 0.7491929579067067,
+    "rmse": 0.5550468388713717,
+    "mae": 0.32510351408540783,
+    "n": 3369,
     "filter": "mass_g > 0.1",
     "log10_space": true
   }

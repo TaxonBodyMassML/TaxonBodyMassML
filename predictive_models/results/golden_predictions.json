@@ -1,135 +1,135 @@
 {
-  "model_sha256": "832ceb0a18d6225f09eeabf78cb311d5c5ef5f60f69c50e792c38b248751b16c",
+  "model_sha256": "6bad674b79ccab14ed721c311ad47349f0530a7fddc3f3cb25fdf2b025fa5dbd",
   "cases": [
     {
       "label": "test_row_0",
       "kingdom": "Animalia",
-      "phylum": "Arthropoda",
-      "class": "Arachnida",
-      "order": "Araneae",
-      "family": "Agelenidae",
-      "genus": "Coelotes",
-      "species": "Coelotes terrestris",
-      "log10_mass_g": -1.1074867248535156,
+      "phylum": "Chordata",
+      "class": "Mammalia",
+      "order": "Rodentia",
+      "family": "Cricetidae",
+      "genus": "Phyllotis",
+      "species": "Phyllotis osilae",
+      "log10_mass_g": 1.6610422134399414,
       "expect_na": false,
-      "log10_mass_g_ee": -1.4386216402053833
+      "log10_mass_g_ee": 1.665566086769104
     },
     {
       "label": "test_row_1",
       "kingdom": "Animalia",
-      "phylum": "Chordata",
-      "class": "Mammalia",
-      "order": "Rodentia",
-      "family": "Muridae",
-      "genus": "Grammomys",
-      "species": "Grammomys kuru",
-      "log10_mass_g": 1.6038576364517212,
+      "phylum": "Arthropoda",
+      "class": "Malacostraca",
+      "order": "Decapoda",
+      "family": "Penaeidae",
+      "genus": "Metapenaeus",
+      "species": "Metapenaeus ensis",
+      "log10_mass_g": 1.1704362630844116,
       "expect_na": false,
-      "log10_mass_g_ee": 1.600037932395935
+      "log10_mass_g_ee": 1.187208890914917
     },
     {
       "label": "test_row_2",
       "kingdom": "Animalia",
       "phylum": "Chordata",
-      "class": "Aves",
-      "order": "Passeriformes",
-      "family": "Muscicapidae",
-      "genus": "Humblotia",
-      "species": "Humblotia flavirostris",
-      "log10_mass_g": 1.355794906616211,
+      "class": "Actinopterygii",
+      "order": "Perciformes",
+      "family": "Stichaeidae",
+      "genus": "Chirolophis",
+      "species": "Chirolophis ascanii",
+      "log10_mass_g": 1.6108208894729614,
       "expect_na": false,
-      "log10_mass_g_ee": 1.2171144485473633
+      "log10_mass_g_ee": 1.8755780458450317
     },
     {
       "label": "test_row_3",
       "kingdom": "Animalia",
-      "phylum": "Arthropoda",
-      "class": "Malacostraca",
-      "order": "Decapoda",
-      "family": "Diogenidae",
-      "genus": "Clibanarius",
-      "species": "Clibanarius brasiliensis",
-      "log10_mass_g": 0.3156920075416565,
+      "phylum": "Chordata",
+      "class": "Mammalia",
+      "order": "Chiroptera",
+      "family": "Molossidae",
+      "genus": "Mops",
+      "species": "Mops nanulus",
+      "log10_mass_g": 1.373563289642334,
       "expect_na": false,
-      "log10_mass_g_ee": 0.5190086364746094
+      "log10_mass_g_ee": 1.3839668035507202
     },
     {
       "label": "test_row_4",
       "kingdom": "Animalia",
-      "phylum": "Chordata",
-      "class": "Testudines",
-      "order": "Testudines",
-      "family": "Emydidae",
-      "genus": "Trachemys",
-      "species": "Trachemys gaigeae",
-      "log10_mass_g": 3.2724506855010986,
+      "phylum": "Arthropoda",
+      "class": "Arachnida",
+      "order": "Araneae",
+      "family": "Zodariidae",
+      "genus": "Zodarion",
+      "species": "Zodarion jozefienae",
+      "log10_mass_g": -2.1995301246643066,
       "expect_na": false,
-      "log10_mass_g_ee": 3.272320508956909
+      "log10_mass_g_ee": -2.2795329093933105
     },
     {
       "label": "genus_level",
       "kingdom": "Animalia",
-      "phylum": "Arthropoda",
-      "class": "Arachnida",
-      "order": "Araneae",
-      "family": "Agelenidae",
-      "genus": "Coelotes",
+      "phylum": "Chordata",
+      "class": "Mammalia",
+      "order": "Rodentia",
+      "family": "Cricetidae",
+      "genus": "Phyllotis",
       "species": "UNK",
-      "log10_mass_g": -1.1074867248535156,
+      "log10_mass_g": 1.6610422134399414,
       "expect_na": false,
-      "log10_mass_g_ee": -1.4386216402053833
+      "log10_mass_g_ee": 1.665566086769104
     },
     {
       "label": "family_level",
       "kingdom": "Animalia",
-      "phylum": "Arthropoda",
-      "class": "Arachnida",
-      "order": "Araneae",
-      "family": "Agelenidae",
+      "phylum": "Chordata",
+      "class": "Mammalia",
+      "order": "Rodentia",
+      "family": "Cricetidae",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": -1.1074867248535156,
+      "log10_mass_g": 1.5971661806106567,
       "expect_na": false,
-      "log10_mass_g_ee": -1.4386216402053833
+      "log10_mass_g_ee": 1.535216212272644
     },
     {
       "label": "order_level",
       "kingdom": "Animalia",
-      "phylum": "Arthropoda",
-      "class": "Arachnida",
-      "order": "Araneae",
+      "phylum": "Chordata",
+      "class": "Mammalia",
+      "order": "Rodentia",
       "family": "UNK",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": -3.038144826889038,
+      "log10_mass_g": 1.6140809059143066,
       "expect_na": false,
-      "log10_mass_g_ee": -1.7230056524276733
+      "log10_mass_g_ee": 2.304757595062256
     },
     {
       "label": "class_level",
       "kingdom": "Animalia",
-      "phylum": "Arthropoda",
-      "class": "Arachnida",
+      "phylum": "Chordata",
+      "class": "Mammalia",
       "order": "UNK",
       "family": "UNK",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": -1.946738600730896,
+      "log10_mass_g": 1.801438331604004,
       "expect_na": false,
-      "log10_mass_g_ee": -3.326754331588745
+      "log10_mass_g_ee": 2.678210496902466
     },
     {
       "label": "phylum_level",
       "kingdom": "Animalia",
-      "phylum": "Arthropoda",
+      "phylum": "Chordata",
       "class": "UNK",
       "order": "UNK",
       "family": "UNK",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": -1.445443868637085,
+      "log10_mass_g": -0.4824332296848297,
       "expect_na": false,
-      "log10_mass_g_ee": -3.536569595336914
+      "log10_mass_g_ee": 1.9124574661254883
     },
     {
       "label": "kingdom_level",
@@ -140,9 +140,9 @@
       "family": "UNK",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": -4.620352745056152,
+      "log10_mass_g": -2.4977855682373047,
       "expect_na": false,
-      "log10_mass_g_ee": -3.578852891921997
+      "log10_mass_g_ee": -3.585759162902832
     },
     {
       "label": "all_unk",
@@ -153,22 +153,22 @@
       "family": "UNK",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": -4.65140438079834,
+      "log10_mass_g": -3.065000057220459,
       "expect_na": true,
-      "log10_mass_g_ee": -9.00432300567627
+      "log10_mass_g_ee": -8.657758712768555
     },
     {
       "label": "unseen_species_known_genus",
       "kingdom": "Animalia",
-      "phylum": "Arthropoda",
-      "class": "Arachnida",
-      "order": "Araneae",
-      "family": "Agelenidae",
-      "genus": "Coelotes",
+      "phylum": "Chordata",
+      "class": "Mammalia",
+      "order": "Rodentia",
+      "family": "Cricetidae",
+      "genus": "Phyllotis",
       "species": "Zzzz notaspecies",
-      "log10_mass_g": -1.1074867248535156,
+      "log10_mass_g": 1.6610422134399414,
       "expect_na": false,
-      "log10_mass_g_ee": -1.4386216402053833
+      "log10_mass_g_ee": 1.665566086769104
     },
     {
       "label": "unseen_everything",
@@ -179,9 +179,9 @@
       "family": "Zzfamily",
       "genus": "Zzgenus",
       "species": "Zzspecies",
-      "log10_mass_g": -4.65140438079834,
+      "log10_mass_g": -3.065000057220459,
       "expect_na": true,
-      "log10_mass_g_ee": -9.00432300567627
+      "log10_mass_g_ee": -8.657758712768555
     }
   ]
 }

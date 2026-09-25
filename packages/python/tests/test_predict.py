@@ -199,7 +199,7 @@ def test_include_source_dict_hit_returns_source_string():
 
     result = tbm.predict_mass("Nucella ostrina", include_source=True)
     assert "source" in result.columns
-    assert result["source"].iloc[0] == "Novak_unpubl"
+    assert result["source"].iloc[0] == "Novak_2017"
 
 
 @skip_without_artifacts
@@ -257,7 +257,7 @@ def test_mixed_dict_model_unresolved_order_preserved():
     assert len(result) == 3
     assert result["taxon"].iloc[0] == "Nucella ostrina"
     assert result["mass_g"].iloc[0] == pytest.approx(0.7)
-    assert result["source"].iloc[0] == "Novak_unpubl"
+    assert result["source"].iloc[0] == "Novak_2017"
     assert result["mass_g"].iloc[1] > 0
     assert result["source"].iloc[1].startswith("tbmML_")
     assert math.isnan(result["mass_g"].iloc[2])

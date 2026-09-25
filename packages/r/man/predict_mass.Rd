@@ -38,9 +38,11 @@ calibration residuals, providing the marginal conformal guarantee.}
 \item{include_taxonomy}{Logical. If \code{TRUE}, append the resolved taxonomy
 columns to the output. Default \code{FALSE}.}
 
-\item{fuzzy_match_name}{Logical. If \code{TRUE}, species names are first
+\item{fuzzy_match_name}{Logical. If \code{TRUE}, taxon names are first
 corrected via the GBIF species-match API before taxonomy lookup,
-tolerating misspellings and minor name variants. A \code{matched_name} column
+tolerating misspellings and minor name variants. Single-word names not
+recognised as a species are retried at genus through kingdom rank, so
+misspelled higher-rank names are also corrected. A \code{matched_name} column
 is appended to the output: it contains the originally entered name when a
 correction was applied or no GBIF match was found; \code{NA} when the name was
 already canonical. Default \code{FALSE} (exact name matching). Ignored when
@@ -49,7 +51,7 @@ already canonical. Default \code{FALSE} (exact name matching). Ignored when
 \item{include_source}{Logical. If \code{TRUE}, append a \code{source} column
 identifying the provenance of each returned mass value. For taxa returned
 directly from the training-data dictionary the value is the original
-source identifier (e.g., \code{"fishbase"}, \code{"Novak_unpubl"}). For
+source identifier (e.g., \code{"fishbase"}, \code{"Novak_2017"}). For
 model-inferred values it is \code{"tbmML_"} followed by the finest taxonomic
 rank present in the training data (e.g., \code{"tbmML_genus"} if the genus
 was seen during training; \code{"tbmML_order"} if only the order was seen).

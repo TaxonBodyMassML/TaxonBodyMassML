@@ -416,9 +416,11 @@ def predict_mass(
     include_taxonomy : bool
         If ``True``, include the resolved taxonomy columns in the output.
     fuzzy_match_name : bool
-        If ``True``, species names are first corrected via the GBIF
+        If ``True``, taxon names are first corrected via the GBIF
         species-match API before taxonomy lookup, tolerating misspellings and
-        minor name variants.  A ``matched_name`` column is appended to the
+        minor name variants.  Single-word names not recognised as a species
+        are retried at genus through kingdom rank, so misspelled higher-rank
+        names are also corrected.  A ``matched_name`` column is appended to the
         output: it contains the originally entered name when a correction was
         applied or no GBIF match was found; ``None`` when the name was already
         canonical.  Default ``False`` (exact name matching).  Ignored when
@@ -427,7 +429,7 @@ def predict_mass(
         If ``True``, append a ``source`` column identifying the provenance of
         each returned mass value.  For taxa returned directly from the
         training-data dictionary the value is the original source identifier
-        (e.g., ``"fishbase"``, ``"Novak_unpubl"``).  For model-inferred
+        (e.g., ``"fishbase"``, ``"Novak_2017"``).  For model-inferred
         values it is ``"tbmML_"`` followed by the finest taxonomic rank
         present in the training data (e.g., ``"tbmML_genus"`` if the genus
         was seen during training; ``"tbmML_order"`` if only the order was
