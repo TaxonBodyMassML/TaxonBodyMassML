@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.13.0] - 2026-09-26
+
+### Model
+
+- Entity-embedding Stage 2 retrained with hyperparameters from a leakage-free
+  Optuna study (Stage 1 refit inside every CV fold; search space widened).
+  New optimum: 1,500 trees, depth 17, learning rate 0.015, subsample 0.67,
+  colsample 0.52, min_child_weight 2. Held-out test MAE 0.324 (was 0.328),
+  RMSE 0.558 (0.561), R² 0.910 (0.909). Stage 1, the XGBoost method, the
+  training data (TaxonBodyMass_DB v6.0.0) and the lookup table are unchanged.
+  `model_ee.ubj` grows from 16 MB to 127 MB (artifacts ~0.4 GB in total).
+  Hugging Face tags `r-v0.13.0` / `py-v0.13.0`.
+
+### Changed
+
+- `predict_mass()` warns when a taxon's only rank present in the training
+  vocabulary is the kingdom. The prediction is still returned, but with every
+  finer rank unknown it is essentially uninformative (test-set MAE of about
+  5 log10 units).
+- Module docstring names both models (entity-embedding default and single-stage
+  XGBoost). The repository licence is now MIT, matching the package.
+
 ## [0.12.0] - 2026-09-25
 
 ### Added

@@ -1,3 +1,28 @@
+# TaxonBodyMassML 0.13.0
+
+## Model
+
+* Entity-embedding Stage 2 retrained with hyperparameters from a leakage-free
+  Optuna study: the Stage-1 network is now refit inside every cross-validation
+  fold, and the search space was widened (`n_estimators` to 1,500, `max_depth`
+  to 25, `learning_rate` down to 0.003, `min_child_weight` to 30). New optimum:
+  1,500 trees, depth 17, learning rate 0.015, subsample 0.67, colsample 0.52,
+  min_child_weight 2. Held-out test MAE 0.324 (was 0.328), RMSE 0.558 (0.561),
+  R² 0.910 (0.909); class-level MAE 1.01 (was 1.07). Stage 1, the XGBoost
+  method, the training data (TaxonBodyMass_DB v6.0.0) and the lookup table are
+  unchanged. `model_ee.ubj` grows from 16 MB to 127 MB (artifacts ~0.4 GB in
+  total). Hugging Face tags `r-v0.13.0` / `py-v0.13.0`.
+
+## Behaviour
+
+* `predict_mass()` now warns when a taxon's only rank present in the training
+  vocabulary is the kingdom. The prediction is still returned, but with every
+  finer rank unknown it is essentially uninformative (test-set MAE of about
+  5 log10 units), so users should treat such rows with caution.
+* Package title and description now name both models (entity-embedding default
+  and single-stage XGBoost).
+* The repository licence is now MIT, matching the packages.
+
 # TaxonBodyMassML 0.12.0
 
 ## New features

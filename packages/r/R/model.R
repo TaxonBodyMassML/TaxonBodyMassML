@@ -17,7 +17,7 @@ NULL
 # Only advances when make publish is run with new artifacts. Intentionally
 # independent of the package version so code-only releases work without a
 # new HuggingFace upload. Updated automatically by scripts/publish_artifacts.py.
-.MODEL_ARTIFACT_VERSION <- "0.12.0"
+.MODEL_ARTIFACT_VERSION <- "0.13.0"
 
 .CHECKSUMS <- list(
   # XGBoost (original method)
@@ -28,9 +28,9 @@ NULL
   "lookup.json"             = "e49b971caa4d7b9078a59a0681a8cb9cde78e67f4244bc0e3c689eaf43255784",
   # Entity Embeddings
   "embeddings.json"              = "9abc38faff6ac490f27480d1c19698c19d8e3a934acd76919c95bf366ac8ec17",
-  "model_ee.ubj"                 = "950dcb0603c339165b894a9c0a114657d82158ef0e51d487bf3034aeec837284",
-  "calibration_ee.json"          = "c04921195dcdaafa1b446b658ab7ace500f5b92dfc22dbb226a942a957dc024e",
-  "calibration_by_rank_ee.json"  = "f21a6d5108c4dae122d4627a6845ed7370ac2dc1005f84c460fe6ee7af121f37"
+  "model_ee.ubj"                 = "9b27e77101ee5559e8e58e8d1ebbbea4ee23b92606ce9c7ff2025a8b522f2eb6",
+  "calibration_ee.json"          = "cd68beb482bc1427e7163f0665260ef2a13b9dd47e6f353bac46172aa1519200",
+  "calibration_by_rank_ee.json"  = "1c12da9c75e261240ff34867e99081277c62744f20ef432748a86d5dc3268083"
 )
 
 .ARTIFACT_FILES <- names(.CHECKSUMS)
