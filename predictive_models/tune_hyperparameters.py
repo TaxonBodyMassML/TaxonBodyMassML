@@ -150,13 +150,16 @@ XGB_SPACE = {
     "min_child_weight": ("int", 1, 10),
 }
 EE_FIXED = {"objective": "reg:absoluteerror", "random_state": "SEED"}
+# Bounds widened after the 0.12.0 optimum sat on n_estimators = 800 and
+# min_child_weight = 10, and the first nested study on max_depth = 15 and
+# learning_rate ~ 0.01 (each at the previous limit).
 EE_SPACE = {
-    "n_estimators": ("int", 200, 800, 50),
-    "max_depth": ("int", 4, 15),
-    "learning_rate": ("float_log", 0.01, 0.30),
+    "n_estimators": ("int", 200, 1500, 50),
+    "max_depth": ("int", 4, 25),
+    "learning_rate": ("float_log", 0.003, 0.30),
     "subsample": ("float", 0.5, 1.0),
     "colsample_bytree": ("float", 0.5, 1.0),
-    "min_child_weight": ("int", 1, 10),
+    "min_child_weight": ("int", 1, 30),
 }
 
 
@@ -259,16 +262,36 @@ def tune_ee():
     train["mass_g"] = np.log10(train["mass_g"])
     y_full_ee = train["mass_g"].values
 
-    vocabs = build_vocab(train)
-    X_codes = encode_codes(train, vocabs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    print("Stage 1: pre-training MLP for EE tuning (done once)...")
-    mlp = _build_embedding_mlp_and_train(X_codes, y_full_ee, vocabs, device)
-    embeddings = mlp.get_embeddings()
-    X_emb_full = make_emb_features(train, embeddings)
-
     kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=SEED)
+
+    # Nested Stage 1: the embedding network is fitted separately inside every
+    # fold, on that fold's training rows only, with that fold's vocabulary.
+    # Validation rows whose value is absent from the fold vocabulary map to the
+    # UNK vector, exactly as unseen taxa do at inference.  Fitting Stage 1 once
+    # on all training rows (the pre-0.13 behaviour) let every validation row's
+    # own mass shape the embeddings it was then scored with, so the CV MAE was
+    # optimistic.  Stage 1 has no tuned hyperparameters, so the five fits are
+    # done once and reused by every trial.
+    folds = []
+    for k, (train_idx, val_idx) in enumerate(kf.split(train), start=1):
+        print(f"Stage 1: fitting MLP on fold {k}/{N_FOLDS} training rows...")
+        torch.manual_seed(SEED)
+        np.random.seed(SEED)
+        tr, va = train.iloc[train_idx], train.iloc[val_idx]
+        vocabs_k = build_vocab(tr)
+        mlp_k = _build_embedding_mlp_and_train(
+            encode_codes(tr, vocabs_k), y_full_ee[train_idx], vocabs_k, device
+        )
+        emb_k = mlp_k.get_embeddings()
+        folds.append(
+            (
+                make_emb_features(tr, emb_k),
+                y_full_ee[train_idx],
+                make_emb_features(va, emb_k),
+                y_full_ee[val_idx],
+            )
+        )
 
     def objective(trial):
         params = dict(
@@ -277,11 +300,11 @@ def tune_ee():
             **_suggest_all(trial, EE_SPACE),
         )
         fold_maes = []
-        for train_idx, val_idx in kf.split(X_emb_full):
+        for X_tr, y_tr, X_va, y_va in folds:
             model = xgb.XGBRegressor(**params)
-            model.fit(X_emb_full[train_idx], y_full_ee[train_idx])
-            preds = model.predict(X_emb_full[val_idx])
-            fold_maes.append(float(np.mean(np.abs(y_full_ee[val_idx] - preds))))
+            model.fit(X_tr, y_tr)
+            preds = model.predict(X_va)
+            fold_maes.append(float(np.mean(np.abs(y_va - preds))))
         return float(np.mean(fold_maes))
 
     sampler = optuna.samplers.TPESampler(seed=SEED)
@@ -299,6 +322,7 @@ def tune_ee():
         "best_cv_mae": study.best_value,
         "n_trials": N_TRIALS,
         "n_folds": N_FOLDS,
+        "stage1_cv": "nested (Stage 1 refit inside each fold)",
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "current_params": {
             "n_estimators": 400,
