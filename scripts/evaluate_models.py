@@ -188,7 +188,7 @@ def tab_unk(summary, methods):
         lines = [
             r"\begin{tabular}{lrrr}",
             r"\toprule",
-            r"Finest known rank & MAE ($\log_{10}$ g) & $\Delta$MAE & median factor \\",
+            r"Finest known rank & MAE ($\log_{10}$ g) & $\Delta$MAE & $10^{\mathrm{MAE}}$ \\",
             r"\midrule",
         ]
         for rank in RANKS:

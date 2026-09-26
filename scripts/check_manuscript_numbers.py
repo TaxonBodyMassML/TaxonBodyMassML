@@ -27,6 +27,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 MANUSCRIPT = REPO / "ms" / "manuscript.tex"
 NUMBERS = [REPO / "ms" / "numbers.tex", REPO / "predictive_models" / "results" / "numbers.tex"]
+# Macros owned by the DB pipeline (TaxonBodyMass_DB/R/RunMe.r writes this file).
+NUMBERS_DB = REPO / "ms" / "numbers_db.tex"
 
 # Control words starting with these prefixes are treated as numbers macros.
 MACRO_PREFIXES = (
@@ -57,6 +59,7 @@ MACRO_PREFIXES = (
     "mass",
     "ordersOf",
     "nNames",
+    "nRemoved",
     "nSpecies",
     "nTrain",
     "nTest",
@@ -85,7 +88,7 @@ MACRO_PREFIXES = (
     "lookupMB",
     "numbersGenerated",
 )
-ALLOW_NUMERALS = re.compile(r"^(1[89]\d\d|20\d\d|97331|0\.(80|90|95|75)|0000-0002-7881-4253)$")
+ALLOW_NUMERALS = re.compile(r"^(1[89]\d\d|20\d\d|97331|0\.(80|90|95|75|10)|0000-0002-7881-4253)$")
 
 
 def strip_comments_and_listings(text: str) -> str:
@@ -112,6 +115,8 @@ def main() -> int:
         print("numbers.tex not found; run scripts/make_numbers_tex.py first")
         return 2
     defined = set(re.findall(r"\\newcommand\{\\([A-Za-z]+)\}", numbers.read_text()))
+    if NUMBERS_DB.exists():
+        defined |= set(re.findall(r"\\newcommand\{\\([A-Za-z]+)\}", NUMBERS_DB.read_text()))
     tex = MANUSCRIPT.read_text()
     body = strip_comments_and_listings(tex)
 
@@ -121,6 +126,11 @@ def main() -> int:
     unused = sorted(defined - used)
     notes = re.findall(r"\\(MN|ToDo)\{", body)
     placeholders = re.findall(r"<<OUTPUT-[A-Za-z0-9]+>>", tex)  # example listings not yet pasted
+    db_placeholders = (
+        re.findall(r"\\newcommand\{\\([A-Za-z]+)\}\{[^}]*\?\?", NUMBERS_DB.read_text())
+        if NUMBERS_DB.exists()
+        else []
+    )
 
     numerals = []
     for i, line in enumerate(body.splitlines(), 1):
@@ -131,7 +141,10 @@ def main() -> int:
             if not ALLOW_NUMERALS.match(token.replace(",", "")):
                 numerals.append((i, token, line.strip()[:90]))
 
-    print(f"numbers.tex: {len(defined)} macros defined ({numbers.relative_to(REPO)})")
+    src = numbers.relative_to(REPO).as_posix()
+    if NUMBERS_DB.exists():
+        src += f" + {NUMBERS_DB.relative_to(REPO).as_posix()}"
+    print(f"numbers.tex: {len(defined)} macros defined ({src})")
     print(
         f"manuscript: {len(macro_like & defined)} macros used, {len(unused)} unused, {len(undefined)} undefined"  # noqa: E501
     )
@@ -144,6 +157,12 @@ def main() -> int:
     if placeholders:
         status = 1
         print(f"  example output placeholders still present: {sorted(set(placeholders))}")
+    if db_placeholders:
+        status = 1
+        print(
+            "  numbers_db.tex still holds ?? placeholders (re-run TaxonBodyMass_DB/R/RunMe.r): "
+            + ", ".join(db_placeholders)
+        )
     if notes:
         print(f"  margin notes remaining: {len(notes)} (\\MN/\\ToDo)")
         if args.strict:

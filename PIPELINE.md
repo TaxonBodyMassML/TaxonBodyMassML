@@ -80,6 +80,8 @@ make tune -j2      # concurrent: both in parallel
 
 100 Optuna TPE trials, 5-fold CV MAE in log₁₀ space per model. SQLite backends are resumable (`load_if_exists=True`) — interrupted runs can be continued without losing completed trials.
 
+For the Entity Embeddings model the Stage-1 network is refit inside each fold (on that fold's training rows and vocabulary) before the Stage-2 trials, so the reported CV MAE is leakage-free; Stage 1 has no tuned hyperparameters, so this costs five Stage-1 fits per study, not per trial. Earlier studies (≤ 0.12.0) fitted Stage 1 once on the whole training set and were therefore mildly optimistic.
+
 Run `make clean-tune` first whenever training data has changed; stale trials from a different dataset are invalid.
 
 **Outputs:**
@@ -167,5 +169,6 @@ make results
 **Requires Phase 7 complete first** (Hugging Face upload + package checksum update), because `numbers.tex` records the package and artifact versions.
 
 - All numbers in `ms/manuscript.tex` come from `numbers.tex` macros; edit prose only. `make check-ms` lists unused/undefined macros, remaining margin notes and any hard-coded numerals.
+- Five macros are owned by the DB pipeline, not by `numbers.tex`: `\nNamesSubmitted`, `\nNamesResolved`, `\nNamesAutotroph`, `\nSpeciesAfterFilter` and `\nRemovedHighRange` are written to `ms/numbers_db.tex` by `TaxonBodyMass_DB/R/RunMe.r` (they are only knowable before deduplication and filtering; the incremental `sources/passes/*.csv` files must not be used for them). Re-run `RunMe.r` after any DB change so that file is current; `make check-ms` reads both files.
 - Regenerate the R example output by running `Rscript scripts/run_examples.R` with the released package and pasting the console output into the `lstlisting` blocks of the Examples subsection.
 - `make -C ms pdf` builds the development PDF; `make submission` writes the single-file, macro-free `ms/submission/manuscript_submission.tex` (tables and bibliography inlined) and verifies with `pdftotext` that it renders identically. Submit that file, not the development source.

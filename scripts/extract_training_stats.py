@@ -9,10 +9,11 @@ fetched by scripts/fetch_source_data.py; one row per species) and writes
   predictive_models/results/data_stats.json   every count quoted in the manuscript
                                               (consumed by make_numbers_tex.py)
 
-With --db-passes DIR (default: ../TaxonBodyMass_DB/sources/passes) the
-resolution chain (names submitted -> resolved -> autotrophs removed -> unique
-species) is derived from the final enrichment pass file, applying the same
-autotroph rule as TaxonBodyMass_DB/R/library/filter_autotrophs.r.
+The resolution chain (names submitted -> resolved -> autotrophs removed ->
+species before the range filter) is NOT derived here: the enrichment pass files
+in TaxonBodyMass_DB/sources/passes hold only the names enriched on the last
+(incremental) run.  TaxonBodyMass_DB/R/RunMe.r writes those counts directly to
+ms/numbers_db.tex.
 
 Run from repo root:
   predictive_models/.venv/bin/python scripts/extract_training_stats.py
@@ -31,56 +32,12 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _results_common import (  # noqa: E402
     DATA,
-    REPO,
     RESULTS,
     TAXONOMY_COLS,
     fmt_int,
     write_json,
     write_tex,
 )
-
-# Mirror of TaxonBodyMass_DB/R/library/filter_autotrophs.r (v5.1.0).  Used only
-# to reconstruct the count chain from the pre-filter pass file.
-AUTOTROPH_KINGDOMS = {"Plantae", "Viridiplantae", "Fungi"}
-AUTOTROPH_PHYLA = {
-    "Ochrophyta",
-    "Bacillariophyta",
-    "Haptophyta",
-    "Cryptophyta",
-    "Chlorophyta",
-    "Rhodophyta",
-    "Charophyta",
-    "Glaucophyta",
-    "Streptophyta",
-    "Euglenophyta",
-    "Cyanobacteria",
-    "Cyanobacteriota",
-}
-AUTOTROPH_GENERA = {
-    "Alexandrium",
-    "Amphidinium",
-    "Ceratium",
-    "Cochlodinium",
-    "Dinophysis",
-    "Fragilidium",
-    "Glenodinium",
-    "Gonyaulax",
-    "Gymnodinium",
-    "Heterocapsa",
-    "Lingulodinium",
-    "Parvodinium",
-    "Peridinium",
-    "Prorocentrum",
-    "Scrippsiella",
-    "Spiniferodinium",
-    "Takayama",
-    "Thecadinium",
-    "Tripos",
-    "Yihiella",
-    "Euglena",
-    "Eutreptiella",
-    "Lepocinclis",
-}
 
 
 def _tabular(df_g: pd.DataFrame, label: str, n: int | None = None) -> list[str]:
@@ -114,38 +71,22 @@ def summarise(df: pd.DataFrame, col: str) -> pd.DataFrame:
     return out
 
 
-def resolution_chain(passes_dir: Path) -> dict | None:
-    path = passes_dir / "TaxonBodyMass_Wikidata_pass.csv"
+def sources_contributing(labels: set[str]) -> int | None:
+    """Number of bibliography entries with at least one CiteID present in the
+    ``source_mass`` labels of the released CSV.  The bibliography lists every
+    source consulted; sources whose records were all removed downstream (range
+    filter, unresolved names, sheet overrides) contribute no species."""
+    path = DATA / "TaxonBodyMass_CitationCiteIDs.csv"
     if not path.exists():
-        print(f"  (no {path}; resolution chain skipped)")
+        print(f"  (no {path}; sources_contributing skipped)")
         return None
-    p = pd.read_csv(path, low_memory=False)
-    resolved = p[p["species"].notna()]
-    kept = resolved[
-        ~resolved["kingdom"].isin(AUTOTROPH_KINGDOMS)
-        & ~resolved["phylum"].isin(AUTOTROPH_PHYLA)
-        & ~resolved["genus"].isin(AUTOTROPH_GENERA)
-    ]
-    return {
-        "pass_file": str(path),
-        "n_names_submitted": int(p["taxon"].nunique()),
-        "n_names_resolved": int(resolved["taxon"].nunique()),
-        "n_names_autotroph": int(resolved["taxon"].nunique() - kept["taxon"].nunique()),
-        "n_species_after_filter": int(kept["species"].nunique()),
-        "note": "applies the v5.1.0 filter rule to the pre-filter, pre-deduplication pass file; "
-        "may differ by a few records from the released CSV (later manual overrides)",
-    }
+    cite = pd.read_csv(path)
+    keys = cite.groupby("Bibcite")["CiteID"].apply(set)
+    return int(sum(bool(ids & labels) for ids in keys))
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument(
-        "--db-passes",
-        type=Path,
-        default=REPO.parent / "TaxonBodyMass_DB" / "sources" / "passes",
-        help="TaxonBodyMass_DB/sources/passes directory (resolution chain)",
-    )
-    args = ap.parse_args()
+    argparse.ArgumentParser(description=__doc__).parse_args()
 
     raw = pd.read_csv(DATA / "TaxonBodyMass.csv")
     n_db = len(raw)
@@ -176,6 +117,7 @@ def main() -> None:
         "n_dropped_missing_rank": n_db - n_used,
         "n_source_records": int(raw["n"].sum()) if "n" in raw.columns else None,
         "n_sources_distinct": len(src_counter),
+        "n_sources_contributing": sources_contributing(set(src_counter)),
         "top_single_source_contributors": single_source.most_common(6),
         "n_lookup_species": n_db,
         "kingdoms": {k: int(v) for k, v in by_kingdom["n_species"].items()},
@@ -199,7 +141,6 @@ def main() -> None:
         },
         "mass_median_g": float(used["mass_g"].median()),
         "orders_of_magnitude": math.log10(largest["mass_g"] / smallest["mass_g"]),
-        "resolution_chain": resolution_chain(args.db_passes),
     }
     write_json(RESULTS / "data_stats.json", stats)
 
@@ -211,8 +152,10 @@ def main() -> None:
         f"{largest['species']} {largest['mass_g']:.4g} g "
         f"({stats['orders_of_magnitude']:.1f} orders of magnitude)"
     )
-    if stats["resolution_chain"]:
-        print("Resolution chain:", stats["resolution_chain"])
+    print(
+        f"Sources: {stats['n_sources_distinct']} distinct labels; "
+        f"{stats['n_sources_contributing']} bibliography entries contributing"
+    )
 
 
 if __name__ == "__main__":

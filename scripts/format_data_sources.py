@@ -37,20 +37,55 @@ def _escape(text: str) -> str:
     return text
 
 
+def _strip_enclosing_braces(text: str) -> str:
+    """Remove one pair of braces only if they enclose the whole string
+    (``{Sarmiento-Lezcano}`` yes; ``{\\v S}egvi{\\'c}`` no)."""
+    if not (text.startswith("{") and text.endswith("}")):
+        return text
+    depth = 0
+    for i, ch in enumerate(text):
+        depth += (ch == "{") - (ch == "}")
+        if depth == 0 and i < len(text) - 1:
+            return text
+    return text[1:-1]
+
+
+def _split_name(person: str) -> tuple[str, str]:
+    """Return ``(surname, initials)`` for one author.
+
+    Handles both BibTeX name forms: ``Last, First Middle`` and ``First Middle
+    Last``.  In the latter, a trailing ``{...}`` group or the final word is the
+    surname, so ``Airam Nauzet {Sarmiento-Lezcano}`` -> ``Sarmiento-Lezcano, A.N.``.
+    """
+    person = person.strip()
+    if "," in person:
+        last, first = (p.strip() for p in person.split(",", 1))
+    else:
+        m = re.match(r"^(.*?)\s*(\{[^{}]*\})$", person)
+        if m:
+            first, last = m.group(1), m.group(2)
+        else:
+            words = person.split()
+            first, last = " ".join(words[:-1]), (words[-1] if words else person)
+    last = _strip_enclosing_braces(last.strip())
+    initials = "".join(w[0] + "." for w in first.split() if w and w[0].isalpha())
+    return last, initials
+
+
+def _first_surname(raw: str) -> str:
+    return _split_name(_escape(raw).split(" and ")[0])[0]
+
+
 def _format_authors(raw: str) -> str:
-    """Format 'Last, First and Last, First ...' → 'Last, F., Last, F., ...'"""
-    raw = _escape(raw)
-    people = [a.strip() for a in raw.split(" and ")]
+    """Format any BibTeX author list as 'Last, F., Last, F., and Last, F.'"""
+    people = [a.strip() for a in _escape(raw).split(" and ") if a.strip()]
     formatted = []
     for person in people:
-        if "," in person:
-            parts = [p.strip() for p in person.split(",", 1)]
-            last = parts[0]
-            first = parts[1] if len(parts) > 1 else ""
-            initials = "".join(w[0] + "." for w in first.split() if w and w[0].isalpha())
-            formatted.append(f"{last}, {initials}" if initials else last)
-        else:
-            formatted.append(person)
+        if person.lower() == "others":
+            formatted.append("others")
+            continue
+        last, initials = _split_name(person)
+        formatted.append(f"{last}, {initials}" if initials else last)
     if len(formatted) == 1:
         return formatted[0]
     if len(formatted) == 2:
@@ -69,10 +104,10 @@ def _format_entry(e: dict) -> str:
 
     # natbib in author-year mode requires an optional [Author, Year] label on
     # \bibitem; without it natbib switches to numeric mode and raises an error.
-    first_surname = _escape(e.get("author", e.get("editor", "Anonymous"))).split(",")[0].strip()
+    first_surname = _first_surname(e.get("author", e.get("editor", "Anonymous")))
     natbib_label = f"{first_surname}, {year}"
 
-    parts = [f"{author} ({year}). {title}."]
+    parts = [f"{author} ({year}). {title.rstrip('.')}."]
 
     if etype == "article":
         journal = _escape(e.get("journal", ""))
@@ -109,11 +144,12 @@ def _format_entry(e: dict) -> str:
                 chunk += f". {publisher}"
             parts.append(chunk + ".")
     else:
-        note = _escape(e.get("note", e.get("howpublished", "")))
+        note = _escape(e.get("note", e.get("howpublished", ""))).rstrip(".")
         if note:
             parts.append(note + ".")
 
-    doi = _escape(e.get("doi", ""))
+    # Some entries store a full resolver URL in the doi field.
+    doi = re.sub(r"^(https?://(dx\.)?doi\.org/|doi:)\s*", "", _escape(e.get("doi", "")), flags=re.I)
     url = _escape(e.get("url", ""))
     if doi:
         parts.append(f"\\url{{https://doi.org/{doi}}}")
@@ -130,9 +166,7 @@ def main():
     with open(BIB_PATH, encoding="utf-8") as f:
         db = bibtexparser.load(f, parser)
 
-    entries = sorted(
-        db.entries, key=lambda e: _escape(e.get("author", "zzz")).split(",")[0].lower()
-    )
+    entries = sorted(db.entries, key=lambda e: _first_surname(e.get("author", "zzz")).lower())
 
     lines = [r"\begin{thebibliography}{999}"]
     for e in entries:

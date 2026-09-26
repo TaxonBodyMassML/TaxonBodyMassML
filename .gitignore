@@ -220,3 +220,6 @@ regressor_microservice/sliced_model/
 
 # Cloudflare tunnel credentials/config mounted into the cloudflared container (see regressor_microservice/README.md)
 regressor_microservice/cloudflared/
+
+# Archived tuning studies keep only their JSON; artifact backups stay local
+predictive_models/results/release_*/artifacts/

@@ -140,6 +140,8 @@ def main():
         M["nSourceRecords"] = fmt_int(data["n_source_records"])
     M["nSources"] = fmt_int(count_bib_entries(DATA / "Citations_BodyMass.bib"))
     M["nSourceLabels"] = fmt_int(data["n_sources_distinct"])
+    if data.get("n_sources_contributing") is not None:
+        M["nSourcesContributing"] = fmt_int(data["n_sources_contributing"])
     M["nLookupSpecies"] = fmt_int(data["n_lookup_species"])
     M["nKingdoms"] = str(len(data["kingdoms"]))
     for k, v in data["kingdoms"].items():
@@ -162,12 +164,8 @@ def main():
     M["massMedianG"] = num(data["mass_median_g"], 1)
     M["ordersOfMagnitude"] = num(data["orders_of_magnitude"], 1)
     M["ordersOfMagnitudeInt"] = str(int(round(data["orders_of_magnitude"])))
-    chain = data.get("resolution_chain")
-    if chain:
-        M["nNamesSubmitted"] = fmt_int(chain["n_names_submitted"])
-        M["nNamesResolved"] = fmt_int(chain["n_names_resolved"])
-        M["nNamesAutotroph"] = fmt_int(chain["n_names_autotroph"])
-        M["nSpeciesAfterFilter"] = fmt_int(chain["n_species_after_filter"])
+    # nNamesSubmitted / nNamesResolved / nNamesAutotroph / nSpeciesAfterFilter /
+    # nRemovedHighRange are written by TaxonBodyMass_DB/R/RunMe.r to ms/numbers_db.tex.
 
     # ---- split and calibration ---------------------------------------------
     n_train, n_test = int(m_xgb["n_train"]), int(m_xgb["n_test"])
@@ -220,7 +218,11 @@ def main():
             M[f"{p}Imp{RANK_CAP[rank]}"] = num(imp[method][rank], 1)
     M["eeStageOneMAE"] = num(m_ee["stage1_mae"], 2)
     M["eeStageOneMAEthree"] = num(m_ee["stage1_mae"], 3)
-    M["eeBestTrial"] = str(hp["EntityEmbeddings"].get("best_trial", ""))
+    # Test species per stratum actually used by the stratified intervals
+    # (finest rank whose value is in the training vocabulary).
+    counts = ev["methods"]["EntityEmbeddings"]["source_rank_counts"]
+    for rank in RANKS:
+        M[f"eeNStrat{RANK_CAP[rank]}"] = fmt_int(counts.get(f"tbmML_{rank}", 0))
     for rank in MODEL_FEATURES:
         M[f"embDim{rank.capitalize()}"] = str(m_ee["emb_dims"][rank])
     M["embDimTotal"] = str(m_ee["total_emb_dim"])
