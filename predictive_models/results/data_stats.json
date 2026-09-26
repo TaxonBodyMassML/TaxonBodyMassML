@@ -4,6 +4,7 @@
   "n_dropped_missing_rank": 0,
   "n_source_records": 454263,
   "n_sources_distinct": 349,
+  "n_sources_contributing": 345,
   "top_single_source_contributors": [
     [
       "Feldman_etal_2016",
@@ -82,13 +83,5 @@
     "class": "Mammalia"
   },
   "mass_median_g": 25.3,
-  "orders_of_magnitude": 21.942008053022313,
-  "resolution_chain": {
-    "pass_file": "/Users/novakm/Git/FracFeed/TaxonBodyMass_DB/sources/passes/TaxonBodyMass_Wikidata_pass.csv",
-    "n_names_submitted": 182,
-    "n_names_resolved": 176,
-    "n_names_autotroph": 0,
-    "n_species_after_filter": 176,
-    "note": "applies the v5.1.0 filter rule to the pre-filter, pre-deduplication pass file; may differ by a few records from the released CSV (later manual overrides)"
-  }
+  "orders_of_magnitude": 21.942008053022313
 }
