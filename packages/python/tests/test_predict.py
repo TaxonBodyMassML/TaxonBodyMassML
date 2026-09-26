@@ -323,12 +323,38 @@ def test_unrepresented_taxonomy_returns_nan_with_warning():
 
 
 @skip_without_artifacts
+def test_kingdom_only_taxonomy_warns_but_predicts():
+    """Only the kingdom is in the vocabulary: a prediction is returned with a warning."""
+    import math
+
+    import taxonbodymassml as tbm
+
+    kingdom_only = _frame(
+        "Animalia",
+        "Nullaphyta",
+        "Nullaclassia",
+        "Nullaordinia",
+        "Nullafamilidae",
+        "Nullagenus",
+        "Nullagenus nullaspecies",
+    )
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = tbm.predict_mass(kingdom_only, confidence_interval=True, include_source=True)
+    assert any("resolved only to kingdom" in str(x.message) for x in w)
+    assert not math.isnan(result["mass_g"].iloc[0])
+    assert not math.isnan(result["lower_bound"].iloc[0])
+    assert result["source"].iloc[0] == "tbmML_kingdom"
+
+
+@skip_without_artifacts
 def test_kingdom_only_taxonomy_is_still_predicted():
     """Kingdom-level matches keep their estimate; the wide interval conveys the uncertainty."""
     import taxonbodymassml as tbm
 
     animal = _frame("Animalia", "UNK", "UNK", "UNK", "UNK", "UNK", "UNK")
-    result = tbm.predict_mass(animal, include_source=True, lookup=False)
+    with pytest.warns(UserWarning, match="resolved only to kingdom"):
+        result = tbm.predict_mass(animal, include_source=True, lookup=False)
     assert result["mass_g"].iloc[0] > 0
     assert result["source"].iloc[0] == "tbmML_kingdom"
 

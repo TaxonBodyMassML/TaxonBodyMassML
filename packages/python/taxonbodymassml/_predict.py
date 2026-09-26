@@ -1,5 +1,6 @@
 """
-Prediction logic: UNK mapping, XGBoost inference, conformal intervals.
+Prediction logic: taxonomy lookup, UNK mapping, entity-embedding and XGBoost
+inference, conformal intervals.
 """
 
 from __future__ import annotations
@@ -583,9 +584,28 @@ def predict_mass(
             # Taxa whose kingdom..genus share no value with the training
             # vocabulary would be scored on all-UNK features: return NaN for
             # them (with a warning), as for unresolvable names.
-            unrep = _unrepresented_mask(model_sub, load_categories())
+            categories = load_categories()
+            src_ranks = [
+                _infer_source_rank(model_sub.iloc[i], categories) for i in range(len(model_sub))
+            ]
+            unrep = [r == "tbmML_UNK" for r in src_ranks]
             unrep_pos = [i for i, u in enumerate(unrep) if u]
             keep_pos = [i for i, u in enumerate(unrep) if not u]
+
+            # Taxa whose only rank in the training vocabulary is the kingdom are
+            # scored on kingdom + five UNK features. The prediction is returned
+            # but is essentially uninformative (test-set MAE ~5 log10 units).
+            kingdom_only = [model_names[i] for i, r in enumerate(src_ranks) if r == "tbmML_kingdom"]
+            if kingdom_only:
+                shown = ", ".join(repr(n) for n in kingdom_only[:10])
+                if len(kingdom_only) > 10:
+                    shown += f", ... ({len(kingdom_only) - 10} more)"
+                warnings.warn(
+                    f"{len(kingdom_only)} taxon/taxa resolved only to kingdom within the "
+                    f"training data (all finer ranks unknown); their predictions are "
+                    f"essentially uninformative: {shown}",
+                    stacklevel=2,
+                )
 
             if unrep_pos:
                 unrep_names = [model_names[i] for i in unrep_pos]

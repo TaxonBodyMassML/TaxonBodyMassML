@@ -44,10 +44,10 @@
     <br>A: When you first open the application, there is an introduction modal welcoming you to the website; if you click 'Get Started!' at the bottom of this modal, it will reveal the input bar for you to type into. This input bar should have placeholder text that reads: "Input species name(s)..."</p>
 
     <p>Q: What sort of input do I supply?
-    <br>A: You will input a scientific species name. The system will automatically attempt to correct minor misspellings and name variants before looking up the species, so you do not need to enter a perfectly spelled name. If no match can be found at all, you will be prompted to provide the rest of the creature's taxonomy (domain, kingdom, phylum, class, order, family, genus, and species again).</p>
+    <br>A: You will input a scientific species name. The name is resolved against the GBIF Backbone Taxonomy (with an NCBI fallback) to obtain its kingdom-to-genus classification, which the model uses to predict body mass. Names must be spelled correctly: the web interface does not correct misspellings. If the name cannot be resolved, no prediction is returned.</p>
 
     <p>Q: Does the site handle typos or misspelled species names?
-    <br>A: Yes. Fuzzy name matching is performed automatically on every request. Before looking up a species, the system queries the GBIF species database to find the closest canonical match to what you typed. The matched name will be shown alongside your result so you can confirm the correct species was found. If no close match exists, the original name is used as-is.</p>
+    <br>A: No. The web interface looks up the name exactly as typed, so typos will usually result in no prediction. Fuzzy name correction (via the GBIF species-match service) is available in the R and Python packages by setting <code>fuzzy_match_name = TRUE</code> in <code>predict_mass()</code>; the corrected name is then reported alongside the result.</p>
 
     <p>Q: What are some examples of inputs I could try?
     <br>A: Here are a list of scientific species names that have direct matches in our dataset:</p>
@@ -61,8 +61,8 @@
     <p>Q: Why is my first result slow to appear?
     <br>A: The very first prediction request after the service starts up may take a little while to complete as the system initializes. Subsequent requests will be significantly faster.</p>
 
-    <p>Q: What does "confidence output" mean in this context?
-    <br>A: The 'Confidence Output' section of the output is describing how "sure" our algorithm is that it made an accurate body weight estimate</p>
+    <p>Q: What do the lower and upper bounds mean?
+    <br>A: For model-predicted masses they are a 90% conformal prediction interval: across taxa queried at the same level of taxonomic resolution (e.g. genus known, species not), about 90% of true body masses fall inside the interval. The interval is calibrated separately for each level of taxonomic resolution, so it widens when only the family or order of a name can be resolved. For species whose measured mass is held in the database, the measured value is returned and no interval is shown. The R and Python packages let you choose other coverage levels.</p>
 
 <!-- example user paths -->
 

@@ -308,11 +308,29 @@ test_that("predict_mass() returns NA and warns when no rank is in the training d
   expect_equal(result$source, "tbmML_UNK")
 })
 
+test_that("predict_mass() warns but still predicts when only the kingdom is in the training data", {
+  testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
+                    "Model artifacts not cached; skipping integration test.")
+  kingdom_only <- .tax_row("Animalia", "Nullaphyta", "Nullaclassia", "Nullaordinia",
+                           "Nullafamilidae", "Nullagenus", "Nullagenus nullaspecies")
+  expect_warning(
+    result <- TaxonBodyMassML::predict_mass(kingdom_only, confidence_interval = TRUE,
+                                            include_source = TRUE),
+    "resolved only to kingdom"
+  )
+  expect_false(is.na(result$mass_g))
+  expect_false(is.na(result$lower_bound))
+  expect_equal(result$source, "tbmML_kingdom")
+})
+
 test_that("predict_mass() still predicts a kingdom-only taxonomy", {
   testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
                     "Model artifacts not cached; skipping integration test.")
   animal <- .tax_row("Animalia", "UNK", "UNK", "UNK", "UNK", "UNK", "UNK")
-  result <- TaxonBodyMassML::predict_mass(animal, include_source = TRUE, lookup = FALSE)
+  expect_warning(
+    result <- TaxonBodyMassML::predict_mass(animal, include_source = TRUE, lookup = FALSE),
+    "resolved only to kingdom"
+  )
   expect_true(result$mass_g > 0)
   expect_equal(result$source, "tbmML_kingdom")
 })

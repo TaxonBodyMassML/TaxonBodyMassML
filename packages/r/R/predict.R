@@ -480,7 +480,24 @@ predict_mass <- function(taxon,
       # Taxa whose kingdom..genus share no value with the training vocabulary
       # would be scored on all-UNK features (a meaningless extrapolation):
       # return NA for them, with a warning, as for unresolvable names.
-      unrep <- .infer_source_rank(model_sub, .load_categories()) == "tbmML_UNK"
+      src_rank <- .infer_source_rank(model_sub, .load_categories())
+      unrep    <- src_rank == "tbmML_UNK"
+
+      # Taxa whose only rank in the training vocabulary is the kingdom are
+      # scored on kingdom + five UNK features. The prediction is returned but
+      # is essentially uninformative (test-set MAE ~5 log10 units), so warn.
+      kingdom_only <- src_rank == "tbmML_kingdom"
+      if (any(kingdom_only)) {
+        k_names <- model_names[kingdom_only]
+        shown <- paste(sQuote(utils::head(k_names, 10L), q = FALSE), collapse = ", ")
+        if (length(k_names) > 10L)
+          shown <- paste0(shown, ", ... (", length(k_names) - 10L, " more)")
+        warning(sprintf(
+          paste0("%d taxon/taxa resolved only to kingdom within the training data ",
+                 "(all finer ranks unknown); their predictions are essentially ",
+                 "uninformative: %s"),
+          length(k_names), shown), call. = FALSE)
+      }
 
       if (any(unrep)) {
         unrep_names <- model_names[unrep]
