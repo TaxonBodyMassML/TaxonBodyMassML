@@ -91,12 +91,41 @@ def db_version(override: str | None) -> str:
         )
         if exact.returncode == 0:
             return exact.stdout.strip()
+        # HEAD is past the last tag. The manuscript cites the *data* version, so
+        # report the tag when the released CSVs are unchanged since it (commits
+        # touching only scripts, docs or the bibliography do not change the data).
+        last_tag = subprocess.run(
+            ["git", "-C", str(db), "describe", "--tags", "--abbrev=0"],
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        data_unchanged = (
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(db),
+                    "diff",
+                    "--quiet",
+                    last_tag,
+                    "HEAD",
+                    "--",
+                    "TaxonBodyMass.csv",
+                    "TaxonBodyMass_GenusLevel.csv",
+                ]
+            ).returncode
+            == 0
+        )
+        if last_tag and data_unchanged:
+            print(f"  TaxonBodyMass_DB HEAD is past {last_tag} but the released CSVs are unchanged")
+            return last_tag
         near = subprocess.run(
             ["git", "-C", str(db), "describe", "--tags"], capture_output=True, text=True
         )
         tag = near.stdout.strip()
         print(
-            f"  WARNING: TaxonBodyMass_DB HEAD is not tagged ({tag}); tag it or pass --db-version"
+            f"  WARNING: TaxonBodyMass_DB data changed since {last_tag} ({tag}); "
+            "tag a new DB release or pass --db-version"
         )
         return tag
     except FileNotFoundError:
