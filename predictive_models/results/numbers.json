@@ -211,7 +211,7 @@
   "artifactVersion": "0.13.0",
   "hfTagR": "r-v0.13.0",
   "hfTagPy": "py-v0.13.0",
-  "dbVersion": "v6.0.0-1-g84679f7",
+  "dbVersion": "v6.0.0-2-g361067a",
   "xgboostFloorPy": "3.2",
   "xgboostFloorR": "3.1.2",
   "xgboostVersion": "3.3.0",
