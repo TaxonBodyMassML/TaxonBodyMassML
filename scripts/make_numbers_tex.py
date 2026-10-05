@@ -9,6 +9,7 @@ Inputs (all produced by the other results scripts / the pipeline):
   hyperparams.json, metrics.json, metrics_ee.json, artifacts/checksums.json,
   packages/python/pyproject.toml, packages/r/DESCRIPTION,
   packages/python/taxonbodymassml/_checksums.py, data/Citations_BodyMass.bib,
+  data/PrimaryCitations_BodyMass.bib (if fetched),
   installed library versions, `git describe` of ../TaxonBodyMass_DB.
 
 Macro names use letters only (LaTeX), prefixed ee/xgb for per-model values.
@@ -171,6 +172,17 @@ def main():
     M["nSourceLabels"] = fmt_int(data["n_sources_distinct"])
     if data.get("n_sources_contributing") is not None:
         M["nSourcesContributing"] = fmt_int(data["n_sources_contributing"])
+    if data.get("n_independent_values") is not None:
+        M["nIndependentValues"] = fmt_int(data["n_independent_values"])
+    # Primary-source attribution (TaxonBodyMass_DB issue #1): verified primary
+    # references and the record-link coverage, from the provenance table.
+    if data.get("n_primary_refs") is not None:
+        M["nPrimarySources"] = fmt_int(data["n_primary_refs"])
+        M["pctRecordsPrimary"] = num(data["pct_records_primary"], 1)
+        M["pctRecordsHopResolved"] = num(data["pct_records_hop_resolved"], 2)
+    primary_bib = DATA / "PrimaryCitations_BodyMass.bib"
+    if primary_bib.exists():
+        M["nPrimaryBibEntries"] = fmt_int(count_bib_entries(primary_bib))
     M["nLookupSpecies"] = fmt_int(data["n_lookup_species"])
     M["nKingdoms"] = str(len(data["kingdoms"]))
     for k, v in data["kingdoms"].items():

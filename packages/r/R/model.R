@@ -33,7 +33,23 @@ NULL
   "calibration_by_rank_ee.json"  = "1c12da9c75e261240ff34867e99081277c62744f20ef432748a86d5dc3268083"
 )
 
-.ARTIFACT_FILES <- names(.CHECKSUMS)
+# Provenance artifacts (TaxonBodyMass_DB issue #1): the generated primary-source
+# bibliography and the species x source x reference provenance table, built from
+# the same TaxonBodyMass_DB snapshot as lookup.json. Downloaded by
+# download_model() together with the model artifacts, and on first use by
+# get_citations(level = "primary") / create_bib(level = "primary").
+# predict_mass() does not need them.
+.PROVENANCE_CHECKSUMS <- list(
+  "PrimaryCitations_BodyMass.bib"   = "a2e9490cd37cc020e4d76d30f1362344a934870b093795896879960784b2d71f",
+  "TaxonBodyMass_Provenance.csv.gz" = "cfd931c8431061859e97a80581691a85324845e51b1da45d8c22ed6e20d1ce49"
+)
+
+# Model artifacts (needed by predict_mass) and provenance artifacts are
+# verified and downloaded as two groups so a prediction never waits for, or
+# fails on, the citation files.
+.ARTIFACT_FILES   <- names(.CHECKSUMS)
+.PROVENANCE_FILES <- names(.PROVENANCE_CHECKSUMS)
+.ALL_CHECKSUMS    <- c(.CHECKSUMS, .PROVENANCE_CHECKSUMS)
 
 # ---------------------------------------------------------------------------
 # Cache directory
@@ -48,7 +64,7 @@ NULL
 # ---------------------------------------------------------------------------
 
 .verify_file <- function(path, filename) {
-  expected <- .CHECKSUMS[[filename]]
+  expected <- .ALL_CHECKSUMS[[filename]]
   con <- file(path, "rb")
   on.exit(close(con), add = TRUE)
   as.character(openssl::sha256(con)) == expected
@@ -77,11 +93,14 @@ NULL
 
 #' Check whether all model artifacts are present and valid in the local cache
 #'
+#' @param files Character. The artifact files to check; default the model
+#'   artifacts (`.ARTIFACT_FILES`). Pass `.PROVENANCE_FILES` for the
+#'   provenance artifacts.
 #' @return Logical `TRUE` if all artifacts are present and pass SHA256 verification.
 #' @keywords internal
-.artifacts_cached <- function() {
+.artifacts_cached <- function(files = .ARTIFACT_FILES) {
   cache <- .cache_dir()
-  all(vapply(.ARTIFACT_FILES, function(f) {
+  all(vapply(files, function(f) {
     p <- file.path(cache, f)
     file.exists(p) && isTRUE(.verify_file(p, f))
   }, logical(1L)))
@@ -98,15 +117,21 @@ NULL
 #' rank-stratified calibration residuals (`calibration.json`,
 #' `calibration_by_rank.json`), the category lists that define the model's
 #' factor levels (`categories.json`), the training-data species dictionary
-#' (`lookup.json`), and the Entity Embeddings model (`embeddings.json`,
-#' `model_ee.ubj`, `calibration_ee.json`, `calibration_by_rank_ee.json`).
-#' Every file is verified against a SHA256 checksum bundled with the package.
-#' On subsequent calls the files are skipped unless `force = TRUE` or the
-#' checksum does not match.
+#' (`lookup.json`), the Entity Embeddings model (`embeddings.json`,
+#' `model_ee.ubj`, `calibration_ee.json`, `calibration_by_rank_ee.json`), and
+#' the provenance artifacts used by `get_citations(level = "primary")` and
+#' `create_bib(level = "primary")`: the generated primary-source bibliography
+#' (`PrimaryCitations_BodyMass.bib`) and the species x source x reference
+#' provenance table (`TaxonBodyMass_Provenance.csv.gz`). Every file is
+#' verified against a SHA256 checksum bundled with the package. On subsequent
+#' calls the files are skipped unless `force = TRUE` or the checksum does not
+#' match. A provenance file that the requested revision does not carry (a
+#' revision published before the provenance artifacts existed) is reported
+#' with a warning; the model artifacts are always required.
 #'
 #' @param version Character. HuggingFace revision to download. `"latest"`
-#'   resolves to the default branch (`main`). Pass a specific tag or commit
-#'   SHA to pin a version.
+#'   resolves to the revision matching the bundled checksums
+#'   (`r-v<version>`). Pass a specific tag or commit SHA to pin a version.
 #' @param force Logical. If `TRUE`, re-download even if a valid cached copy
 #'   already exists. Default `FALSE`.
 #'
@@ -121,6 +146,18 @@ NULL
 #'
 #' @export
 download_model <- function(version = "latest", force = FALSE) {
+  .download_files(.ARTIFACT_FILES, version = version, force = force)
+  .download_files(.PROVENANCE_FILES, version = version, force = force,
+                  optional = TRUE)
+  invisible(NULL)
+}
+
+# Download `files` into the cache unless a verified copy exists. With
+# `optional = TRUE` a file absent from the revision (HTTP 404) is reported
+# with a warning instead of an error.
+#' @noRd
+.download_files <- function(files, version = "latest", force = FALSE,
+                            optional = FALSE) {
   dir.create(.cache_dir(), recursive = TRUE, showWarnings = FALSE)
   revision <- if (identical(version, "latest")) {
     paste0("r-v", .MODEL_ARTIFACT_VERSION)
@@ -128,7 +165,7 @@ download_model <- function(version = "latest", force = FALSE) {
     version
   }
 
-  for (filename in .ARTIFACT_FILES) {
+  for (filename in files) {
     dest <- file.path(.cache_dir(), filename)
     if (!force && file.exists(dest) && isTRUE(.verify_file(dest, filename))) {
       next
@@ -137,7 +174,21 @@ download_model <- function(version = "latest", force = FALSE) {
     req <- .tbm_req(.hf_url(filename, revision)) |>
       httr2::req_timeout(7200) |>
       httr2::req_progress()
-    httr2::req_perform(req, path = dest)
+    not_found <- FALSE
+    tryCatch(
+      httr2::req_perform(req, path = dest),
+      httr2_http_404 = function(e) {
+        if (!optional) stop(e)
+        not_found <<- TRUE
+      }
+    )
+    if (not_found) {
+      if (file.exists(dest)) unlink(dest)
+      warning(filename, " is not part of artifact revision '", revision, "'; ",
+              "primary-source citations are unavailable until a newer artifact ",
+              "revision is published.", call. = FALSE)
+      next
+    }
     if (!isTRUE(.verify_file(dest, filename))) {
       stop(
         "SHA256 mismatch for ", filename,
@@ -161,9 +212,39 @@ download_model <- function(version = "latest", force = FALSE) {
       "TaxonBodyMassML: downloading model artifacts on first use (~0.4 GB)...\n",
       "  Files: ", paste(.ARTIFACT_FILES, collapse = ", ")
     )
-    download_model()
+    .download_files(.ARTIFACT_FILES)
   }
   .model_env$artifacts_ok <- TRUE
+}
+
+# Download the provenance artifacts on first use; stop when the artifact
+# revision does not carry them.
+.ensure_provenance_artifacts <- function() {
+  if (isTRUE(.model_env$provenance_ok)) return(invisible(NULL))
+  if (!.artifacts_cached(.PROVENANCE_FILES)) {
+    message(
+      "TaxonBodyMassML: downloading provenance artifacts on first use...\n",
+      "  Files: ", paste(.PROVENANCE_FILES, collapse = ", ")
+    )
+    .download_files(.PROVENANCE_FILES, optional = TRUE)
+    if (!.artifacts_cached(.PROVENANCE_FILES)) {
+      stop(
+        "Provenance artifacts are not available (artifact revision r-v",
+        .MODEL_ARTIFACT_VERSION, "). Use get_citations()/create_bib() with ",
+        "level = \"source\", or upgrade the package once a revision with ",
+        "provenance artifacts is published.",
+        call. = FALSE
+      )
+    }
+  }
+  .model_env$provenance_ok <- TRUE
+}
+
+# Path of a verified provenance artifact in the cache (downloads on first use).
+#' @noRd
+.provenance_path <- function(filename) {
+  .ensure_provenance_artifacts()
+  file.path(.cache_dir(), filename)
 }
 
 # ---------------------------------------------------------------------------

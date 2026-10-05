@@ -59,7 +59,7 @@ features; species is used for the training-data lookup, not as a model input.
 | `interval_method` | `str` | `"stratified"` (default): conformal half-width from calibration residuals of the finest taxonomic rank present in the training data. `"pooled"`: a single quantile from all calibration residuals (marginal guarantee). |
 | `include_taxonomy` | `bool` | Append resolved taxonomy columns to the output. |
 | `fuzzy_match_name` | `bool` | If `True`, correct species names via the GBIF species-match API before lookup, tolerating misspellings and name variants. Appends a `matched_name` column: the originally entered name when a correction was applied or no match was found; `None` when the name was already canonical. Default `False` (exact matching). Ignored when `taxon` is a `pd.DataFrame`. |
-| `include_source` | `bool` | If `True`, append a `source` column with the provenance of each mass value: the original source identifier (e.g., `"fishbase"`) for dictionary-sourced values, or `"tbmML_<rank>"` for model-inferred values indicating the finest training-data rank. |
+| `include_source` | `bool` | If `True`, append a `source` column with the provenance of each mass value: the original source identifier (e.g., `"fishbase"`) for dictionary-sourced values, or `"tbmML_<rank>"` for model-inferred values indicating the finest training-data rank. Also appends `source_taxon`, the dictionary key of dictionary-sourced rows (`None` otherwise), which `create_bib(level="primary")` joins on. |
 | `lookup` | `bool` | `True` (default): taxa found in the training-data dictionary return their empirical mass and bypass the model. `False`: every resolved taxon is passed through the model. |
 
 Returns a `pd.DataFrame` with columns `taxon`, `mass_g` (grams), and optionally `lower_bound`, `upper_bound`, `confidence`, `kingdom` … `species_resolved`, `matched_name`, `source`.
@@ -76,22 +76,31 @@ Resolve scientific names to 7-rank taxonomy (kingdom → species) using the GBIF
 
 Download model artifacts from Hugging Face Hub to the local cache directory. Called automatically when needed by `predict_mass()`.
 
-### `get_citations()`
+### `get_citations(level="source")`
 
-Return the path to the bundled `Citations_BodyMass.bib` BibTeX file. Pass it to `bibtexparser.load()` or open it in Zotero, BibDesk, or JabRef.
+Return the path to a bibliography. `level="source"` (default) is the bundled `Citations_BodyMass.bib`: every data source (compilation, database or primary study) whose body masses were used to train the model. `level="primary"` is `PrimaryCitations_BodyMass.bib`, the verified primary references (the studies that measured the animals the compilations reproduce); it is a model artifact, downloaded from Hugging Face on first use like `lookup.json` and verified against a bundled checksum. `level="all"` returns both paths as a tuple. Pass a path to `bibtexparser.load()` or open it in Zotero, BibDesk, or JabRef.
 
 ```python
 path = tbm.get_citations()
 # /path/to/taxonbodymassml/data/Citations_BodyMass.bib
+primary = tbm.get_citations(level="primary")
+# ~/.cache/TaxonBodyMassML/PrimaryCitations_BodyMass.bib
 ```
 
-### `create_bib(x, file="TaxonBodyMass_sources.bib")`
+### `create_bib(x, file="TaxonBodyMass_sources.bib", level="source")`
 
-Write a `.bib` file containing only the data sources cited in the `source` column of a `predict_mass(..., include_source=True)` result, so you can cite exactly the empirical body-mass sources behind your own predictions. Multi-source values (`"Feldman_etal_2016; Meiri_2018"`) are split, model-inferred rows (`tbmML_*`) are skipped, and a `UserWarning` lists any label that has no citation mapping. Returns the `pathlib.Path` written.
+Write a `.bib` file containing only the references behind the dictionary rows of a `predict_mass(..., include_source=True)` result, so you can cite exactly the empirical body-mass sources behind your own predictions.
+
+- `level="source"` (default): the data sources named in the `source` column. Multi-source values (`"Feldman_etal_2016; Meiri_2018"`) are split, model-inferred rows (`tbmML_*`) are skipped, and a `UserWarning` lists any label that has no citation mapping.
+- `level="primary"`: the studies that measured the animals. The dictionary species (joined on the `source_taxon` column, falling back to `species_resolved`, then `taxon` with a warning) are looked up in the provenance table `TaxonBodyMass_Provenance.csv.gz` (a model artifact) and every verified primary reference and conversion-factor reference of those species is written. Coverage is partial while TaxonBodyMass_DB ingests the sources' reference lists: a warning counts the species whose sources cite references that are not yet resolved, so cite `level="source"` for them as well.
+- `level="all"`: the union of both, without duplicate keys.
+
+The header line reports the number of entries per level. Returns the `pathlib.Path` written.
 
 ```python
 res = tbm.predict_mass(["Nucella ostrina", "Anolis carolinensis"], include_source=True)
 tbm.create_bib(res, "my_sources.bib")
+tbm.create_bib(res, "my_primary_sources.bib", level="all")
 ```
 
 ### `tbm_options(**kwargs)`
@@ -142,8 +151,15 @@ Tucker et al. (2014a, b), Hirt et al. (2017), Eklöf et al. (2017), Cai et al. (
 Animal Diversity Web, AnAge (Tacutu et al., 2013), FishBase (Froese and Pauly, 2025),
 SeaLifeBase (Palomares and Pauly, 2025), and DataRetriever (McGlinn et al., 2017).
 
-Full formatted references and a complete per-measurement BibTeX bibliography are
+Full formatted references and the BibTeX bibliography of every data source are
 available via `get_citations()` and at <https://taxonbodymassml.github.io/citations.html>.
+Most sources are compilations; the studies that measured the animals are being
+attributed record by record in TaxonBodyMass_DB (issue #1) and are available, for
+the sources processed so far, via `get_citations(level="primary")` and
+`create_bib(..., level="primary")`. The coverage of the current artifacts is
+reported by `scripts/extract_training_stats.py` (`n_primary_refs`,
+`pct_records_hop_resolved`); `create_bib()` warns about the species whose
+primary references are not yet resolved.
 
 ### Selected references
 

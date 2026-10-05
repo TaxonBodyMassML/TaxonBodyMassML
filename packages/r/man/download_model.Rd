@@ -8,8 +8,8 @@ download_model(version = "latest", force = FALSE)
 }
 \arguments{
 \item{version}{Character. HuggingFace revision to download. \code{"latest"}
-resolves to the default branch (\code{main}). Pass a specific tag or commit
-SHA to pin a version.}
+resolves to the revision matching the bundled checksums
+(\verb{r-v<version>}). Pass a specific tag or commit SHA to pin a version.}
 
 \item{force}{Logical. If \code{TRUE}, re-download even if a valid cached copy
 already exists. Default \code{FALSE}.}
@@ -24,11 +24,17 @@ directory: the XGBoost model (\code{model.ubj}) with its pooled and
 rank-stratified calibration residuals (\code{calibration.json},
 \code{calibration_by_rank.json}), the category lists that define the model's
 factor levels (\code{categories.json}), the training-data species dictionary
-(\code{lookup.json}), and the Entity Embeddings model (\code{embeddings.json},
-\code{model_ee.ubj}, \code{calibration_ee.json}, \code{calibration_by_rank_ee.json}).
-Every file is verified against a SHA256 checksum bundled with the package.
-On subsequent calls the files are skipped unless \code{force = TRUE} or the
-checksum does not match.
+(\code{lookup.json}), the Entity Embeddings model (\code{embeddings.json},
+\code{model_ee.ubj}, \code{calibration_ee.json}, \code{calibration_by_rank_ee.json}), and
+the provenance artifacts used by \code{get_citations(level = "primary")} and
+\code{create_bib(level = "primary")}: the generated primary-source bibliography
+(\code{PrimaryCitations_BodyMass.bib}) and the species x source x reference
+provenance table (\code{TaxonBodyMass_Provenance.csv.gz}). Every file is
+verified against a SHA256 checksum bundled with the package. On subsequent
+calls the files are skipped unless \code{force = TRUE} or the checksum does not
+match. A provenance file that the requested revision does not carry (a
+revision published before the provenance artifacts existed) is reported
+with a warning; the model artifacts are always required.
 }
 \examples{
 \dontrun{

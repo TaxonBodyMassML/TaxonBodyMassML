@@ -39,6 +39,8 @@ MACRO_PREFIXES = (
     "nDropped",
     "nSource",
     "nSources",
+    "nIndependent",
+    "nPrimary",
     "nLookup",
     "nKingdoms",
     "nAnimalia",

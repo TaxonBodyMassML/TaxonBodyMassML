@@ -226,6 +226,20 @@ test_that("predict_mass() with include_source returns source for dictionary hit"
   expect_equal(result$source, "Novak_2017")
 })
 
+test_that("predict_mass() with include_source returns source_taxon for a dictionary hit", {
+  testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
+                    "Model artifacts not cached; skipping integration test.")
+  testthat::skip_if_offline()
+
+  # source_taxon is the dictionary key: the join key of create_bib(level = "primary")
+  result <- TaxonBodyMassML::predict_mass(c("Nucella ostrina", "Nucella lima"),
+                                          include_source = TRUE)
+  expect_identical(utils::tail(names(result), 2L), c("source", "source_taxon"))
+  expect_equal(result$source_taxon[1L], "Nucella ostrina")
+  expect_equal(result$source[2L], "tbmML_genus")
+  expect_true(is.na(result$source_taxon[2L]))
+})
+
 test_that("predict_mass() dict hit with CI has NA bounds", {
   testthat::skip_if(!TaxonBodyMassML:::.artifacts_cached(),
                     "Model artifacts not cached; skipping integration test.")

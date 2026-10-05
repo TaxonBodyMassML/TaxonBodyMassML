@@ -4,7 +4,12 @@
 \alias{.artifacts_cached}
 \title{Check whether all model artifacts are present and valid in the local cache}
 \usage{
-.artifacts_cached()
+.artifacts_cached(files = .ARTIFACT_FILES)
+}
+\arguments{
+\item{files}{Character. The artifact files to check; default the model
+artifacts (\code{.ARTIFACT_FILES}). Pass \code{.PROVENANCE_FILES} for the
+provenance artifacts.}
 }
 \value{
 Logical \code{TRUE} if all artifacts are present and pass SHA256 verification.

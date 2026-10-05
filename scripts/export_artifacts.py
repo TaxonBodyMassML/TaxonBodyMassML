@@ -11,6 +11,10 @@ Outputs (in artifacts/):
     calibration_by_rank.json -- rank-stratified XGBoost calibration residuals
     categories.json          -- per-feature category lists (kingdom..genus); index == training code
     lookup.json              -- species -> {mass_g, source} lookup
+    PrimaryCitations_BodyMass.bib, TaxonBodyMass_Provenance.csv.gz
+                             -- provenance artifacts copied from data/ (fetched from
+                                TaxonBodyMass_DB by scripts/fetch_source_data.py; the
+                                same DB snapshot as the lookup); see issue #21
     checksums.json           -- SHA-256 for all artifact files (incl. EE files if present)
 
 Also writes predictive_models/results/golden_predictions.json: reference
@@ -212,7 +216,24 @@ with open(GOLDEN_PATH, "w") as f:
 print(f"  Saved golden predictions → {GOLDEN_PATH}")
 
 # ---------------------------------------------------------------------------
-# 7. Checksums
+# 7. Provenance artifacts (TaxonBodyMass_DB issue #1): the generated
+#    primary-source bibliography and the species x source x reference table.
+#    Not bundled by the packages; downloaded with the model artifacts and
+#    read by get_citations(level="primary") / create_bib(level="primary").
+# ---------------------------------------------------------------------------
+import shutil  # noqa: E402
+
+PROVENANCE_ARTIFACTS = ["PrimaryCitations_BodyMass.bib", "TaxonBodyMass_Provenance.csv.gz"]
+for fname in PROVENANCE_ARTIFACTS:
+    src = REPO_ROOT / "data" / fname
+    if src.exists():
+        shutil.copy2(src, OUT_DIR / fname)
+        print(f"  Staged {fname} from data/ → {OUT_DIR / fname}")
+    else:
+        print(f"  {fname}: MISSING in data/ — run scripts/fetch_source_data.py first")
+
+# ---------------------------------------------------------------------------
+# 8. Checksums
 # ---------------------------------------------------------------------------
 print("Computing SHA256 checksums...")
 checksums = {}
@@ -239,6 +260,14 @@ for fname in [
     else:
         print(f"  {fname}: MISSING — run predictive_models/entity_embeddings_model.py first")
 
+for fname in PROVENANCE_ARTIFACTS:
+    path = OUT_DIR / fname
+    if path.exists():
+        checksums[fname] = sha256_file(path)
+        print(f"  {fname}: {checksums[fname]}")
+    else:
+        print(f"  {fname}: MISSING — run scripts/fetch_source_data.py first")
+
 checksums_path = OUT_DIR / "checksums.json"
 with open(checksums_path, "w") as f:
     json.dump(checksums, f, indent=2)
@@ -247,6 +276,6 @@ print(f"  Written to {checksums_path}")
 print("""
 Done. Next steps (see packages/UpdatingModelGuide.md):
   1. python scripts/check_parity.py      # Python package / R package / microservice vs golden
-  2. Copy checksums into packages/python/taxonbodymassml/_checksums.py and packages/r/R/model.R
+  2. python scripts/sync_checksums.py  # -> _checksums.py and model.R (both checksum maps)
   3. make publish                        # only with explicit approval; uploads + tags on HF
 """)

@@ -408,3 +408,22 @@ res <- TaxonBodyMassML::predict_mass(
 )
 TaxonBodyMassML::create_bib(res, file = "my_sources.bib")
 ```
+
+Most data sources are compilations that reproduce measurements published
+elsewhere. TaxonBodyMass_DB is attributing every record to the study that
+measured the animal; the verified primary references ship as a model artifact
+(`PrimaryCitations_BodyMass.bib`, downloaded on first use like the species
+dictionary) together with a provenance table that links every species of the
+dictionary to its sources and their references. `get_citations(level =
+"primary")` returns the primary bibliography, and `create_bib(level =
+"primary")` writes the primary references behind your dictionary rows,
+joined on the `source_taxon` column that `include_source = TRUE` now adds
+(`level = "all"` writes both levels without duplicate keys). Coverage grows
+source by source: a warning counts the species whose sources cite references
+that are not yet resolved, so keep citing the compilations (`level = "source"`)
+for them.
+
+```{r create-bib-primary}
+TaxonBodyMassML::get_citations(level = "primary")
+TaxonBodyMassML::create_bib(res, file = "my_primary_sources.bib", level = "all")
+```

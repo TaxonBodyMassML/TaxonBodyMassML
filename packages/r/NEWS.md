@@ -1,3 +1,34 @@
+# TaxonBodyMassML (development version)
+
+## New features
+
+* Primary-source citations (TaxonBodyMass_DB issue #1, TaxonBodyMassML #21).
+  `get_citations(level = c("source", "primary", "all"))` returns the bundled
+  compilation bibliography (unchanged default), the generated primary-source
+  bibliography `PrimaryCitations_BodyMass.bib` (a new model artifact fetched
+  from Hugging Face on first use and checksummed like `lookup.json`), or both.
+  `create_bib(x, file, level)` writes, for `"primary"`, the verified primary
+  references and conversion-factor references of the dictionary species of
+  `x`, read from the new provenance artifact `TaxonBodyMass_Provenance.csv.gz`;
+  `"all"` is the union without duplicate keys. The header reports the counts
+  per level; warnings list species absent from the provenance table and count
+  the species whose sources cite references that are not yet resolved.
+* `predict_mass(..., include_source = TRUE)` adds a `source_taxon` column: the
+  dictionary key of dictionary rows (`NA` for model rows), the join key of
+  `create_bib(level = "primary")` (falls back to `species_resolved`, then to
+  `taxon` with a warning).
+* `download_model()` also fetches the two provenance artifacts; a revision that
+  does not carry them produces a warning, and `predict_mass()` never waits for
+  them. `model.R` gains `.PROVENANCE_CHECKSUMS`.
+
+## Data
+
+* Bundled `Citations_BodyMass.bib` and `TaxonBodyMass_CitationCiteIDs.csv`
+  refreshed from TaxonBodyMass_DB (the CSV now carries `doi`, `role` and
+  `bib_file` columns; the package reads the first two only). The model
+  artifacts and the species dictionary are unchanged; the provenance artifacts
+  require a new Hugging Face revision before they can be downloaded.
+
 # TaxonBodyMassML 0.13.0
 
 ## Model

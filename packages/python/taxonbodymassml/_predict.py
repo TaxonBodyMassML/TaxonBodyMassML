@@ -237,6 +237,7 @@ def _assemble_output(
             if src is None:
                 src = _infer_source_rank(taxonomy_df.iloc[i], categories)
             row["source"] = src
+            row["source_taxon"] = None  # model rows have no dictionary key
         rows.append(row)
 
     return pd.DataFrame(rows)
@@ -436,6 +437,9 @@ def predict_mass(
         was seen during training; ``"tbmML_order"`` if only the order was
         seen).  Taxa whose resolved taxonomy shares no rank with the training
         data receive ``"tbmML_UNK"``; unresolvable taxa receive ``None``.
+        Also appends ``source_taxon``: for dictionary rows the name under
+        which the species was found in the dictionary (the join key used by
+        ``create_bib(level="primary")``), ``None`` for every other row.
         Default ``False``.
     lookup : bool
         If ``True`` (default), taxa found in the training-data dictionary are
@@ -453,7 +457,7 @@ def predict_mass(
         With ``fuzzy_match_name=True``: also ``matched_name`` (the originally
         entered name if corrected or unmatched; ``None`` if no correction was
         needed).
-        With ``include_source=True``: also ``source``.
+        With ``include_source=True``: also ``source`` and ``source_taxon``.
         Rows for unresolvable species, and rows whose resolved taxonomy shares
         no rank with the training data (a warning lists them), have ``NaN``
         for numeric columns.
@@ -514,7 +518,7 @@ def predict_mass(
         if include_taxonomy:
             cols += _TAXONOMY_INPUT_COLS
         if include_source:
-            cols += ["source"]
+            cols += ["source", "source_taxon"]
         if matched_names is not None:
             cols += ["matched_name"]
         return pd.DataFrame(columns=cols)
@@ -572,6 +576,7 @@ def predict_mass(
                         )  # noqa: E501
                 if include_source:
                     row["source"] = entry["source"]
+                    row["source_taxon"] = sp  # dictionary key, for create_bib(level="primary")
                 dict_data.append(row)
             dict_df = pd.DataFrame(dict_data)
             dict_df["_orig_idx"] = [resolved_pos[i] for i in dict_indices]
@@ -633,6 +638,7 @@ def predict_mass(
                             row[col] = model_sub[col].iloc[i] if col in model_sub.columns else None
                     if include_source:
                         row["source"] = "tbmML_UNK"
+                        row["source_taxon"] = None
                     unrep_rows.append(row)
                 unrep_df = pd.DataFrame(unrep_rows)
                 unrep_df["_orig_idx"] = [resolved_pos[model_indices[i]] for i in unrep_pos]
@@ -670,6 +676,7 @@ def predict_mass(
         if include_source:
             for r in nan_rows:
                 r["source"] = None
+                r["source_taxon"] = None
         nan_df = pd.DataFrame(nan_rows)
         nan_df["_orig_idx"] = unresolved_pos
         result_rows.append(nan_df)
