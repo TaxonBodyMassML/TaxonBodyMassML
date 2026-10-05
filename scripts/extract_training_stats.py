@@ -2,7 +2,9 @@
 Training-data statistics for the manuscript.
 
 Reads data/TaxonBodyMass.csv (the copy of TaxonBodyMass_DB/TaxonBodyMass.csv
-fetched by scripts/fetch_source_data.py; one row per species) and writes
+fetched by scripts/fetch_source_data.py; one row per species) and, when present,
+data/TaxonBodyMass_Provenance.csv.gz (the species x source x reference table of
+TaxonBodyMass_DB issue #1; the primary-source coverage numbers) and writes
 
   predictive_models/results/tab_kingdom.tex   species and mass range per kingdom
   predictive_models/results/tab_class.tex     the same for the 20 largest classes
@@ -85,6 +87,53 @@ def sources_contributing(labels: set[str]) -> int | None:
     return int(sum(bool(ids & labels) for ids in keys))
 
 
+# match_status values of a verified primary reference (TaxonBodyMass_DB issue #1).
+ACCEPTED_STATUS = {"certain", "approved", "nodoi_approved"}
+
+
+def provenance_stats() -> dict:
+    """Primary-source coverage from data/TaxonBodyMass_Provenance.csv.gz.
+
+    One row per species x source label x reference, weighted by ``n_records``
+    (the records behind the row; a record citing two references counts twice).
+
+    * ``n_primary_refs``: distinct verified primary references (``primary_bibcite``
+      of rows with an accepted ``match_status``; conversion-factor references
+      are not primary measurements and are excluded).
+    * ``pct_records_hop_resolved``: of the record links whose source cites a
+      reference (``hop >= 1``), the percentage resolved to a verified primary
+      reference.  This is the per-source ``pct_resolved`` of
+      TaxonBodyMass_DB/reports/warnings_citations.md pooled over sources.
+    * ``pct_records_primary``: of all record links except conversion factors,
+      the percentage that end at a primary measurement: the source measured
+      the animal itself (``measured_in_source``) or cites a verified reference.
+    """
+    path = DATA / "TaxonBodyMass_Provenance.csv.gz"
+    if not path.exists():
+        print(f"  (no {path}; provenance stats skipped)")
+        return {
+            "n_primary_refs": None,
+            "pct_records_hop_resolved": None,
+            "pct_records_primary": None,
+        }
+    prov = pd.read_csv(path, dtype=str, keep_default_na=False, na_values=["NA"])
+    hop = pd.to_numeric(prov["hop"], errors="coerce").fillna(0).astype(int)
+    n = pd.to_numeric(prov["n_records"], errors="coerce").fillna(0).astype(int)
+    accepted = prov["match_status"].isin(ACCEPTED_STATUS)
+    cites = hop >= 1
+    not_conv = prov["provenance_type"] != "conversion_factor"
+    primary = not_conv & ((prov["provenance_type"] == "measured_in_source") | accepted)
+    return {
+        "n_primary_refs": int(prov.loc[accepted, "primary_bibcite"].nunique()),
+        "pct_records_hop_resolved": float(
+            100.0 * n[cites & accepted].sum() / max(n[cites].sum(), 1)
+        ),
+        "pct_records_primary": float(100.0 * n[primary].sum() / max(n[not_conv].sum(), 1)),
+        "n_provenance_rows": int(len(prov)),
+        "n_provenance_species": int(prov["species"].nunique()),
+    }
+
+
 def main() -> None:
     argparse.ArgumentParser(description=__doc__).parse_args()
 
@@ -116,6 +165,13 @@ def main() -> None:
         "n_used": n_used,
         "n_dropped_missing_rank": n_db - n_used,
         "n_source_records": int(raw["n"].sum()) if "n" in raw.columns else None,
+        # n_independent (TaxonBodyMass_DB issue #5): values left per species after
+        # collapsing copies of the same datum across sources; n_source_records is
+        # duplicate-inflated.
+        "n_independent_values": (
+            int(raw["n_independent"].sum()) if "n_independent" in raw.columns else None
+        ),
+        **provenance_stats(),
         "n_sources_distinct": len(src_counter),
         "n_sources_contributing": sources_contributing(set(src_counter)),
         "top_single_source_contributors": single_source.most_common(6),
@@ -156,6 +212,12 @@ def main() -> None:
         f"Sources: {stats['n_sources_distinct']} distinct labels; "
         f"{stats['n_sources_contributing']} bibliography entries contributing"
     )
+    if stats["n_primary_refs"] is not None:
+        print(
+            f"Primary sources: {stats['n_primary_refs']} verified references; "
+            f"{stats['pct_records_hop_resolved']:.2f}% of citing record links resolved; "
+            f"{stats['pct_records_primary']:.1f}% of record links end at a primary measurement"
+        )
 
 
 if __name__ == "__main__":
