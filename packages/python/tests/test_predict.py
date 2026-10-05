@@ -203,6 +203,18 @@ def test_include_source_dict_hit_returns_source_string():
 
 
 @skip_without_artifacts
+def test_include_source_dict_hit_returns_source_taxon():
+    """source_taxon is the dictionary key (the join key of create_bib(level="primary"))."""
+    import taxonbodymassml as tbm
+
+    result = tbm.predict_mass(["Nucella ostrina", "Nucella lima"], include_source=True)
+    assert list(result.columns[-2:]) == ["source", "source_taxon"]
+    assert result["source_taxon"].iloc[0] == "Nucella ostrina"
+    assert result["source"].iloc[1] == "tbmML_genus"
+    assert result["source_taxon"].iloc[1] is None or pd.isna(result["source_taxon"].iloc[1])
+
+
+@skip_without_artifacts
 def test_dict_hit_ci_columns_are_nan():
     import math
 
@@ -422,14 +434,15 @@ def test_first_call_on_empty_cache_downloads_before_lookup(tmp_path, monkeypatch
     real_cache = _model._CACHE_DIR
     copied = []
 
-    def fake_download(version="latest", force=False):
-        for name in _model._ARTIFACT_FILES:
+    def fake_download(filenames, version="latest", force=False, optional=False):
+        assert list(filenames) == _model._ARTIFACT_FILES  # provenance files are not needed
+        for name in filenames:
             shutil.copy2(real_cache / name, tmp_path / name)
             copied.append(name)
 
     monkeypatch.setattr(_model, "_CACHE_DIR", tmp_path)
     monkeypatch.setattr(_model, "_ARTIFACTS_VERIFIED", False)
-    monkeypatch.setattr(_model, "download_model", fake_download)
+    monkeypatch.setattr(_model, "_download_files", fake_download)
     for attr in [a for a in vars(_model) if a.endswith("_CACHE") and a != "_CACHE_DIR"]:
         monkeypatch.setattr(_model, attr, None)  # forget anything loaded by earlier tests
 
@@ -456,6 +469,7 @@ def test_first_call_on_empty_cache_downloads_before_lookup(tmp_path, monkeypatch
     copied.clear()
     result = tbm.predict_mass(nucella, lookup=False, include_source=True)
     assert result["mass_g"].iloc[0] > 0 and result["source"].iloc[0] == "tbmML_genus"
+    assert result["source_taxon"].iloc[0] is None
     assert set(copied) == set(_model._ARTIFACT_FILES)
 
 

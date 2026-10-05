@@ -99,6 +99,7 @@
   if (include_source) {
     if (is.null(cats)) cats <- .load_categories()
     result$source <- .infer_source_rank(taxonomy_df, cats)
+    result$source_taxon <- NA_character_  # model rows have no dictionary key
   }
 
   result
@@ -292,7 +293,11 @@
 #'   rank present in the training data (e.g., `"tbmML_genus"` if the genus
 #'   was seen during training; `"tbmML_order"` if only the order was seen).
 #'   Taxa whose resolved taxonomy shares no rank with the training data
-#'   receive `"tbmML_UNK"`; unresolvable taxa receive `NA`. Default `FALSE`.
+#'   receive `"tbmML_UNK"`; unresolvable taxa receive `NA`. Also appends
+#'   `source_taxon`: for dictionary rows the name under which the species was
+#'   found in the dictionary (the join key used by
+#'   `create_bib(level = "primary")`), `NA` for every other row. Default
+#'   `FALSE`.
 #' @param lookup Logical. If `TRUE` (default), taxa found in the training-data
 #'   dictionary are returned with their empirical mass and bypass the model. If
 #'   `FALSE`, every resolved taxon is passed through the model specified by
@@ -307,7 +312,7 @@
 #'   - When `fuzzy_match_name = TRUE`: also `matched_name` (the originally
 #'     entered name if corrected or unmatched; `NA` if no correction was
 #'     needed).
-#'   - When `include_source = TRUE`: also `source`.
+#'   - When `include_source = TRUE`: also `source` and `source_taxon`.
 #'   - Rows for unresolvable inputs, and rows whose resolved taxonomy shares no
 #'     rank with the training data (a warning lists them), contain `NA` for all
 #'     numeric columns.
@@ -378,7 +383,7 @@ predict_mass <- function(taxon,
     if (!is.null(level))     empty_cols <- c(empty_cols, "lower_bound", "upper_bound", "confidence")
     if (include_taxonomy)    empty_cols <- c(empty_cols, "kingdom", "phylum", "class", "order",
                                              "family", "genus", "species_resolved")
-    if (include_source)      empty_cols <- c(empty_cols, "source")
+    if (include_source)      empty_cols <- c(empty_cols, "source", "source_taxon")
     if (fuzzy_match_name && !is.data.frame(taxon)) empty_cols <- c(empty_cols, "matched_name")
     return(as.data.frame(setNames(lapply(empty_cols, function(.) character(0L)), empty_cols),
                          stringsAsFactors = FALSE))
@@ -468,6 +473,8 @@ predict_mass <- function(taxon,
       if (include_source) {
         dict_df$source <- vapply(dict_sub$species_resolved,
                                  function(sp) lkp[[sp]]$source, character(1L))
+        # the dictionary key: the join key of create_bib(level = "primary")
+        dict_df$source_taxon <- as.character(dict_sub$species_resolved)
       }
       dict_df$..orig_idx.. <- resolved_pos[dict_pos]
       rows[[length(rows) + 1L]] <- dict_df
@@ -524,7 +531,10 @@ predict_mass <- function(taxon,
           unrep_df <- cbind(unrep_df, model_sub[unrep, tax_cols, drop = FALSE])
           rownames(unrep_df) <- NULL
         }
-        if (include_source) unrep_df$source <- "tbmML_UNK"
+        if (include_source) {
+          unrep_df$source       <- "tbmML_UNK"
+          unrep_df$source_taxon <- NA_character_
+        }
         unrep_df$..orig_idx.. <- resolved_pos[model_pos[unrep]]
         rows[[length(rows) + 1L]] <- unrep_df
       }
@@ -559,7 +569,8 @@ predict_mass <- function(taxon,
       }
     }
     if (include_source) {
-      nan_df$source <- NA_character_
+      nan_df$source       <- NA_character_
+      nan_df$source_taxon <- NA_character_
     }
     nan_df$..orig_idx.. <- unresolved_pos
     rows[[length(rows) + 1L]] <- nan_df

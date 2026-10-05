@@ -56,7 +56,11 @@ model-inferred values it is \code{"tbmML_"} followed by the finest taxonomic
 rank present in the training data (e.g., \code{"tbmML_genus"} if the genus
 was seen during training; \code{"tbmML_order"} if only the order was seen).
 Taxa whose resolved taxonomy shares no rank with the training data
-receive \code{"tbmML_UNK"}; unresolvable taxa receive \code{NA}. Default \code{FALSE}.}
+receive \code{"tbmML_UNK"}; unresolvable taxa receive \code{NA}. Also appends
+\code{source_taxon}: for dictionary rows the name under which the species was
+found in the dictionary (the join key used by
+\code{create_bib(level = "primary")}), \code{NA} for every other row. Default
+\code{FALSE}.}
 
 \item{lookup}{Logical. If \code{TRUE} (default), taxa found in the training-data
 dictionary are returned with their empirical mass and bypass the model. If
@@ -74,7 +78,7 @@ and \code{confidence} (NA for dictionary-sourced rows).
 \item When \code{fuzzy_match_name = TRUE}: also \code{matched_name} (the originally
 entered name if corrected or unmatched; \code{NA} if no correction was
 needed).
-\item When \code{include_source = TRUE}: also \code{source}.
+\item When \code{include_source = TRUE}: also \code{source} and \code{source_taxon}.
 \item Rows for unresolvable inputs, and rows whose resolved taxonomy shares no
 rank with the training data (a warning lists them), contain \code{NA} for all
 numeric columns.
