@@ -31,6 +31,7 @@ See the [Python package readme](packages/python/README.md) for the full API refe
 ## Data Sources
 Training data sources are listed in [data/Citations_BodyMass.bib](data/Citations_BodyMass.bib), including the [FracFeed: Global database of the fraction of feeding predators](https://github.com/marknovak/FracFeed_DB), which motivated the compilation of the body mass data.
 Both packages bundle this bibliography (`get_citations()`) and, via `create_bib()`, can write a `.bib` file containing only the sources behind a given set of `predict_mass(..., include_source = TRUE)` results.
+Most sources are compilations that reproduce measurements published elsewhere. TaxonBodyMass_DB is attributing every record to the study that measured the animal ([TaxonBodyMass_DB#1](https://github.com/TaxonBodyMassML/TaxonBodyMass_DB/issues/1)); the verified primary references ship as model artifacts next to `lookup.json` ([data/PrimaryCitations_BodyMass.bib](data/PrimaryCitations_BodyMass.bib), [data/TaxonBodyMass_Provenance.csv.gz](data/TaxonBodyMass_Provenance.csv.gz)) and are returned by `get_citations(level = "primary")` and `create_bib(..., level = "primary")`. Coverage grows source by source; `create_bib()` reports the species whose primary references are not yet resolved, and the compilation remains the citation of record for them.
 
 ---
 ---
