@@ -2,9 +2,13 @@
 % Please edit documentation in R/citations.R
 \name{create_bib}
 \alias{create_bib}
-\title{Write a BibTeX file of the data sources behind a set of predictions}
+\title{Write a BibTeX file of the references behind a set of predictions}
 \usage{
-create_bib(x, file = "TaxonBodyMass_sources.bib")
+create_bib(
+  x,
+  file = "TaxonBodyMass_sources.bib",
+  level = c("source", "primary", "all")
+)
 }
 \arguments{
 \item{x}{A \code{data.frame} with a \code{source} column, as returned by
@@ -13,29 +17,48 @@ create_bib(x, file = "TaxonBodyMass_sources.bib")
 \item{file}{Path of the \code{.bib} file to write. Default
 \code{"TaxonBodyMass_sources.bib"} in the working directory. An existing file
 is overwritten.}
+
+\item{level}{One of \code{"source"} (default), \code{"primary"} or \code{"all"}; see
+Details.}
 }
 \value{
 Invisibly, the normalised path to the written file.
 }
 \description{
 Takes the output of \code{\link[=predict_mass]{predict_mass()}} called with \code{include_source = TRUE}
-and writes a \code{.bib} file containing the BibTeX entries for every
-training-data source cited in its \code{source} column. This lets users cite
-exactly the empirical body-mass sources that contributed to their results.
+and writes a \code{.bib} file containing the BibTeX entries that the dictionary
+(training-data) rows of the result rest on. This lets users cite exactly
+the empirical body-mass sources that contributed to their results.
 }
 \details{
-Each \code{source} value is split on \code{";"} (a taxon recorded by several sources
+\code{level = "source"} (default) cites the data sources named in the \code{source}
+column. Each value is split on \code{";"} (a taxon recorded by several sources
 has a value such as \code{"Feldman_etal_2016; Meiri_2018"}), trimmed, and
 de-duplicated. Model-inferred rows, whose \code{source} begins with \code{"tbmML_"},
 and \code{NA} values are ignored, so an output with no dictionary hits yields a
-bibliography with no entries.
+bibliography with no entries. Source labels are matched to BibTeX keys
+through the bundled \code{TaxonBodyMass_CitationCiteIDs.csv} (labels and keys
+are compared after normalising whitespace, Unicode dashes and diacritics
+to plain ASCII), and the entries are copied verbatim from the file returned
+by \code{\link[=get_citations]{get_citations()}}. A warning lists any label that has no mapping; such
+labels are skipped.
 
-Source labels are matched to BibTeX keys through the bundled
-\code{TaxonBodyMass_CitationCiteIDs.csv}, and the corresponding entries are
-copied verbatim from the file returned by \code{\link[=get_citations]{get_citations()}}. Labels and
-keys are compared after normalising whitespace, Unicode dashes and
-diacritics to plain ASCII, so minor typographic variants still match.
-A warning lists any label that has no mapping; such labels are skipped.
+\code{level = "primary"} cites the studies that measured the animals: the
+dictionary species of \code{x} are joined to the provenance table
+(\code{TaxonBodyMass_Provenance.csv.gz}, a model artifact downloaded on first
+use) and every verified primary reference (\code{match_status} \code{certain},
+\code{approved} or \code{nodoi_approved}) and every conversion-factor reference of
+those species is written, taken from the primary bibliography or, for
+references that are themselves data sources, from the compilation
+bibliography. The join uses the \code{source_taxon} column (the dictionary key;
+present when \code{predict_mass()} was called with \code{include_source = TRUE}),
+falling back to \code{species_resolved} and then, with a warning, to \code{taxon}.
+Coverage is partial while TaxonBodyMass_DB ingests the sources' reference
+lists: species whose sources cite references that are not yet resolved are
+reported in a warning, so cite \code{level = "source"} for them as well.
+
+\code{level = "all"} writes the union of both levels without duplicate keys. The
+header line reports the number of entries per level.
 }
 \examples{
 x <- data.frame(taxon  = c("Anolis carolinensis", "Nucella lima"),
@@ -49,6 +72,8 @@ readLines(out)[1:3]
 res <- predict_mass(c("Nucella ostrina", "Anolis carolinensis"),
                     include_source = TRUE)
 create_bib(res, file = "my_sources.bib")
+# ... and the primary studies behind those sources, where known
+create_bib(res, file = "my_primary_sources.bib", level = "all")
 }
 
 }

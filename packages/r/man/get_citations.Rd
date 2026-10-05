@@ -2,18 +2,28 @@
 % Please edit documentation in R/citations.R
 \name{get_citations}
 \alias{get_citations}
-\title{Return path to the body-mass data-source bibliography}
+\title{Return path(s) to the body-mass bibliographies}
 \usage{
-get_citations()
+get_citations(level = c("source", "primary", "all"))
+}
+\arguments{
+\item{level}{One of \code{"source"} (default), \code{"primary"} or \code{"all"}.}
 }
 \value{
-Character. Absolute path to \code{Citations_BodyMass.bib}.
+Character. Absolute path to the requested bibliography; for
+\code{level = "all"} a length-2 vector \code{c(source = ..., primary = ...)}.
 }
 \description{
-Returns the file path to \code{inst/extdata/Citations_BodyMass.bib}, which
-contains BibTeX entries for all data sources used to train the
-TaxonBodyMassML model. The file can be read with
-\code{bibtex::read.bib()} (requires the \code{bibtex} package).
+Returns the file path to a TaxonBodyMassML bibliography. \code{level = "source"}
+(the default) gives the bundled \code{inst/extdata/Citations_BodyMass.bib},
+which contains BibTeX entries for every data source (compilation, database
+or primary study) whose body masses were used to train the model.
+\code{level = "primary"} gives the generated \code{PrimaryCitations_BodyMass.bib} of
+verified primary references (the studies that measured the animals the
+compilations reproduce; TaxonBodyMass_DB issue #1). It is a model artifact,
+fetched from Hugging Face on first use (like \code{lookup.json}) and verified
+against a bundled checksum. \code{level = "all"} returns both paths. The files
+can be read with \code{bibtex::read.bib()} (requires the \code{bibtex} package).
 }
 \examples{
 path <- get_citations()
@@ -22,10 +32,12 @@ cat(path, "\n")
 \dontrun{
 # Read with bibtex package
 refs <- bibtex::read.bib(get_citations())
+# The verified primary references (downloads the artifact on first use)
+primary <- bibtex::read.bib(get_citations(level = "primary"))
 }
 
 }
 \seealso{
-\code{\link[=create_bib]{create_bib()}} to export only the sources cited by a particular
+\code{\link[=create_bib]{create_bib()}} to export only the references cited by a particular
 set of predictions.
 }

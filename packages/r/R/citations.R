@@ -1,14 +1,38 @@
-#' Return path to the body-mass data-source bibliography
+# Citation levels: the compilation a value was copied from ("source"), the
+# study that measured the animal ("primary"), or both ("all").
+.LEVELS <- c("source", "primary", "all")
+# Provenance artifacts (TaxonBodyMass_DB issue #1), distributed next to lookup.json.
+.PRIMARY_BIB_FILE <- "PrimaryCitations_BodyMass.bib"
+.PROVENANCE_FILE  <- "TaxonBodyMass_Provenance.csv.gz"
+# match_status values of a verified primary reference. Conversion-factor rows
+# (provenance_type == "conversion_factor") carry no status and are always cited.
+.ACCEPTED_STATUS  <- c("certain", "approved", "nodoi_approved")
+.CONVERSION_TYPE  <- "conversion_factor"
+.PROVENANCE_COLS  <- c("genus", "species", "taxon", "source_mass", "source_bibcite",
+                       "origin", "hop", "via_cite_id", "ref_role", "provenance_type",
+                       "primary_cite_id", "primary_bibcite", "primary_doi",
+                       "match_status", "n_records")
+
+#' Return path(s) to the body-mass bibliographies
 #'
 #' @description
-#' Returns the file path to `inst/extdata/Citations_BodyMass.bib`, which
-#' contains BibTeX entries for all data sources used to train the
-#' TaxonBodyMassML model. The file can be read with
-#' `bibtex::read.bib()` (requires the `bibtex` package).
+#' Returns the file path to a TaxonBodyMassML bibliography. `level = "source"`
+#' (the default) gives the bundled `inst/extdata/Citations_BodyMass.bib`,
+#' which contains BibTeX entries for every data source (compilation, database
+#' or primary study) whose body masses were used to train the model.
+#' `level = "primary"` gives the generated `PrimaryCitations_BodyMass.bib` of
+#' verified primary references (the studies that measured the animals the
+#' compilations reproduce; TaxonBodyMass_DB issue #1). It is a model artifact,
+#' fetched from Hugging Face on first use (like `lookup.json`) and verified
+#' against a bundled checksum. `level = "all"` returns both paths. The files
+#' can be read with `bibtex::read.bib()` (requires the `bibtex` package).
 #'
-#' @return Character. Absolute path to `Citations_BodyMass.bib`.
+#' @param level One of `"source"` (default), `"primary"` or `"all"`.
 #'
-#' @seealso [create_bib()] to export only the sources cited by a particular
+#' @return Character. Absolute path to the requested bibliography; for
+#'   `level = "all"` a length-2 vector `c(source = ..., primary = ...)`.
+#'
+#' @seealso [create_bib()] to export only the references cited by a particular
 #'   set of predictions.
 #'
 #' @examples
@@ -18,43 +42,68 @@
 #' \dontrun{
 #' # Read with bibtex package
 #' refs <- bibtex::read.bib(get_citations())
+#' # The verified primary references (downloads the artifact on first use)
+#' primary <- bibtex::read.bib(get_citations(level = "primary"))
 #' }
 #'
 #' @export
-get_citations <- function() {
-  system.file("extdata", "Citations_BodyMass.bib",
-              package = "TaxonBodyMassML",
-              mustWork = TRUE)
+get_citations <- function(level = c("source", "primary", "all")) {
+  level <- .check_level(level)
+  src <- system.file("extdata", "Citations_BodyMass.bib",
+                     package = "TaxonBodyMassML",
+                     mustWork = TRUE)
+  if (level == "source") return(src)
+  prim <- .primary_bib_path()
+  if (level == "primary") return(prim)
+  c(source = src, primary = prim)
 }
 
 
-#' Write a BibTeX file of the data sources behind a set of predictions
+#' Write a BibTeX file of the references behind a set of predictions
 #'
 #' @description
 #' Takes the output of [predict_mass()] called with `include_source = TRUE`
-#' and writes a `.bib` file containing the BibTeX entries for every
-#' training-data source cited in its `source` column. This lets users cite
-#' exactly the empirical body-mass sources that contributed to their results.
+#' and writes a `.bib` file containing the BibTeX entries that the dictionary
+#' (training-data) rows of the result rest on. This lets users cite exactly
+#' the empirical body-mass sources that contributed to their results.
 #'
 #' @details
-#' Each `source` value is split on `";"` (a taxon recorded by several sources
+#' `level = "source"` (default) cites the data sources named in the `source`
+#' column. Each value is split on `";"` (a taxon recorded by several sources
 #' has a value such as `"Feldman_etal_2016; Meiri_2018"`), trimmed, and
 #' de-duplicated. Model-inferred rows, whose `source` begins with `"tbmML_"`,
 #' and `NA` values are ignored, so an output with no dictionary hits yields a
-#' bibliography with no entries.
+#' bibliography with no entries. Source labels are matched to BibTeX keys
+#' through the bundled `TaxonBodyMass_CitationCiteIDs.csv` (labels and keys
+#' are compared after normalising whitespace, Unicode dashes and diacritics
+#' to plain ASCII), and the entries are copied verbatim from the file returned
+#' by [get_citations()]. A warning lists any label that has no mapping; such
+#' labels are skipped.
 #'
-#' Source labels are matched to BibTeX keys through the bundled
-#' `TaxonBodyMass_CitationCiteIDs.csv`, and the corresponding entries are
-#' copied verbatim from the file returned by [get_citations()]. Labels and
-#' keys are compared after normalising whitespace, Unicode dashes and
-#' diacritics to plain ASCII, so minor typographic variants still match.
-#' A warning lists any label that has no mapping; such labels are skipped.
+#' `level = "primary"` cites the studies that measured the animals: the
+#' dictionary species of `x` are joined to the provenance table
+#' (`TaxonBodyMass_Provenance.csv.gz`, a model artifact downloaded on first
+#' use) and every verified primary reference (`match_status` `certain`,
+#' `approved` or `nodoi_approved`) and every conversion-factor reference of
+#' those species is written, taken from the primary bibliography or, for
+#' references that are themselves data sources, from the compilation
+#' bibliography. The join uses the `source_taxon` column (the dictionary key;
+#' present when `predict_mass()` was called with `include_source = TRUE`),
+#' falling back to `species_resolved` and then, with a warning, to `taxon`.
+#' Coverage is partial while TaxonBodyMass_DB ingests the sources' reference
+#' lists: species whose sources cite references that are not yet resolved are
+#' reported in a warning, so cite `level = "source"` for them as well.
+#'
+#' `level = "all"` writes the union of both levels without duplicate keys. The
+#' header line reports the number of entries per level.
 #'
 #' @param x A `data.frame` with a `source` column, as returned by
 #'   `predict_mass(..., include_source = TRUE)`.
 #' @param file Path of the `.bib` file to write. Default
 #'   `"TaxonBodyMass_sources.bib"` in the working directory. An existing file
 #'   is overwritten.
+#' @param level One of `"source"` (default), `"primary"` or `"all"`; see
+#'   Details.
 #'
 #' @return Invisibly, the normalised path to the written file.
 #'
@@ -72,10 +121,13 @@ get_citations <- function() {
 #' res <- predict_mass(c("Nucella ostrina", "Anolis carolinensis"),
 #'                     include_source = TRUE)
 #' create_bib(res, file = "my_sources.bib")
+#' # ... and the primary studies behind those sources, where known
+#' create_bib(res, file = "my_primary_sources.bib", level = "all")
 #' }
 #'
 #' @export
-create_bib <- function(x, file = "TaxonBodyMass_sources.bib") {
+create_bib <- function(x, file = "TaxonBodyMass_sources.bib",
+                       level = c("source", "primary", "all")) {
   if (!is.data.frame(x) || !"source" %in% names(x)) {
     stop("`x` must be a data.frame with a `source` column; ",
          "call predict_mass(..., include_source = TRUE).", call. = FALSE)
@@ -83,35 +135,193 @@ create_bib <- function(x, file = "TaxonBodyMass_sources.bib") {
   if (!is.character(file) || length(file) != 1L || !nzchar(file)) {
     stop("`file` must be a single, non-empty file path.", call. = FALSE)
   }
+  level <- .check_level(level)
 
+  source_keys  <- if (level %in% c("source", "all")) .source_keys(x) else character(0L)
+  primary_keys <- if (level %in% c("primary", "all")) .primary_keys(x) else character(0L)
+
+  read_bib <- function(path) {
+    paste(readLines(path, encoding = "UTF-8", warn = FALSE), collapse = "\n")
+  }
+  source_bib  <- read_bib(get_citations("source"))
+  primary_bib <- if (level == "source") "" else read_bib(.primary_bib_path())
+
+  # Source entries come from the compilation bibliography; primary entries from
+  # the primary bibliography, or from the compilation bibliography when the
+  # primary reference is itself a data source (a shared key).
+  written   <- character(0L)
+  entries   <- character(0L)
+  missing   <- character(0L)
+  n_source  <- 0L
+  n_primary <- 0L
+  for (k in sort(unique(source_keys))) {
+    e <- .extract_bib_entry(source_bib, k)
+    if (is.null(e)) { missing <- c(missing, k); next }
+    entries  <- c(entries, e)
+    written  <- c(written, k)
+    n_source <- n_source + 1L
+  }
+  for (k in sort(unique(primary_keys))) {
+    e <- .extract_bib_entry(primary_bib, k)
+    if (is.null(e)) e <- .extract_bib_entry(source_bib, k)
+    if (is.null(e)) { missing <- c(missing, k); next }
+    n_primary <- n_primary + 1L
+    if (k %in% written) next
+    entries <- c(entries, e)
+    written <- c(written, k)
+  }
+  if (length(missing) > 0L) {
+    warning("BibTeX key(s) referenced by the citation tables but absent from ",
+            "the bibliographies: ", paste(sort(unique(missing)), collapse = ", "),
+            call. = FALSE)
+  }
+
+  counts <- switch(level,
+    source  = sprintf("%d data-source citation(s)", n_source),
+    primary = sprintf("%d primary-reference citation(s)", n_primary),
+    all     = sprintf("%d data-source and %d primary-reference citation(s) (%d unique)",
+                      n_source, n_primary, length(entries))
+  )
+  header <- sprintf("%%%% TaxonBodyMassML create_bib(): %s for %d taxa", counts, nrow(x))
+  body   <- if (length(entries) > 0L) paste(entries, collapse = "\n\n") else character(0L)
+  writeLines(enc2utf8(c(header, "", body)), file, useBytes = TRUE)
+  invisible(normalizePath(file))
+}
+
+
+#' @noRd
+.check_level <- function(level) {
+  if (!is.character(level) || length(level) == 0L || anyNA(level)) {
+    stop("`level` must be one of ", paste(sQuote(.LEVELS, q = FALSE), collapse = ", "), ".",
+         call. = FALSE)
+  }
+  if (length(level) > 1L) {
+    if (identical(level, .LEVELS)) return("source")  # default of match.arg-style vector
+    stop("`level` must be a single value: one of ",
+         paste(sQuote(.LEVELS, q = FALSE), collapse = ", "), ".", call. = FALSE)
+  }
+  if (!level %in% .LEVELS) {
+    stop("`level` must be one of ", paste(sQuote(.LEVELS, q = FALSE), collapse = ", "),
+         "; got ", sQuote(level, q = FALSE), ".", call. = FALSE)
+  }
+  level
+}
+
+
+# BibTeX keys of the data sources named in the `source` column (level "source").
+#' @noRd
+.source_keys <- function(x) {
   tokens <- .split_sources(x$source)
   map    <- .read_citeids()
   hit    <- match(.normalise_label(tokens), names(map))
-
   unmapped <- tokens[is.na(hit)]
   if (length(unmapped) > 0L) {
     warning(length(unmapped), " source label(s) have no citation mapping ",
             "and were skipped: ", paste(sort(unmapped), collapse = ", "),
             call. = FALSE)
   }
+  unname(map[hit[!is.na(hit)]])
+}
 
-  keys    <- sort(unique(unname(map[hit[!is.na(hit)]])))
-  bibtext <- paste(readLines(get_citations(), encoding = "UTF-8", warn = FALSE),
-                   collapse = "\n")
-  entries <- lapply(keys, function(k) .extract_bib_entry(bibtext, k))
-  found   <- !vapply(entries, is.null, logical(1L))
-  if (any(!found)) {
-    warning("BibTeX key(s) listed in TaxonBodyMass_CitationCiteIDs.csv but ",
-            "absent from Citations_BodyMass.bib: ",
-            paste(keys[!found], collapse = ", "), call. = FALSE)
+
+# Lookup keys of the dictionary rows of `x` (unique, first-seen order). For
+# each dictionary row the key is `source_taxon` (the name under which the
+# species was found in the training-data dictionary), falling back to
+# `species_resolved` when that is missing and then to `taxon` (the input name,
+# which may differ from the dictionary key; a warning is issued once when any
+# row needs this last fallback). Model-inferred and unresolved rows (`source`
+# tbmML_... or NA) are skipped.
+#' @noRd
+.dictionary_species <- function(x) {
+  src     <- as.character(x$source)
+  is_dict <- !is.na(src) & nzchar(trimws(src)) &
+    !grepl("^tbm_?ml_|^tbml_", trimws(src), ignore.case = TRUE, perl = TRUE)
+  cols <- intersect(c("source_taxon", "species_resolved", "taxon"), names(x))
+  key  <- rep(NA_character_, nrow(x))
+  from <- rep(NA_character_, nrow(x))
+  for (col in cols) {
+    v    <- trimws(as.character(x[[col]]))
+    take <- is.na(key) & !is.na(v) & nzchar(v)
+    key[take]  <- v[take]
+    from[take] <- col
   }
-  entries <- unlist(entries[found], use.names = FALSE)
+  if (any(is_dict & !is.na(from) & from == "taxon")) {
+    warning("Some dictionary rows of `x` have no `source_taxon` or `species_resolved` ",
+            "value; joining the provenance table on `taxon` (input names) for them, ",
+            "which may differ from the dictionary keys. Call predict_mass(..., ",
+            "include_source = TRUE) with this package version to get `source_taxon`.",
+            call. = FALSE)
+  }
+  unique(key[is_dict & !is.na(key)])
+}
 
-  header <- sprintf("%%%% TaxonBodyMassML create_bib(): %d data-source citation(s) for %d taxa",
-                    length(entries), nrow(x))
-  body   <- if (length(entries) > 0L) paste(entries, collapse = "\n\n") else character(0L)
-  writeLines(enc2utf8(c(header, "", body)), file, useBytes = TRUE)
-  invisible(normalizePath(file))
+
+# BibTeX keys of the verified primary (and conversion) references of the
+# dictionary species of `x`, from the provenance table (level "primary").
+#' @noRd
+.primary_keys <- function(x) {
+  species <- .dictionary_species(x)
+  if (length(species) == 0L) return(character(0L))
+  prov <- .read_provenance()
+  rows <- prov[prov$species %in% species, , drop = FALSE]
+
+  absent <- sort(setdiff(species, rows$species))
+  if (length(absent) > 0L) {
+    shown <- paste(utils::head(absent, 10L), collapse = ", ")
+    if (length(absent) > 10L) shown <- paste0(shown, ", ... (", length(absent) - 10L, " more)")
+    warning(length(absent), " dictionary species absent from the provenance table ",
+            "(the table may predate the species dictionary): ", shown, call. = FALSE)
+  }
+
+  accepted <- rows$match_status %in% .ACCEPTED_STATUS |
+    (!is.na(rows$provenance_type) & rows$provenance_type == .CONVERSION_TYPE)
+  cited <- rows[accepted & !is.na(rows$primary_bibcite), , drop = FALSE]
+
+  # Rows whose source cites a reference (hop >= 1) that is not (yet) verified:
+  # the primary bibliography is incomplete for these species.
+  unresolved <- rows[rows$hop >= 1L & !rows$match_status %in% .ACCEPTED_STATUS, , drop = FALSE]
+  if (nrow(unresolved) > 0L) {
+    status <- table(ifelse(is.na(unresolved$match_status), "none", unresolved$match_status))
+    status <- sort(status, decreasing = TRUE)
+    warning(length(unique(unresolved$species)), " of ", length(species),
+            " dictionary species have source records whose primary reference is ",
+            "not yet resolved (", nrow(unresolved), " record link(s); match_status ",
+            paste(names(status), status, sep = ": ", collapse = ", "),
+            "); cite these at level = \"source\".", call. = FALSE)
+  }
+  cited$primary_bibcite
+}
+
+
+# Path to the primary-source bibliography artifact (downloaded on first use).
+#' @noRd
+.primary_bib_path <- function() .provenance_path(.PRIMARY_BIB_FILE)
+
+
+# Path to the provenance table artifact (downloaded on first use).
+#' @noRd
+.provenance_table_path <- function() .provenance_path(.PROVENANCE_FILE)
+
+
+# Read TaxonBodyMass_Provenance.csv.gz (TaxonBodyMass_DB pipeline step 7): one
+# row per species x source label x reference. All columns are character ("NA"
+# -> NA) except `hop` and `n_records` (integer).
+#' @noRd
+.read_provenance <- function(path = .provenance_table_path()) {
+  con <- gzfile(path, open = "rt", encoding = "UTF-8")
+  on.exit(close(con), add = TRUE)
+  df <- utils::read.csv(con, stringsAsFactors = FALSE, na.strings = "NA",
+                        colClasses = "character", check.names = FALSE)
+  missing <- setdiff(.PROVENANCE_COLS, names(df))
+  if (length(missing) > 0L) {
+    stop("Provenance table is missing column(s): ", paste(missing, collapse = ", "),
+         call. = FALSE)
+  }
+  df$hop       <- as.integer(df$hop)
+  df$n_records <- as.integer(df$n_records)
+  df$hop[is.na(df$hop)]             <- 0L
+  df$n_records[is.na(df$n_records)] <- 0L
+  df
 }
 
 
