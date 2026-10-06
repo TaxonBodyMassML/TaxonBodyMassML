@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Data licences: the README and the package README state that the TaxonBodyMass_DB
+  outputs the data artifacts are built from (the `lookup.json` values, the
+  provenance table, the two bibliographies and the training data) are CC BY-NC 4.0
+  as of 2026-10-06 (owner decision, replacing CC BY 4.0), so the data artifacts
+  carry the NonCommercial term; the code and the model weights stay MIT. No
+  artifact, version or model changed.
+
 ### Added
 
 - Data licences: the README and the package README state that `lookup.json`, the

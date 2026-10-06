@@ -1,5 +1,14 @@
 # TaxonBodyMassML (development version)
 
+## Changes
+
+* Data licences: the README and the Getting Started vignette state that the
+  TaxonBodyMass_DB outputs the data artifacts are built from (the `lookup.json`
+  values, the provenance table, the two bibliographies and the training data) are
+  CC BY-NC 4.0 as of 2026-10-06 (owner decision, replacing CC BY 4.0), so the data
+  artifacts carry the NonCommercial term; the code and the model weights stay MIT.
+  No artifact, version or model changed.
+
 ## New features
 
 * Data licences: the README and the Getting Started vignette state that `lookup.json`, the
