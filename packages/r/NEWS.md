@@ -2,6 +2,13 @@
 
 ## New features
 
+* Data licences: the README and the Getting Started vignette state that `lookup.json`, the
+  training data and the provenance artifacts aggregate values from sources whose
+  terms are listed in TaxonBodyMass_DB `sources/LICENSES.md`, name the
+  non-commercial and share-alike sources (FishBase, SeaLifeBase, Lane 2019, Cai et
+  al. 2025, Hoehler et al. 2023, Animal Diversity Web/Quaardvark, Pata & Hunt 2025,
+  Hechinger et al. 2011), and say that no raw source file ships and that users
+  decide their own position on the aggregated values (TaxonBodyMass_DB issue #6).
 * Primary-source citations (TaxonBodyMass_DB issue #1, TaxonBodyMassML #21).
   `get_citations(level = c("source", "primary", "all"))` returns the bundled
   compilation bibliography (unchanged default), the generated primary-source
