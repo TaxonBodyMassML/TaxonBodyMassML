@@ -27,9 +27,14 @@ NULL
   c("KINGDOM", "kingdom")
 )
 
+# Sentinel returned by .gbif_fuzzy_name() when the GBIF request itself fails
+# (network error, timeout, etc.) — distinct from NA_character_ ("no match").
+.FUZZY_REQUEST_FAILED <- "\x01GBIF_REQUEST_FAILED\x01"
+
 # ---------------------------------------------------------------------------
 # Internal: ask GBIF for its canonical match for a single name
-# Returns the matched species string, or NA_character_ on no match.
+# Returns the matched species string, NA_character_ on no match, or
+# .FUZZY_REQUEST_FAILED when the request itself errors.
 # ---------------------------------------------------------------------------
 
 .gbif_fuzzy_name <- function(name) {
@@ -93,7 +98,7 @@ NULL
     }
 
     NA_character_
-  }, error = function(e) NA_character_)
+  }, error = function(e) .FUZZY_REQUEST_FAILED)
 }
 
 # ---------------------------------------------------------------------------
@@ -133,6 +138,17 @@ correct_species_names <- function(species) {
     }, character(1L))
   } else {
     matched <- vapply(names_vec, .gbif_fuzzy_name, character(1L))
+  }
+
+  failed <- matched == .FUZZY_REQUEST_FAILED & !is.na(matched)
+  if (any(failed)) {
+    warning(
+      "Fuzzy lookup failed for ", sum(failed),
+      " name(s) (GBIF request error); used as typed: ",
+      paste0("'", names_vec[failed], "'", collapse = ", "),
+      call. = FALSE
+    )
+    matched[failed] <- NA_character_
   }
 
   data.frame(
