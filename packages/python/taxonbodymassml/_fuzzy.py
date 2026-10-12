@@ -23,6 +23,10 @@ _GBIF_FUZZY_URL = "https://api.gbif.org/v1/species/match"
 _MATCH_ACCEPTED = {"EXACT", "FUZZY"}
 _MIN_CONFIDENCE = 75
 
+# Sentinel returned when the GBIF request itself fails (network error, timeout,
+# etc.) — distinct from None ("no match found").
+_FUZZY_REQUEST_FAILED = object()
+
 # Ranked sequence tried for single-word inputs when rank=SPECIES returns NONE.
 # Each tuple is (gbif_rank_param, response_field_name).
 _HIGHER_RANK_TRIES = [
@@ -94,7 +98,7 @@ def _gbif_fuzzy_name(name: str) -> Optional[str]:
 
         return None
     except Exception:
-        return None
+        return _FUZZY_REQUEST_FAILED
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +145,17 @@ def correct_species_names(species) -> pd.DataFrame:
                 try:
                     matched[n] = fut.result()
                 except Exception:
-                    matched[n] = None
+                    matched[n] = _FUZZY_REQUEST_FAILED
+
+    failed = [n for n in names if matched.get(n) is _FUZZY_REQUEST_FAILED]
+    if failed:
+        warnings.warn(
+            f"Fuzzy lookup failed for {len(failed)} name(s) (GBIF request error); "
+            f"used as typed: {', '.join(repr(n) for n in failed)}",
+            stacklevel=2,
+        )
+    for n in failed:
+        matched[n] = None
 
     return pd.DataFrame(
         {

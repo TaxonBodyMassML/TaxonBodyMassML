@@ -77,3 +77,59 @@ def test_correct_species_names_no_match_returns_none_offline():
         result = correct_species_names("Xyzzy notaspecies12345")
 
     assert result.iloc[0]["matched_name"] is None
+
+
+def test_gbif_fuzzy_name_returns_sentinel_on_request_error():
+    """A network error makes _gbif_fuzzy_name return the failed-request sentinel."""
+    import taxonbodymassml._fuzzy as fmod
+
+    with patch("taxonbodymassml._fuzzy._get", side_effect=OSError("network error")):
+        result = fmod._gbif_fuzzy_name("Nucela lima")
+
+    assert result is fmod._FUZZY_REQUEST_FAILED
+
+
+def test_correct_species_names_warns_on_request_failure():
+    """correct_species_names emits a warning and returns None for failed requests."""
+    import warnings
+
+    import taxonbodymassml._fuzzy as fmod
+
+    with patch(
+        "taxonbodymassml._fuzzy._gbif_fuzzy_name",
+        return_value=fmod._FUZZY_REQUEST_FAILED,
+    ):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            from taxonbodymassml._fuzzy import correct_species_names
+
+            result = correct_species_names("Nucela lima")
+
+    assert any("Fuzzy lookup failed for 1 name" in str(w.message) for w in caught)
+    assert result.iloc[0]["matched_name"] is None
+    assert result.iloc[0]["input_name"] == "Nucela lima"
+
+
+def test_correct_species_names_warns_only_for_failed_not_no_match():
+    """Warning fires for request failures but not for genuine no-match (None)."""
+    import warnings
+
+    import taxonbodymassml._fuzzy as fmod
+
+    sentinel = fmod._FUZZY_REQUEST_FAILED
+    call_results = iter([sentinel, None])
+
+    with patch(
+        "taxonbodymassml._fuzzy._gbif_fuzzy_name",
+        side_effect=lambda name: next(call_results),
+    ):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            from taxonbodymassml._fuzzy import correct_species_names
+
+            result = correct_species_names(["Nucela lima", "Xyzzy notaspecies"])
+
+    warning_msgs = [str(w.message) for w in caught]
+    assert any("Fuzzy lookup failed for 1 name" in m for m in warning_msgs)
+    assert result.iloc[0]["matched_name"] is None  # failed request -> None
+    assert result.iloc[1]["matched_name"] is None  # no match -> None (no extra warning)
