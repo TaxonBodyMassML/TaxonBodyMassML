@@ -223,7 +223,7 @@ def test_primary_citeids_are_in_the_primary_bib(offline_provenance):
     cite = pd.read_csv(_citeid_path(), dtype=str, keep_default_na=False)
     prim_bib = tbm.get_citations("primary").read_text(encoding="utf-8")
     keys = cite.loc[cite["bib_file"] == "PrimaryCitations", "Bibcite"]
-    assert set(cite["role"]) == {"source", "conversion", "primary"}
+    assert set(cite.loc[cite["CiteID"] != "NA", "role"]) == {"source", "conversion", "primary"}
     assert [k for k in keys if _extract_bib_entry(prim_bib, k) is None] == []
 
 

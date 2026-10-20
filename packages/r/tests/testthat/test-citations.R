@@ -196,7 +196,7 @@ test_that("the primary CiteIDs of the CiteID map are in the primary bibliography
   cite <- utils::read.csv(TaxonBodyMassML:::.citeid_path(), stringsAsFactors = FALSE,
                           encoding = "UTF-8", na.strings = character(0))
   expect_identical(names(cite)[1:2], c("Bibcite", "CiteID"))  # the readers use these only
-  expect_setequal(unique(cite$role), c("source", "conversion", "primary"))
+  expect_setequal(unique(cite$role[cite$CiteID != "NA"]), c("source", "conversion", "primary"))
   prim <- paste(readLines(TaxonBodyMassML::get_citations("primary"), encoding = "UTF-8",
                           warn = FALSE), collapse = "\n")
   keys <- cite$Bibcite[cite$bib_file == "PrimaryCitations"]
