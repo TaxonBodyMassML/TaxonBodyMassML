@@ -80,23 +80,7 @@ def main():
     # plt.xlabel("Z-Normalized Mass")
     # plt.show(block=True)
 
-    df = df.drop(
-        [
-            "taxon",
-            "taxon_provided",
-            "source_mass",
-            "n",
-            "log10_range",
-            "taxonomy_source",
-            "gbif_confidence",
-            "gbif_status",
-            "gbif_family",
-            "gbif_order",
-            "species_changed",
-        ],
-        axis=1,
-        errors="ignore",
-    )
+    df = df[["genus", "species", "mass_g", "kingdom", "phylum", "class", "order", "family"]]
 
     # Normalize all taxonomy string columns to ASCII to prevent XGBoost's JSON
     # serialisation from miscomputing category byte offsets for multi-byte UTF-8
