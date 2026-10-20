@@ -1,11 +1,11 @@
 {
   "method": "EntityEmbeddings",
-  "r2": 0.9104013393686586,
-  "rmse": 0.557807664100326,
-  "mae": 0.32371610171958953,
-  "stage1_mae": 0.39158577745403855,
-  "n_train": 32916,
-  "n_test": 3657,
+  "r2": 0.8308411600150589,
+  "rmse": 0.607355230855912,
+  "mae": 0.4518496412174964,
+  "stage1_mae": 0.569703077593056,
+  "n_train": 390,
+  "n_test": 43,
   "log10_space": true,
   "stage1_epochs": 100,
   "stage1_batch": 256,
@@ -30,12 +30,12 @@
     "min_child_weight": 2
   },
   "vocab_sizes": {
-    "kingdom": 6,
-    "phylum": 40,
-    "class": 116,
-    "order": 459,
-    "family": 2149,
-    "genus": 9432
+    "kingdom": 3,
+    "phylum": 9,
+    "class": 23,
+    "order": 67,
+    "family": 191,
+    "genus": 327
   },
-  "timestamp": "2026-09-26T22:53:07.985261+00:00"
+  "timestamp": "2026-10-20T14:27:48.394054+00:00"
 }

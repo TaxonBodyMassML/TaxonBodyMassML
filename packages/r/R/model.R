@@ -21,16 +21,16 @@ NULL
 
 .CHECKSUMS <- list(
   # XGBoost (original method)
-  "model.ubj"               = "6bad674b79ccab14ed721c311ad47349f0530a7fddc3f3cb25fdf2b025fa5dbd",
-  "calibration.json"        = "890527f72e80b25d93d15e136c9ee7b9fe424113770743e0f800b8f8f08b8ff9",
-  "calibration_by_rank.json" = "73f933218adb4353f3812d6f97e092945aabecb938d39e40db167895b1ab5aa0",
-  "categories.json"         = "f9495c6f6b9c4411512f8083faed0e40bcffe548b1bf12e7b9f7656382df9218",
-  "lookup.json"             = "e49b971caa4d7b9078a59a0681a8cb9cde78e67f4244bc0e3c689eaf43255784",
+  "model.ubj"               = "8d4364a5f6451ccc457392faa80e761ede0c6ab7f58fdd34b49cca6df30f5e23",
+  "calibration.json"        = "4903078978c6aa1432dfbddbf46fe67ef6839cca5baa6395f070bf4536c5e6bb",
+  "calibration_by_rank.json" = "ccd5d4f29606174038c1ac8d62d91395eb909257dfd1eb6478bb72926c6740e7",
+  "categories.json"         = "6cd53c20b129ace0be8d3546487174caffc095242794d6f4452e3dd827e2708c",
+  "lookup.json"             = "4a1c0b037556f499c4264bf8cd6d5005ef3bf1a96c4e859236afad7074970570",
   # Entity Embeddings
-  "embeddings.json"              = "9abc38faff6ac490f27480d1c19698c19d8e3a934acd76919c95bf366ac8ec17",
-  "model_ee.ubj"                 = "9b27e77101ee5559e8e58e8d1ebbbea4ee23b92606ce9c7ff2025a8b522f2eb6",
-  "calibration_ee.json"          = "cd68beb482bc1427e7163f0665260ef2a13b9dd47e6f353bac46172aa1519200",
-  "calibration_by_rank_ee.json"  = "1c12da9c75e261240ff34867e99081277c62744f20ef432748a86d5dc3268083"
+  "embeddings.json"              = "b6c5bec4334653c247353054da1ad75592cf6bc6e146d07cb5a5f5cb575062cd",
+  "model_ee.ubj"                 = "de95816c6184d2a7979136c700ce91bdaa41974fc6f8927bb294bcad9693452a",
+  "calibration_ee.json"          = "2abbf251382e08e283f49aaf3a3681e03d554df82ecd576d36e264a831ff0bae",
+  "calibration_by_rank_ee.json"  = "43f21b33c208166afafd2a6c8d3d3ddc8b9dab1520231de6324d53ee9ca05e86"
 )
 
 # Provenance artifacts (TaxonBodyMass_DB issue #1): the generated primary-source
@@ -40,8 +40,8 @@ NULL
 # get_citations(level = "primary") / create_bib(level = "primary").
 # predict_mass() does not need them.
 .PROVENANCE_CHECKSUMS <- list(
-  "PrimaryCitations_BodyMass.bib"   = "a2e9490cd37cc020e4d76d30f1362344a934870b093795896879960784b2d71f",
-  "TaxonBodyMass_Provenance.csv.gz" = "cfd931c8431061859e97a80581691a85324845e51b1da45d8c22ed6e20d1ce49"
+  "PrimaryCitations_BodyMass.bib"   = "bfef580ef0be5c139186b3d68a0bd1c262d34646940be6a3e3ed3248f47da8ef",
+  "TaxonBodyMass_Provenance.csv.gz" = "9e6e76bc4fb0691ddd660367074ce548c87743959f6bd8a5ef8eeb06bc79eaee"
 )
 
 # Model artifacts (needed by predict_mass) and provenance artifacts are
