@@ -24,7 +24,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import re
-import subprocess
 import sys
 from importlib import metadata
 from pathlib import Path
@@ -81,56 +80,9 @@ def first_match(pattern: str, text: str, flags=re.M) -> str:
 
 
 def db_version(override: str | None) -> str:
-    if override:
-        return override
-    db = REPO.parent / "TaxonBodyMass_DB"
-    try:
-        exact = subprocess.run(
-            ["git", "-C", str(db), "describe", "--tags", "--exact-match"],
-            capture_output=True,
-            text=True,
-        )
-        if exact.returncode == 0:
-            return exact.stdout.strip()
-        # HEAD is past the last tag. The manuscript cites the *data* version, so
-        # report the tag when the released CSVs are unchanged since it (commits
-        # touching only scripts, docs or the bibliography do not change the data).
-        last_tag = subprocess.run(
-            ["git", "-C", str(db), "describe", "--tags", "--abbrev=0"],
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-        data_unchanged = (
-            subprocess.run(
-                [
-                    "git",
-                    "-C",
-                    str(db),
-                    "diff",
-                    "--quiet",
-                    last_tag,
-                    "HEAD",
-                    "--",
-                    "TaxonBodyMass.csv",
-                    "TaxonBodyMass_GenusLevel.csv",
-                ]
-            ).returncode
-            == 0
-        )
-        if last_tag and data_unchanged:
-            print(f"  TaxonBodyMass_DB HEAD is past {last_tag} but the released CSVs are unchanged")
-            return last_tag
-        near = subprocess.run(
-            ["git", "-C", str(db), "describe", "--tags"], capture_output=True, text=True
-        )
-        tag = near.stdout.strip()
-        print(
-            f"  WARNING: TaxonBodyMass_DB data changed since {last_tag} ({tag}); "
-            "tag a new DB release or pass --db-version"
-        )
-        return tag
-    except FileNotFoundError:
-        return "unknown"
+    from scripts._db_version import db_version as _db_version  # noqa: E402
+
+    return _db_version(override=override, repo_root=REPO)
 
 
 def count_bib_entries(path: Path) -> int:

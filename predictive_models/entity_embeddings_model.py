@@ -10,10 +10,15 @@ Stage 2: XGBoost trained on the extracted embedding vectors (continuous features
 Run from any directory:
     python predictive_models/entity_embeddings_model.py
 
-Outputs (in artifacts/):
-    embeddings.json  -- per-column embedding lookup {col: {value: [...], "UNK": [...]}}
-    model_ee.ubj        -- Stage 2 XGBoost in binary UBJSON format
-    calibration_ee.json -- {"residuals": [...]} conformal calibration residuals
+Outputs (in artifacts/staging/EntityEmbeddings/):
+    model_ee.ubj                 -- Stage 2 XGBoost in binary UBJSON format
+    embeddings.json              -- per-column embedding lookup {col: {value: [...], "UNK": [...]}}
+    calibration_ee.json          -- {"residuals": [...]} conformal calibration residuals
+    calibration_by_rank_ee.json  -- rank-stratified conformal calibration residuals
+
+These files are picked up by scripts/export_artifacts.py, which renames them
+to normalised names (without the ``_ee`` suffix) inside the versioned folder
+``artifacts/models/EntityEmbeddings/v<n>/`` and updates the manifest.
 
 Requirements:
     pip install torch>=2.0 xgboost>=3.2
@@ -50,9 +55,11 @@ np.random.seed(42)
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TRAIN_CSV = REPO_ROOT / "data" / "split" / "train.csv"
 TEST_CSV = REPO_ROOT / "data" / "split" / "test.csv"
-OUT_DIR = REPO_ROOT / "artifacts"
+# Staging dir: scripts/export_artifacts.py copies from here into the versioned
+# model folder and renames files to normalised names (without the _ee suffix).
+OUT_DIR = REPO_ROOT / "artifacts" / "staging" / "EntityEmbeddings"
 RESULTS_DIR = REPO_ROOT / "predictive_models" / "results"
-OUT_DIR.mkdir(exist_ok=True)
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 RESULTS_DIR.mkdir(exist_ok=True)
 
 # Species is not a feature (see taxonomy_encoding.MODEL_FEATURES).
