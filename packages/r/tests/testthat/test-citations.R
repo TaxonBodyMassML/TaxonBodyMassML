@@ -153,12 +153,15 @@ local_offline_provenance <- function(env = parent.frame()) {
 }
 
 bib_keys <- function(path) {
-  txt <- paste(readLines(path, encoding = "UTF-8", warn = FALSE), collapse = "\n")
-  m <- gregexpr("(?m)^@[A-Za-z]+\\{([^,\n]+),", txt, perl = TRUE)[[1L]]
-  if (m[1L] < 0L) return(character(0L))
-  starts <- attr(m, "capture.start")
-  lens   <- attr(m, "capture.length")
-  substring(txt, starts, starts + lens - 1L)
+  lines    <- readLines(path, encoding = "UTF-8", warn = FALSE)
+  at_lines <- lines[startsWith(lines, "@")]
+  if (!length(at_lines)) return(character(0L))
+  m      <- regexpr("^@[A-Za-z]+[{]([^,]+),", at_lines, perl = TRUE)
+  hit    <- which(m > 0L)
+  if (!length(hit)) return(character(0L))
+  starts <- attr(m, "capture.start")[hit, , drop = TRUE]
+  lens   <- attr(m, "capture.length")[hit, , drop = TRUE]
+  substring(at_lines[hit], starts, starts + lens - 1L)
 }
 
 test_that("get_citations() returns the bundled bib, the primary bib, or both", {
