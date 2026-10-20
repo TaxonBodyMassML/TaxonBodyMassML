@@ -144,9 +144,11 @@ test_that("create_bib() errors on bad input", {
 accepted_status <- c("certain", "approved", "nodoi_approved")
 
 local_offline_provenance <- function(env = parent.frame()) {
+  prim_path <- testthat::test_path("fixtures", "PrimaryCitations_BodyMass.bib")
+  prov_path <- testthat::test_path("fixtures", "provenance_subset.csv.gz")
   testthat::local_mocked_bindings(
-    .primary_bib_path      = function() testthat::test_path("fixtures", "PrimaryCitations_BodyMass.bib"),
-    .provenance_table_path = function() testthat::test_path("fixtures", "provenance_subset.csv.gz"),
+    .primary_bib_path      = function() prim_path,
+    .provenance_table_path = function() prov_path,
     .package = "TaxonBodyMassML",
     .env = env
   )
@@ -244,10 +246,7 @@ test_that("create_bib(level = 'primary') on the first accepted provenance row wr
   txt <- readLines(f, encoding = "UTF-8")
   expect_match(txt[1], "primary-reference citation\\(s\\) for 1 taxa$")
   keys_found <- bib_keys(f)
-  expect_true(row$primary_bibcite %in% keys_found,
-              info = paste0("primary_bibcite=", row$primary_bibcite,
-                            "; keys_found=[", paste(keys_found, collapse="|"), "]",
-                            "; at_lines=[", paste(txt[startsWith(txt, "@")], collapse="|"), "]"))
+  expect_true(row$primary_bibcite %in% keys_found)
   expect_false(row$source_bibcite %in% keys_found)  # the compilation is not cited here
 })
 
