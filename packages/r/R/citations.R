@@ -47,13 +47,13 @@
 #' }
 #'
 #' @export
-get_citations <- function(level = c("source", "primary", "all")) {
+get_citations <- function(level = c("source", "primary", "all"), db_version = NULL) {
   level <- .check_level(level)
   src <- system.file("extdata", "Citations_BodyMass.bib",
                      package = "TaxonBodyMassML",
                      mustWork = TRUE)
   if (level == "source") return(src)
-  prim <- .primary_bib_path()
+  prim <- .primary_bib_path(db_version = db_version)
   if (level == "primary") return(prim)
   c(source = src, primary = prim)
 }
@@ -127,7 +127,8 @@ get_citations <- function(level = c("source", "primary", "all")) {
 #'
 #' @export
 create_bib <- function(x, file = "TaxonBodyMass_sources.bib",
-                       level = c("source", "primary", "all")) {
+                       level = c("source", "primary", "all"),
+                       db_version = NULL) {
   if (!is.data.frame(x) || !"source" %in% names(x)) {
     stop("`x` must be a data.frame with a `source` column; ",
          "call predict_mass(..., include_source = TRUE).", call. = FALSE)
@@ -137,6 +138,10 @@ create_bib <- function(x, file = "TaxonBodyMass_sources.bib",
   }
   level <- .check_level(level)
 
+  if (is.null(db_version)) {
+    db_version <- attr(x, "tbm_model")[["db_version"]]
+  }
+
   source_keys  <- if (level %in% c("source", "all")) .source_keys(x) else character(0L)
   primary_keys <- if (level %in% c("primary", "all")) .primary_keys(x) else character(0L)
 
@@ -144,7 +149,7 @@ create_bib <- function(x, file = "TaxonBodyMass_sources.bib",
     paste(readLines(path, encoding = "UTF-8", warn = FALSE), collapse = "\n")
   }
   source_bib  <- read_bib(get_citations("source"))
-  primary_bib <- if (level == "source") "" else read_bib(.primary_bib_path())
+  primary_bib <- if (level == "source") "" else read_bib(.primary_bib_path(db_version = db_version))
 
   # Source entries come from the compilation bibliography; primary entries from
   # the primary bibliography, or from the compilation bibliography when the
@@ -295,12 +300,12 @@ create_bib <- function(x, file = "TaxonBodyMass_sources.bib",
 
 # Path to the primary-source bibliography artifact (downloaded on first use).
 #' @noRd
-.primary_bib_path <- function() .provenance_path(.PRIMARY_BIB_FILE)
+.primary_bib_path <- function(db_version = NULL) .provenance_path(.PRIMARY_BIB_FILE, db_version = db_version)
 
 
 # Path to the provenance table artifact (downloaded on first use).
 #' @noRd
-.provenance_table_path <- function() .provenance_path(.PROVENANCE_FILE)
+.provenance_table_path <- function(db_version = NULL) .provenance_path(.PROVENANCE_FILE, db_version = db_version)
 
 
 # Read TaxonBodyMass_Provenance.csv.gz (TaxonBodyMass_DB pipeline step 7): one

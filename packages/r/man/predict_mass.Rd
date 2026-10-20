@@ -12,7 +12,8 @@ predict_mass(
   include_taxonomy = FALSE,
   fuzzy_match_name = FALSE,
   include_source = FALSE,
-  lookup = TRUE
+  lookup = TRUE,
+  method_version = NULL
 )
 }
 \arguments{
@@ -66,6 +67,12 @@ found in the dictionary (the join key used by
 dictionary are returned with their empirical mass and bypass the model. If
 \code{FALSE}, every resolved taxon is passed through the model specified by
 \code{method}. Default \code{TRUE}.}
+
+\item{method_version}{\code{NULL} (default, uses the package option which defaults
+to \code{"newest"}), \code{"newest"}, \code{"cached"}, or a positive integer version
+number (also accepted as \code{"v2"} or \code{"2"}). Controls which trained version
+of the requested model is loaded. See \code{tbm_options()} to change the
+session default.}
 }
 \value{
 A \code{data.frame} with at minimum columns \code{taxon} and \code{mass_g}

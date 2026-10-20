@@ -7,7 +7,8 @@
 create_bib(
   x,
   file = "TaxonBodyMass_sources.bib",
-  level = c("source", "primary", "all")
+  level = c("source", "primary", "all"),
+  db_version = NULL
 )
 }
 \arguments{

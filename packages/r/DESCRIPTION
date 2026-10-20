@@ -32,6 +32,7 @@ Imports:
 Suggests:
     cli (>= 3.0),
     testthat (>= 3.0),
+    withr (>= 2.5),
     knitr,
     rmarkdown,
     lifecycle,
