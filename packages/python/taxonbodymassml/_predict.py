@@ -15,16 +15,15 @@ import xgboost as xgb
 
 from ._lookup import TAXONOMY_COLS, lookup_taxonomy
 from ._model import (
-    _ensure_artifacts,
+    ModelSpec,
+    _ensure_model,
     load_calibration,
     load_calibration_by_rank,
-    load_calibration_by_rank_ee,
-    load_calibration_ee,
     load_categories,
     load_embeddings,
     load_lookup,
     load_model,
-    load_model_ee,
+    resolve_model,
 )
 
 _TAXONOMY_INPUT_COLS = [
@@ -175,6 +174,7 @@ def _assemble_output(
     include_source: bool,
     interval_method: str = "pooled",
     by_rank_residuals: Optional[dict] = None,
+    categories: Optional[dict] = None,
 ) -> pd.DataFrame:
     """Convert log10 predictions to a result DataFrame with CI/taxonomy/source columns."""  # noqa: E501
     use_stratified = (
@@ -185,7 +185,7 @@ def _assemble_output(
         and by_rank_residuals is not None
     )
     need_cats = include_source or use_stratified
-    categories = load_categories() if need_cats else None
+    categories = categories if need_cats else None
 
     q_pooled = (
         float(np.quantile(residuals, level))
@@ -247,16 +247,16 @@ def _assemble_output(
 # XGBoost predictor
 # ---------------------------------------------------------------------------
 def _predict_xgboost(
+    spec: ModelSpec,
     taxonomy_df: pd.DataFrame,
     level: Optional[float],
     include_taxonomy: bool,
     input_names: list[str],
     include_source: bool,
     interval_method: str = "pooled",
+    categories: Optional[dict] = None,
 ) -> pd.DataFrame:
-    _ensure_artifacts()
-    categories = load_categories()
-    model = load_model()
+    model = load_model(spec)
     X = _apply_unk_mapping(taxonomy_df, categories)
     # The model was trained with native categorical splits on pd.Categorical
     # columns whose categories are exactly categories.json (UNK first, then
@@ -270,9 +270,9 @@ def _predict_xgboost(
         )
     dmat = xgb.DMatrix(X[feature_names], enable_categorical=True)
     log_preds = model.predict(dmat)
-    residuals = load_calibration() if level is not None else None
+    residuals = load_calibration(spec) if level is not None else None
     by_rank = (
-        load_calibration_by_rank()
+        load_calibration_by_rank(spec)
         if (level is not None and interval_method == "stratified")
         else None
     )
@@ -286,6 +286,7 @@ def _predict_xgboost(
         include_source,
         interval_method,
         by_rank,
+        categories,
     )
 
 
@@ -304,15 +305,16 @@ _EE_TOTAL_DIM = sum(_EE_DIMS.values())  # 84
 
 
 def _predict_entity_embeddings(
+    spec: ModelSpec,
     taxonomy_df: pd.DataFrame,
     level: Optional[float],
     include_taxonomy: bool,
     input_names: list[str],
     include_source: bool,
     interval_method: str = "pooled",
+    categories: Optional[dict] = None,
 ) -> pd.DataFrame:
-    _ensure_artifacts()
-    embeddings = load_embeddings()
+    embeddings = load_embeddings(spec)
 
     # Map each taxonomy value to its embedding; unseen values → UNK vector
     n = len(taxonomy_df)
@@ -349,10 +351,10 @@ def _predict_entity_embeddings(
         offset += dim
 
     dmat = xgb.DMatrix(X)
-    log_preds = load_model_ee().predict(dmat)
-    residuals = load_calibration_ee() if level is not None else None
+    log_preds = load_model(spec).predict(dmat)
+    residuals = load_calibration(spec) if level is not None else None
     by_rank = (
-        load_calibration_by_rank_ee()
+        load_calibration_by_rank(spec)
         if (level is not None and interval_method == "stratified")
         else None
     )
@@ -366,6 +368,7 @@ def _predict_entity_embeddings(
         include_source,
         interval_method,
         by_rank,
+        categories,
     )
 
 
@@ -390,6 +393,7 @@ def predict_mass(
     fuzzy_match_name: bool = False,
     include_source: bool = False,
     lookup: bool = True,
+    method_version=None,
 ) -> pd.DataFrame:
     """Predict body mass for one or more taxa.
 
@@ -446,6 +450,15 @@ def predict_mass(
         returned with their empirical mass and bypass the model.  If
         ``False``, every resolved taxon is passed through the model specified
         by ``method``.
+    method_version : str, int, or None
+        Which trained version of ``method`` to use.  ``None`` (default) reads
+        the package option set by ``tbm_options(method_version=...)`` or the
+        environment variable ``TAXONBODYMASSML_METHOD_VERSION``; the built-in
+        default is ``"newest"``.  ``"newest"`` always uses the highest version
+        in the bundled manifest (downloads on first use).  ``"cached"`` uses
+        the highest locally-cached version and never triggers a download unless
+        nothing at all is cached.  An integer or string like ``1``, ``"v2"``,
+        ``"2"`` selects an exact version.
 
     Returns
     -------
@@ -461,9 +474,12 @@ def predict_mass(
         Rows for unresolvable species, and rows whose resolved taxonomy shares
         no rank with the training data (a warning lists them), have ``NaN``
         for numeric columns.
+        The ``attrs`` dict always carries ``tbm_model`` with keys ``method``,
+        ``version``, and ``db_version``.
     """
     if method not in _METHODS:
         raise ValueError(f"Unknown method {method!r}. Available: {list(_METHODS)}")
+    spec = resolve_model(method, method_version)
     interval_method = _resolve_interval_method(interval_method)
     level = _resolve_ci_level(confidence_interval)
 
@@ -521,7 +537,13 @@ def predict_mass(
             cols += ["source", "source_taxon"]
         if matched_names is not None:
             cols += ["matched_name"]
-        return pd.DataFrame(columns=cols)
+        empty = pd.DataFrame(columns=cols)
+        empty.attrs["tbm_model"] = {
+            "method": spec.method,
+            "version": spec.version,
+            "db_version": spec.db_version,
+        }
+        return empty
 
     # ---- Rows with failed lookup (all None) get NaN predictions ----------
     resolved_mask = taxonomy_df["species_resolved"].notna()
@@ -540,15 +562,12 @@ def predict_mass(
         sub = taxonomy_df[resolved_mask].reset_index(drop=True)
         sub_names = [input_names[i] for i in resolved_pos]
 
-        # Download/verify the artifacts before any loader runs: the dictionary
-        # lookup and the vocabulary check below read lookup.json and
-        # categories.json ahead of the model functions (which ensure again,
-        # cheaply).  Without this a fresh install failed with FileNotFoundError.
-        _ensure_artifacts()
+        # Ensure model files are cached before any loader reads them.
+        _ensure_model(spec)
 
         # ---- Dictionary lookup (optional): return empirical mass for known species ---
         if lookup:
-            lkp = load_lookup()
+            lkp = load_lookup(spec)
             hit_mask = sub["species_resolved"].isin(lkp)
             dict_indices = [i for i, h in enumerate(hit_mask) if h]
             model_indices = [i for i, h in enumerate(hit_mask) if not h]
@@ -589,7 +608,7 @@ def predict_mass(
             # Taxa whose kingdom..genus share no value with the training
             # vocabulary would be scored on all-UNK features: return NaN for
             # them (with a warning), as for unresolvable names.
-            categories = load_categories()
+            categories = load_categories(spec)
             src_ranks = [
                 _infer_source_rank(model_sub.iloc[i], categories) for i in range(len(model_sub))
             ]
@@ -648,12 +667,14 @@ def predict_mass(
                 keep_sub = model_sub.iloc[keep_pos].reset_index(drop=True)
                 keep_names = [model_names[i] for i in keep_pos]
                 good_df = _METHODS[method](
+                    spec,
                     keep_sub,
                     level,
                     include_taxonomy,
                     keep_names,
                     include_source,
                     interval_method,
+                    categories,
                 )
                 good_df["_orig_idx"] = [resolved_pos[model_indices[i]] for i in keep_pos]
                 result_rows.append(good_df)
@@ -687,4 +708,9 @@ def predict_mass(
     if matched_names is not None:
         out["matched_name"] = matched_names
 
+    out.attrs["tbm_model"] = {
+        "method": spec.method,
+        "version": spec.version,
+        "db_version": spec.db_version,
+    }
     return out

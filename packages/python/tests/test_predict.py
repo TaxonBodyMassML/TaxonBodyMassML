@@ -62,6 +62,62 @@ def test_predict_dataframe_missing_columns():
         tbm.predict_mass(pd.DataFrame({"kingdom": ["Animalia"]}))
 
 
+def test_resolve_model_newest():
+    from taxonbodymassml._model import resolve_model
+
+    spec = resolve_model("XGBoost", "newest")
+    assert spec.method == "XGBoost"
+    assert isinstance(spec.version, int)
+    assert spec.version >= 1
+
+
+def test_resolve_model_version_forms():
+    from taxonbodymassml._model import resolve_model
+
+    spec_int = resolve_model("XGBoost", 1)
+    spec_str = resolve_model("XGBoost", "1")
+    spec_vstr = resolve_model("XGBoost", "v1")
+    assert spec_int.version == spec_str.version == spec_vstr.version == 1
+
+
+def test_resolve_model_invalid_version():
+    from taxonbodymassml._model import resolve_model
+
+    with pytest.raises(ValueError, match="not in the bundled manifest"):
+        resolve_model("XGBoost", 999)
+
+
+def test_resolve_model_invalid_method_version_string():
+    from taxonbodymassml._model import resolve_model
+
+    with pytest.raises(ValueError, match="Invalid method_version"):
+        resolve_model("XGBoost", "bad_value")
+
+
+def test_list_models_returns_dataframe():
+    import taxonbodymassml as tbm
+
+    df = tbm.list_models()
+    assert set(["method", "version", "newest", "cached", "r2", "mae"]).issubset(df.columns)
+    assert len(df) >= 2  # at least XGBoost v1 and EE v1
+    assert set(df["method"].unique()) >= {"XGBoost", "EntityEmbeddings"}
+
+
+def test_tbm_options_method_version():
+    from taxonbodymassml._lookup import tbm_options
+
+    orig = tbm_options()["method_version"]
+    try:
+        tbm_options(method_version="cached")
+        assert tbm_options()["method_version"] == "cached"
+        tbm_options(method_version=1)
+        assert tbm_options()["method_version"] == 1
+        with pytest.raises(ValueError):
+            tbm_options(method_version="bad_value")
+    finally:
+        tbm_options(method_version=orig)
+
+
 # ---------------------------------------------------------------------------
 # Integration tests (require artifacts + network)
 # ---------------------------------------------------------------------------
@@ -73,6 +129,8 @@ def test_predict_single_species():
     assert isinstance(result, pd.DataFrame)
     assert "mass_g" in result.columns
     assert result["mass_g"].iloc[0] > 0
+    assert "tbm_model" in result.attrs
+    assert result.attrs["tbm_model"]["method"] == "EntityEmbeddings"
 
 
 @skip_without_artifacts
@@ -426,25 +484,53 @@ def test_unrepresented_rows_keep_their_position_in_mixed_input():
 # ---------------------------------------------------------------------------
 @skip_without_artifacts
 def test_first_call_on_empty_cache_downloads_before_lookup(tmp_path, monkeypatch):
+    """Fresh install: first predict_mass() call must fetch model artifacts before
+    reading lookup.json / categories.json.  Simulated with an empty cache directory
+    and a monkeypatched _fetch that copies from the real cache (no network)."""
     import shutil
 
     import taxonbodymassml as tbm
     from taxonbodymassml import _model
 
     real_cache = _model._CACHE_DIR
-    copied = []
+    fetched = []
 
-    def fake_download(filenames, version="latest", force=False, optional=False):
-        assert list(filenames) == _model._ARTIFACT_FILES  # provenance files are not needed
-        for name in filenames:
-            shutil.copy2(real_cache / name, tmp_path / name)
-            copied.append(name)
+    # _fetch(hub_path, dest) — hub_path is "models/<Method>/v<n>/<file>"
+    # Copy the corresponding file from the old flat layout in the real cache,
+    # replicating what hf_hub_download would do (it writes to local_dir/hub_path).
+    def fake_fetch(hub_path: str, dest):
+        name = hub_path.split("/")[-1]
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        # Flat-layout name mapping (old cache has model_ee.ubj etc.)
+        flat_name_map = {
+            "model.ubj": "model.ubj",
+            "calibration.json": "calibration.json",
+            "calibration_by_rank.json": "calibration_by_rank.json",
+            "categories.json": "categories.json",
+            "lookup.json": "lookup.json",
+            "embeddings.json": "embeddings.json",
+        }
+        method_part = hub_path.split("/")[1]  # "XGBoost" or "EntityEmbeddings"
+        if method_part == "EntityEmbeddings":
+            flat_name_map = {
+                "model.ubj": "model_ee.ubj",
+                "calibration.json": "calibration_ee.json",
+                "calibration_by_rank.json": "calibration_by_rank_ee.json",
+                "categories.json": "categories.json",
+                "lookup.json": "lookup.json",
+                "embeddings.json": "embeddings.json",
+            }
+        flat_name = flat_name_map.get(name, name)
+        src = real_cache / flat_name
+        if src.exists():
+            shutil.copy2(src, dest)
+        fetched.append(hub_path)
 
     monkeypatch.setattr(_model, "_CACHE_DIR", tmp_path)
-    monkeypatch.setattr(_model, "_ARTIFACTS_VERIFIED", False)
-    monkeypatch.setattr(_model, "_download_files", fake_download)
-    for attr in [a for a in vars(_model) if a.endswith("_CACHE") and a != "_CACHE_DIR"]:
-        monkeypatch.setattr(_model, attr, None)  # forget anything loaded by earlier tests
+    monkeypatch.setattr(_model, "_VERIFIED", set())
+    monkeypatch.setattr(_model, "_LOADED", {})
+    monkeypatch.setattr(_model, "_MANIFEST_CACHE", None)
+    monkeypatch.setattr(_model, "_fetch", fake_fetch)
 
     nucella = _frame(
         "Animalia",
@@ -458,19 +544,25 @@ def test_first_call_on_empty_cache_downloads_before_lookup(tmp_path, monkeypatch
     # lookup=True (default): the dictionary is read first
     result = tbm.predict_mass(nucella)
     assert result["mass_g"].iloc[0] == pytest.approx(0.7)
-    assert set(copied) == set(_model._ARTIFACT_FILES)
+    assert len(fetched) > 0  # something was downloaded
+
+    # Result must carry the model attrs
+    assert result.attrs["tbm_model"]["method"] == "EntityEmbeddings"
+    assert result.attrs["tbm_model"]["version"] == 1
 
     # lookup=False: the vocabulary check is the first reader (the CI min-deps path)
-    monkeypatch.setattr(_model, "_ARTIFACTS_VERIFIED", False)
-    for attr in [a for a in vars(_model) if a.endswith("_CACHE") and a != "_CACHE_DIR"]:
-        monkeypatch.setattr(_model, attr, None)
-    for name in _model._ARTIFACT_FILES:
-        (tmp_path / name).unlink()
-    copied.clear()
+    monkeypatch.setattr(_model, "_VERIFIED", set())
+    monkeypatch.setattr(_model, "_LOADED", {})
+    # Remove versioned files so they must be re-fetched
+    import shutil as _shutil
+
+    if (tmp_path / "models").exists():
+        _shutil.rmtree(tmp_path / "models")
+    fetched.clear()
     result = tbm.predict_mass(nucella, lookup=False, include_source=True)
     assert result["mass_g"].iloc[0] > 0 and result["source"].iloc[0] == "tbmML_genus"
     assert result["source_taxon"].iloc[0] is None
-    assert set(copied) == set(_model._ARTIFACT_FILES)
+    assert len(fetched) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -497,16 +589,39 @@ def test_matches_golden_predictions(method, key):
     import numpy as np
     import taxonbodymassml as tbm
 
-    cases = json.loads(_GOLDEN.read_text())["cases"]
-    if not all(key in c for c in cases):
-        pytest.skip(f"golden file has no {key}")
-    cols = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
-    df = pd.DataFrame(cases)[cols].rename(columns={"species": "species_resolved"})
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")  # expect_na cases warn by design
-        out = tbm.predict_mass(df, method=method, lookup=False)
-    got = np.log10(out["mass_g"].to_numpy())
-    expected = np.array([c[key] for c in cases])
-    expect_na = np.array([bool(c.get("expect_na", False)) for c in cases])
+    golden = json.loads(_GOLDEN.read_text())
+    schema = golden.get("schema_version", 1)
+
+    if schema == 1:
+        # Legacy schema: flat "cases" list with per-method keys
+        cases = golden["cases"]
+        if not all(key in c for c in cases):
+            pytest.skip(f"golden file has no {key}")
+        cols = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
+        df = pd.DataFrame(cases)[cols].rename(columns={"species": "species_resolved"})
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # expect_na cases warn by design
+            out = tbm.predict_mass(df, method=method, lookup=False)
+        got = np.log10(out["mass_g"].to_numpy())
+        expected = np.array([c[key] for c in cases])
+        expect_na = np.array([bool(c.get("expect_na", False)) for c in cases])
+    else:
+        # Schema v2: nested by method and version
+        method_key = "XGBoost" if method == "XGBoost" else "EntityEmbeddings"
+        versions = golden.get("models", {}).get(method_key, {})
+        if not versions:
+            pytest.skip(f"golden file has no {method_key} entries")
+        # Use newest version
+        v_key = sorted(versions.keys())[-1]
+        cases = versions[v_key]["cases"]
+        cols = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
+        df = pd.DataFrame(cases)[cols].rename(columns={"species": "species_resolved"})
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            out = tbm.predict_mass(df, method=method, lookup=False)
+        got = np.log10(out["mass_g"].to_numpy())
+        expected = np.array([c["log10_mass_g"] for c in cases])
+        expect_na = np.array([bool(c.get("expect_na", False)) for c in cases])
+
     assert np.all(np.isnan(got[expect_na]))
     assert np.max(np.abs(got[~expect_na] - expected[~expect_na])) < 1e-5

@@ -201,10 +201,14 @@ def offline_provenance(monkeypatch):
     from taxonbodymassml import _citations
 
     monkeypatch.setattr(
-        _citations, "_primary_bib_path", lambda: _FIXTURES / "PrimaryCitations_BodyMass.bib"
+        _citations,
+        "_primary_bib_path",
+        lambda db_version=None: _FIXTURES / "PrimaryCitations_BodyMass.bib",
     )
     monkeypatch.setattr(
-        _citations, "_provenance_path", lambda: _FIXTURES / "provenance_subset.csv.gz"
+        _citations,
+        "_provenance_path",
+        lambda db_version=None: _FIXTURES / "provenance_subset.csv.gz",
     )
     return _citations
 
