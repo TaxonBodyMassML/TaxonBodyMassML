@@ -243,8 +243,12 @@ test_that("create_bib(level = 'primary') on the first accepted provenance row wr
   TaxonBodyMassML::create_bib(x, file = f, level = "primary")
   txt <- readLines(f, encoding = "UTF-8")
   expect_match(txt[1], "primary-reference citation\\(s\\) for 1 taxa$")
-  expect_true(row$primary_bibcite %in% bib_keys(f))
-  expect_false(row$source_bibcite %in% bib_keys(f))  # the compilation is not cited here
+  keys_found <- bib_keys(f)
+  expect_true(row$primary_bibcite %in% keys_found,
+              info = paste0("primary_bibcite=", row$primary_bibcite,
+                            "; keys_found=[", paste(keys_found, collapse="|"), "]",
+                            "; at_lines=[", paste(txt[startsWith(txt, "@")], collapse="|"), "]"))
+  expect_false(row$source_bibcite %in% keys_found)  # the compilation is not cited here
 })
 
 test_that("create_bib(level = 'primary') on the first provenance row (unresolved) warns, writes nothing", {
