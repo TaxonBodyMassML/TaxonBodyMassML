@@ -154,7 +154,9 @@ local_offline_provenance <- function(env = parent.frame()) {
 
 bib_keys <- function(path) {
   txt <- readLines(path, encoding = "UTF-8", warn = FALSE)
-  sub("^@[A-Za-z]+\\{([^,]+),.*$", "\\1", grep("^@[A-Za-z]+\\{", txt, value = TRUE))
+  sub("^@[A-Za-z]+\\{([^,]+),.*$", "\\1",
+      grep("^@[A-Za-z]+\\{", txt, value = TRUE, perl = TRUE),
+      perl = TRUE)
 }
 
 test_that("get_citations() returns the bundled bib, the primary bib, or both", {
