@@ -59,6 +59,19 @@ test_that(".extract_bib_entry() returns the entry verbatim and anchors on the ex
   expect_null(ext(mini_bib, "Nobody:9999aa"))
 })
 
+test_that(".extract_bib_entry() finds entries beyond the first million characters", {
+  # Before R 4.5 substring()'s default `last` was 1e6: the primary bibliography
+  # (~4 MB) lost every entry past that point (TaxonBodyMassML PR #35).
+  filler <- strrep("x", 1200000L)
+  big <- paste0("@misc{Filler:0000aa,\n\tnote = {", filler, "}}\n\n", mini_bib)
+  e <- TaxonBodyMassML:::.extract_bib_entry(big, "Smith-Jones:2020aa")
+  expect_match(e, "^@article\\{Smith-Jones:2020aa,")
+  expect_match(e, "\\{2020\\}\\}$")
+  e2 <- TaxonBodyMassML:::.extract_bib_entry(big, "Smith-Jones:2020ab")
+  expect_match(e2, "^@book\\{Smith-Jones:2020ab,")
+  expect_match(e2, "\\{2021\\}\\}$")
+})
+
 test_that(".read_citeids() maps CiteID to Bibcite and drops NA rows", {
   map <- TaxonBodyMassML:::.read_citeids()
   expect_type(map, "character")
@@ -154,6 +167,14 @@ local_offline_provenance <- function(env = parent.frame()) {
   )
 }
 
+# TRUE when `entry` (the result of .extract_bib_entry()) is the entry for `key`:
+# non-NULL, non-empty and starting with '@type{key,'.
+entry_starts_with_key <- function(entry, key) {
+  if (is.null(entry) || !nzchar(entry) || !startsWith(entry, "@")) return(FALSE)
+  first <- sub("\n.*$", "", entry)                 # '@type{key,'
+  identical(sub("^@[A-Za-z]+\\{", "", first), paste0(key, ","))
+}
+
 bib_keys <- function(path) {
   lines    <- readLines(path, encoding = "UTF-8", warn = FALSE)
   at_lines <- lines[startsWith(lines, "@")]
@@ -211,7 +232,7 @@ test_that("the primary CiteIDs of the CiteID map are in the primary bibliography
   keys <- cite$Bibcite[cite$bib_file == "PrimaryCitations"]
   expect_gt(length(keys), 0L)
   missing <- keys[vapply(keys, function(k) {
-    is.null(TaxonBodyMassML:::.extract_bib_entry(prim, k))
+    !entry_starts_with_key(TaxonBodyMassML:::.extract_bib_entry(prim, k), k)
   }, logical(1))]
   expect_length(missing, 0L)
 })
@@ -228,8 +249,8 @@ test_that("every accepted primary_bibcite has an entry in one of the two bibs", 
   prim <- paste(readLines(TaxonBodyMassML::get_citations("primary"), encoding = "UTF-8",
                           warn = FALSE), collapse = "\n")
   missing <- keys[vapply(keys, function(k) {
-    is.null(TaxonBodyMassML:::.extract_bib_entry(prim, k)) &&
-      is.null(TaxonBodyMassML:::.extract_bib_entry(src, k))
+    !entry_starts_with_key(TaxonBodyMassML:::.extract_bib_entry(prim, k), k) &&
+      !entry_starts_with_key(TaxonBodyMassML:::.extract_bib_entry(src, k), k)
   }, logical(1))]
   expect_length(missing, 0L)
 })
