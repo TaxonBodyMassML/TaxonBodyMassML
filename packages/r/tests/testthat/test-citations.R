@@ -153,10 +153,12 @@ local_offline_provenance <- function(env = parent.frame()) {
 }
 
 bib_keys <- function(path) {
-  txt <- readLines(path, encoding = "UTF-8", warn = FALSE)
-  sub("^@[A-Za-z]+\\{([^,]+),.*$", "\\1",
-      grep("^@[A-Za-z]+\\{", txt, value = TRUE, perl = TRUE),
-      perl = TRUE)
+  txt <- paste(readLines(path, encoding = "UTF-8", warn = FALSE), collapse = "\n")
+  m <- gregexpr("(?m)^@[A-Za-z]+\\{([^,\n]+),", txt, perl = TRUE)[[1L]]
+  if (identical(m, -1L)) return(character(0L))
+  starts <- attr(m, "capture.start")
+  lens   <- attr(m, "capture.length")
+  substring(txt, starts, starts + lens - 1L)
 }
 
 test_that("get_citations() returns the bundled bib, the primary bib, or both", {
