@@ -2,18 +2,22 @@
 % Please edit documentation in R/options.R
 \name{tbm_clear_cache}
 \alias{tbm_clear_cache}
-\title{Clear the TaxonBodyMassML taxonomy cache}
+\title{Clear the TaxonBodyMassML taxonomy and model cache}
 \usage{
-tbm_clear_cache(disk = TRUE, session = TRUE)
+tbm_clear_cache(disk = TRUE, session = TRUE, models = FALSE)
 }
 \arguments{
-\item{disk}{Logical. Remove the on-disk cache directory. Default \code{TRUE}.}
+\item{disk}{Logical. Remove the on-disk taxonomy cache directory. Default \code{TRUE}.}
 
 \item{session}{Logical. Clear the in-memory session cache. Default \code{TRUE}.}
+
+\item{models}{Logical. If \code{TRUE}, remove legacy flat-root model files (left
+by package versions before 0.14.0) via \code{download_model(prune = TRUE)}.
+Default \code{FALSE}.}
 }
 \value{
 Invisible \code{NULL}.
 }
 \description{
-Clear the TaxonBodyMassML taxonomy cache
+Clear the TaxonBodyMassML taxonomy and model cache
 }

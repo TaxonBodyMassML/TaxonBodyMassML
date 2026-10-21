@@ -4,6 +4,6 @@
 \alias{model}
 \title{Model artifact management}
 \description{
-Downloads, verifies, and loads the XGBoost model artifacts from
-Hugging Face Hub. Artifacts are cached in the user's data directory.
+Downloads, verifies, and loads model artifacts from Hugging Face Hub.
+Artifacts are cached in the user's data directory.
 }

@@ -4,7 +4,7 @@
 \alias{get_citations}
 \title{Return path(s) to the body-mass bibliographies}
 \usage{
-get_citations(level = c("source", "primary", "all"))
+get_citations(level = c("source", "primary", "all"), db_version = NULL)
 }
 \arguments{
 \item{level}{One of \code{"source"} (default), \code{"primary"} or \code{"all"}.}

@@ -65,7 +65,6 @@
 
   if (!is.null(level) && !is.null(residuals)) {
     if (identical(interval_method, "stratified") && !is.null(by_rank_residuals)) {
-      if (is.null(cats)) cats <- .load_categories()
       source_rnks <- .infer_source_rank(taxonomy_df, cats)
       rank_keys   <- sub("^tbmML_", "", source_rnks)
       q_vec <- vapply(rank_keys, function(r) {
@@ -97,7 +96,6 @@
   }
 
   if (include_source) {
-    if (is.null(cats)) cats <- .load_categories()
     result$source <- .infer_source_rank(taxonomy_df, cats)
     result$source_taxon <- NA_character_  # model rows have no dictionary key
   }
@@ -159,12 +157,12 @@
 # XGBoost inference
 # ---------------------------------------------------------------------------
 
-.predict_xgboost <- function(taxonomy_df, level, include_taxonomy,
+.predict_xgboost <- function(spec, taxonomy_df, level, include_taxonomy,
                               input_names, include_source,
                               interval_method = "pooled") {
-  cats  <- .load_categories()
+  cats  <- .load_categories(spec)
   X     <- .apply_unk_mapping(taxonomy_df, cats)
-  model <- .load_model()
+  model <- .load_model(spec)
   # The model was trained with native categorical splits on factors whose
   # levels are exactly categories.json (UNK first, then sorted), so the 0-based
   # factor codes equal the training codes.  Column order comes from the model
@@ -179,9 +177,9 @@
     )
   dmat <- xgboost::xgb.DMatrix(data = X[, feature_names, drop = FALSE])
   log_preds <- stats::predict(model, dmat)
-  residuals <- if (!is.null(level)) .load_calibration() else NULL
+  residuals <- if (!is.null(level)) .load_calibration(spec) else NULL
   by_rank   <- if (!is.null(level) && identical(interval_method, "stratified"))
-                 .load_calibration_by_rank() else NULL
+                 .load_calibration_by_rank(spec) else NULL
   .assemble_output(log_preds, taxonomy_df, level, residuals,
                    input_names, include_taxonomy, include_source, cats,
                    interval_method, by_rank)
@@ -195,12 +193,12 @@
               family = 16L, genus = 32L)
 .EE_TOTAL_DIM <- sum(.EE_DIMS)  # 84L
 
-.predict_entity_embeddings <- function(taxonomy_df, level, include_taxonomy,
+.predict_entity_embeddings <- function(spec, taxonomy_df, level, include_taxonomy,
                                         input_names, include_source,
                                         interval_method = "pooled") {
-  embs     <- .load_embeddings()
-  model_ee <- .load_model_ee()
-  residuals <- if (!is.null(level)) .load_calibration_ee() else NULL
+  embs      <- .load_embeddings(spec)
+  model_ee  <- .load_model(spec)
+  residuals <- if (!is.null(level)) .load_calibration(spec) else NULL
 
   n     <- nrow(taxonomy_df)
   X_mat <- matrix(0.0, nrow = n, ncol = .EE_TOTAL_DIM)
@@ -230,7 +228,7 @@
   dmat      <- xgboost::xgb.DMatrix(data = X_mat)
   log_preds <- stats::predict(model_ee, dmat)
   by_rank   <- if (!is.null(level) && identical(interval_method, "stratified"))
-                 .load_calibration_by_rank_ee() else NULL
+                 .load_calibration_by_rank(spec) else NULL
   .assemble_output(log_preds, taxonomy_df, level, residuals,
                    input_names, include_taxonomy, include_source,
                    interval_method = interval_method,
@@ -302,6 +300,11 @@
 #'   dictionary are returned with their empirical mass and bypass the model. If
 #'   `FALSE`, every resolved taxon is passed through the model specified by
 #'   `method`. Default `TRUE`.
+#' @param method_version `NULL` (default, uses the package option which defaults
+#'   to `"newest"`), `"newest"`, `"cached"`, or a positive integer version
+#'   number (also accepted as `"v2"` or `"2"`). Controls which trained version
+#'   of the requested model is loaded. See `tbm_options()` to change the
+#'   session default.
 #'
 #' @return A `data.frame` with at minimum columns `taxon` and `mass_g`
 #'   (body mass in grams).
@@ -351,7 +354,8 @@ predict_mass <- function(taxon,
                     include_taxonomy = FALSE,
                     fuzzy_match_name = FALSE,
                     include_source = FALSE,
-                    lookup = TRUE) {
+                    lookup = TRUE,
+                    method_version = NULL) {
 
   if (!method %in% names(.METHODS)) {
     stop(sprintf(
@@ -360,8 +364,9 @@ predict_mass <- function(taxon,
     ), call. = FALSE)
   }
 
+  spec            <- .resolve_model(method, method_version)
   interval_method <- .resolve_interval_method(interval_method)
-  level <- .resolve_ci_level(confidence_interval)
+  level           <- .resolve_ci_level(confidence_interval)
 
   # ---- Input validation (before any network call) -------------------------
   if (is.data.frame(taxon)) {
@@ -385,11 +390,19 @@ predict_mass <- function(taxon,
                                              "family", "genus", "species_resolved")
     if (include_source)      empty_cols <- c(empty_cols, "source", "source_taxon")
     if (fuzzy_match_name && !is.data.frame(taxon)) empty_cols <- c(empty_cols, "matched_name")
-    return(as.data.frame(setNames(lapply(empty_cols, function(.) character(0L)), empty_cols),
-                         stringsAsFactors = FALSE))
+    empty_out <- as.data.frame(
+      setNames(lapply(empty_cols, function(.) character(0L)), empty_cols),
+      stringsAsFactors = FALSE
+    )
+    attr(empty_out, "tbm_model") <- list(
+      method     = spec$method,
+      version    = spec$version,
+      db_version = spec$db_version
+    )
+    return(empty_out)
   }
 
-  .ensure_artifacts()
+  .ensure_model(spec)
 
   # ---- Input handling -----------------------------------------------------
   if (is.data.frame(taxon)) {
@@ -441,7 +454,7 @@ predict_mass <- function(taxon,
 
     # ---- Dictionary lookup (optional): return empirical mass for known species ---
     if (lookup) {
-      lkp      <- .load_lookup()
+      lkp      <- .load_lookup(spec)
       hit_mask <- sub$species_resolved %in% names(lkp)
       dict_pos  <- which(hit_mask)
       model_pos <- which(!hit_mask)
@@ -487,7 +500,8 @@ predict_mass <- function(taxon,
       # Taxa whose kingdom..genus share no value with the training vocabulary
       # would be scored on all-UNK features (a meaningless extrapolation):
       # return NA for them, with a warning, as for unresolvable names.
-      src_rank <- .infer_source_rank(model_sub, .load_categories())
+      cats_for_rank <- .load_categories(spec)
+      src_rank <- .infer_source_rank(model_sub, cats_for_rank)
       unrep    <- src_rank == "tbmML_UNK"
 
       # Taxa whose only rank in the training vocabulary is the kingdom are
@@ -540,7 +554,7 @@ predict_mass <- function(taxon,
       }
 
       if (any(!unrep)) {
-        good <- .METHODS[[method]](model_sub[!unrep, , drop = FALSE], level,
+        good <- .METHODS[[method]](spec, model_sub[!unrep, , drop = FALSE], level,
                                    include_taxonomy, model_names[!unrep],
                                    include_source, interval_method)
         good$..orig_idx.. <- resolved_pos[model_pos[!unrep]]
@@ -583,6 +597,11 @@ predict_mass <- function(taxon,
   if (!is.null(matched_names)) {
     out$matched_name <- matched_names
   }
+  attr(out, "tbm_model") <- list(
+    method     = spec$method,
+    version    = spec$version,
+    db_version = spec$db_version
+  )
   out
 }
 

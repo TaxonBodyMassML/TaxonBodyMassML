@@ -14,6 +14,9 @@ Valid option names:
 sessions. Default \code{FALSE}.
 \item \code{progress}: logical. Show a progress bar when looking up more than 10
 species (requires the \code{cli} package). Default \code{TRUE}.
+\item \code{method_version}: \code{"newest"} (default), \code{"cached"}, or a positive
+integer version number. Controls which model version \code{predict_mass()}
+uses when \code{method_version} is not supplied explicitly.
 }}
 }
 \value{
@@ -23,7 +26,8 @@ A named list of current option values (invisibly when setting).
 Get or set TaxonBodyMassML options
 }
 \examples{
-tbm_options()              # get all options
-tbm_options(progress = FALSE)  # disable progress bar
+tbm_options()                            # get all options
+tbm_options(progress = FALSE)            # disable progress bar
+tbm_options(method_version = "cached")   # keep locally cached version
 
 }

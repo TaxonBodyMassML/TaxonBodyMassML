@@ -160,8 +160,8 @@ local_offline_provenance <- function(env = parent.frame()) {
   prim_path <- testthat::test_path("fixtures", "PrimaryCitations_BodyMass.bib")
   prov_path <- testthat::test_path("fixtures", "provenance_subset.csv.gz")
   testthat::local_mocked_bindings(
-    .primary_bib_path      = function() prim_path,
-    .provenance_table_path = function() prov_path,
+    .primary_bib_path      = function(db_version = NULL) prim_path,
+    .provenance_table_path = function(db_version = NULL) prov_path,
     .package = "TaxonBodyMassML",
     .env = env
   )

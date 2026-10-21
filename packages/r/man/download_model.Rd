@@ -4,42 +4,42 @@
 \alias{download_model}
 \title{Download TaxonBodyMassML model artifacts from Hugging Face Hub}
 \usage{
-download_model(version = "latest", force = FALSE)
+download_model(
+  method = NULL,
+  method_version = NULL,
+  force = FALSE,
+  prune = FALSE
+)
 }
 \arguments{
-\item{version}{Character. HuggingFace revision to download. \code{"latest"}
-resolves to the revision matching the bundled checksums
-(\verb{r-v<version>}). Pass a specific tag or commit SHA to pin a version.}
+\item{method}{Character. Which method(s) to download: \code{"EntityEmbeddings"},
+\code{"XGBoost"}, or \code{"all"}. Default \code{NULL} (resolves to the default method
+\code{"EntityEmbeddings"}).}
+
+\item{method_version}{\code{NULL} (default, uses the package option which
+defaults to \code{"newest"}), \code{"newest"}, \code{"cached"}, or a positive integer
+version number.}
 
 \item{force}{Logical. If \code{TRUE}, re-download even if a valid cached copy
-already exists. Default \code{FALSE}.}
+exists. Default \code{FALSE}.}
+
+\item{prune}{Logical. If \code{TRUE}, remove legacy flat-root cache files left
+by package versions before 0.14.0. Default \code{FALSE}.}
 }
 \value{
-Invisible \code{NULL}. Called for its side-effect of populating the
-cache directory.
+Invisible \code{NULL}. Called for its side-effect.
 }
 \description{
-Downloads all model artifacts (~0.4 GB in total) to the local user cache
-directory: the XGBoost model (\code{model.ubj}) with its pooled and
-rank-stratified calibration residuals (\code{calibration.json},
-\code{calibration_by_rank.json}), the category lists that define the model's
-factor levels (\code{categories.json}), the training-data species dictionary
-(\code{lookup.json}), the Entity Embeddings model (\code{embeddings.json},
-\code{model_ee.ubj}, \code{calibration_ee.json}, \code{calibration_by_rank_ee.json}), and
-the provenance artifacts used by \code{get_citations(level = "primary")} and
-\code{create_bib(level = "primary")}: the generated primary-source bibliography
-(\code{PrimaryCitations_BodyMass.bib}) and the species x source x reference
-provenance table (\code{TaxonBodyMass_Provenance.csv.gz}). Every file is
-verified against a SHA256 checksum bundled with the package. On subsequent
-calls the files are skipped unless \code{force = TRUE} or the checksum does not
-match. A provenance file that the requested revision does not carry (a
-revision published before the provenance artifacts existed) is reported
-with a warning; the model artifacts are always required.
+Downloads model artifacts for the requested method and version to the local
+user cache directory.  Every file is verified against a SHA256 checksum
+bundled with the package.  On subsequent calls files are skipped unless
+\code{force = TRUE} or the checksum does not match.
 }
 \examples{
 \dontrun{
-download_model()          # download once
-download_model(force = TRUE)  # force re-download
+download_model()                     # default method, newest version
+download_model("all")                # all methods
+download_model(force = TRUE)         # force re-download
 }
 
 }
