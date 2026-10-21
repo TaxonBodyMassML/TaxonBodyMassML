@@ -13,7 +13,8 @@ Run locally (after ``pip install -r requirements.txt`` and the package):
     gunicorn -w 1 -b 127.0.0.1:8000 'regressor:create_wsgi_app()'
 
 Environment:
-    TBM_METHOD   prediction method served: "EntityEmbeddings" (default) or "XGBoost"
+    TBM_METHOD          prediction method served: "EntityEmbeddings" (default) or "XGBoost"
+    TBM_METHOD_VERSION  model version: "newest" (default), "cached", or a positive integer
 
 Response schema (one object per taxonomy):
     taxonomy      the seven ranks after normalisation (unseen values -> "UNK")
@@ -25,6 +26,7 @@ Response schema (one object per taxonomy):
     source        data-source label for dictionary species, "tbmML_<rank>" for
                   model predictions, "tbmML_UNK" when nothing is represented
     model         "EntityEmbeddings" / "XGBoost" for model predictions, else null
+    model_version integer version of the model artifact used
     warning       present only when prediction is null
 """
 
@@ -43,8 +45,13 @@ from flask_cors import CORS
 # These helpers are private to the package.  The service pins the package
 # version (dockerfile ARG TBM_WHEEL), so relying on them is safe; they provide
 # the UNK-mapped taxonomy echo and the dictionary that the response schema needs.
-from taxonbodymassml._checksums import MODEL_ARTIFACT_VERSION
-from taxonbodymassml._model import _ensure_artifacts, load_categories, load_lookup
+from taxonbodymassml._model import (
+    _ensure_model,
+    _manifest,
+    load_categories,
+    load_lookup,
+    resolve_model,
+)
 
 TAXONOMY_COLS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
 # Model features: kingdom .. genus.  Species is not a feature; it is used for the
@@ -53,6 +60,7 @@ MODEL_FEATURES = ["kingdom", "phylum", "class", "order", "family", "genus"]
 UNK = "UNK"
 METHODS = ("EntityEmbeddings", "XGBoost")
 METHOD = os.environ.get("TBM_METHOD", "EntityEmbeddings")
+METHOD_VERSION = os.environ.get("TBM_METHOD_VERSION", "newest")
 INTERVAL_METHOD = "stratified"
 CONFIDENCE = 0.90
 UNREPRESENTED_WARNING = (
@@ -75,17 +83,22 @@ def _package_version() -> str:
 class ModelState:
     """Everything the request handlers need, prepared once at startup."""
 
-    def __init__(self, method: str = METHOD):
+    def __init__(self, method: str = METHOD, method_version: str = METHOD_VERSION):
         if method not in METHODS:
             raise ValueError(f"TBM_METHOD must be one of {METHODS}; got {method!r}")
         self.method = method
-        _ensure_artifacts()  # verifies the cached artifacts against the package checksums
-        self.categories = load_categories()  # {feature: [UNK, sorted training values...]}
+        self.method_version = method_version
+        self.spec = resolve_model(method, method_version)
+        _ensure_model(self.spec)
+        self.categories = load_categories(self.spec)  # {feature: [UNK, sorted training values...]}
         self.valid = {col: set(self.categories[col]) for col in MODEL_FEATURES}
         self.genus_vocab = self.valid["genus"] - {UNK}
-        self.lookup = load_lookup()  # species -> {mass_g, source}
+        self.lookup = load_lookup(self.spec)  # species -> {mass_g, source}
         self.package_version = _package_version()
-        self.artifact_version = MODEL_ARTIFACT_VERSION
+        mfest = _manifest()
+        self.artifact_version = f"artifacts-{mfest['release']}"
+        self.model_version = self.spec.version
+        self.db_version = self.spec.db_version
 
 
 def _ascii_normalize(x):
@@ -156,6 +169,7 @@ def _predict_rows(records, state):
             interval_method=INTERVAL_METHOD,
             include_source=True,
             lookup=True,
+            method_version=state.method_version,
         )
 
     results = []
@@ -204,6 +218,7 @@ def _predict_rows(records, state):
                 "confidence": CONFIDENCE,
                 "source": str(source),
                 "model": state.method,
+                "model_version": state.model_version,
             }
         )
     return results
@@ -232,6 +247,8 @@ def create_app(state):
                 {
                     "status": "ok",
                     "method": state.method,
+                    "method_version": state.model_version,
+                    "db_version": state.db_version,
                     "package_version": state.package_version,
                     "model_artifact_version": state.artifact_version,
                 }
