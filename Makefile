@@ -7,7 +7,7 @@ TUNE_EE   = predictive_models/results/tuning_study_ee.json
 .PHONY: all fetch split \
         tune tune-xgboost tune-ee \
         train train-xgboost train-ee \
-        artifacts publish clean-tune \
+        artifacts sync-manifest publish clean-tune \
         results check-ms submission
 
 all: artifacts
@@ -43,11 +43,20 @@ train-ee: $(TUNE_EE)
 train: train-xgboost train-ee
 
 # ---- Artifact export ----------------------------------------------------------
+# Exports both methods at the next auto-incremented version and updates
+# artifacts/manifest.json.  Run sync-manifest afterwards to propagate.
 artifacts: train
-	python scripts/export_artifacts.py
+	python scripts/export_artifacts.py --method all --version auto
+
+# ---- Sync manifest into packages ---------------------------------------------
+# Copy artifacts/manifest.json into both packages.  Run after export_artifacts.py
+# (or after migrate_v1_manifest.py for the first-time migration).
+sync-manifest:
+	python scripts/sync_manifest.py
 
 # ---- Publish to HuggingFace (upload + versioned tag) -------------------------
-publish: artifacts
+# Requires explicit owner approval; uploads only new folders + manifest.
+publish: sync-manifest
 	python scripts/publish_artifacts.py
 
 # ---- Manuscript results (after `make artifacts` and check_parity.py --sync-cache) ----

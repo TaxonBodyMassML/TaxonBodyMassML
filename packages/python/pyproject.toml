@@ -46,7 +46,7 @@ where = ["."]
 include = ["taxonbodymassml*"]
 
 [tool.setuptools.package-data]
-taxonbodymassml = ["data/*.bib", "data/*.csv"]
+taxonbodymassml = ["data/*.bib", "data/*.csv", "data/*.json"]
 
 [tool.black]
 line-length = 100
