@@ -21,6 +21,10 @@ is overwritten.}
 
 \item{level}{One of \code{"source"} (default), \code{"primary"} or \code{"all"}; see
 Details.}
+
+\item{db_version}{Character or \code{NULL}. Passed to the provenance-artifact
+loader; \code{NULL} (default) resolves first from \code{attr(x, "tbm_model")} and
+then from the newest default model.}
 }
 \value{
 Invisibly, the normalised path to the written file.

@@ -8,6 +8,10 @@ get_citations(level = c("source", "primary", "all"), db_version = NULL)
 }
 \arguments{
 \item{level}{One of \code{"source"} (default), \code{"primary"} or \code{"all"}.}
+
+\item{db_version}{Character or \code{NULL}. The TaxonBodyMass_DB version whose
+provenance artifacts to use (e.g. \code{"v7.0.0"}). \code{NULL} (default) resolves
+to the \code{db_version} of the newest default model.}
 }
 \value{
 Character. Absolute path to the requested bibliography; for
