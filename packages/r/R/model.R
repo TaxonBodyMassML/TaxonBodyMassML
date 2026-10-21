@@ -17,7 +17,7 @@ NULL
 # Only advances when make publish is run with new artifacts. Intentionally
 # independent of the package version so code-only releases work without a
 # new HuggingFace upload. Updated automatically by scripts/publish_artifacts.py.
-.MODEL_ARTIFACT_VERSION <- "0.13.0"
+.MODEL_ARTIFACT_VERSION <- "0.14.0"
 
 .CHECKSUMS <- list(
   # XGBoost (original method)

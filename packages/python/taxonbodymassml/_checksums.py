@@ -8,7 +8,7 @@ HF_REPO_ID = "marknovak/TaxonBodyMassML"
 
 # HuggingFace revision that hosts the current model artifacts (py-v<version>).
 # Only advances when make publish is run with new artifacts.
-MODEL_ARTIFACT_VERSION = "0.13.0"
+MODEL_ARTIFACT_VERSION = "0.14.0"
 
 # Model artifacts: required by predict_mass() and downloaded on first use.
 CHECKSUMS = {
