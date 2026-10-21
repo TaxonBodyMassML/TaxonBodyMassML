@@ -392,8 +392,11 @@ create_bib <- function(x, file = "TaxonBodyMass_sources.bib",
   esc   <- gsub("([^A-Za-z0-9_])", "\\\\\\1", key, perl = TRUE)
   start <- regexpr(paste0("(?m)^@[A-Za-z]+\\{", esc, ","), bibtext, perl = TRUE)
   if (start < 0L) return(NULL)
-  rest <- substring(bibtext, start)
-  nxt  <- regexpr("(?m)^@", substring(rest, 2L), perl = TRUE)
+  # substr(), not substring(): before R 4.5 substring()'s default `last` was
+  # 1e6, which silently truncated entries beyond the first million characters
+  # of the (4 MB) primary bibliography to "".
+  rest <- substr(bibtext, start, nchar(bibtext))
+  nxt  <- regexpr("(?m)^@", substr(rest, 2L, nchar(rest)), perl = TRUE)
   entry <- if (nxt < 0L) rest else substr(rest, 1L, nxt)
   trimws(entry, which = "right")
 }

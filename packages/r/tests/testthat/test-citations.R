@@ -59,6 +59,19 @@ test_that(".extract_bib_entry() returns the entry verbatim and anchors on the ex
   expect_null(ext(mini_bib, "Nobody:9999aa"))
 })
 
+test_that(".extract_bib_entry() finds entries beyond the first million characters", {
+  # Before R 4.5 substring()'s default `last` was 1e6: the primary bibliography
+  # (~4 MB) lost every entry past that point (TaxonBodyMassML PR #35).
+  filler <- strrep("x", 1200000L)
+  big <- paste0("@misc{Filler:0000aa,\n\tnote = {", filler, "}}\n\n", mini_bib)
+  e <- TaxonBodyMassML:::.extract_bib_entry(big, "Smith-Jones:2020aa")
+  expect_match(e, "^@article\\{Smith-Jones:2020aa,")
+  expect_match(e, "\\{2020\\}\\}$")
+  e2 <- TaxonBodyMassML:::.extract_bib_entry(big, "Smith-Jones:2020ab")
+  expect_match(e2, "^@book\\{Smith-Jones:2020ab,")
+  expect_match(e2, "\\{2021\\}\\}$")
+})
+
 test_that(".read_citeids() maps CiteID to Bibcite and drops NA rows", {
   map <- TaxonBodyMassML:::.read_citeids()
   expect_type(map, "character")
@@ -144,21 +157,34 @@ test_that("create_bib() errors on bad input", {
 accepted_status <- c("certain", "approved", "nodoi_approved")
 
 local_offline_provenance <- function(env = parent.frame()) {
+  prim_path <- testthat::test_path("fixtures", "PrimaryCitations_BodyMass.bib")
+  prov_path <- testthat::test_path("fixtures", "provenance_subset.csv.gz")
   testthat::local_mocked_bindings(
-    .primary_bib_path      = function() testthat::test_path("fixtures", "PrimaryCitations_BodyMass.bib"),
-    .provenance_table_path = function() testthat::test_path("fixtures", "provenance_subset.csv.gz"),
+    .primary_bib_path      = function() prim_path,
+    .provenance_table_path = function() prov_path,
     .package = "TaxonBodyMassML",
     .env = env
   )
 }
 
+# TRUE when `entry` (the result of .extract_bib_entry()) is the entry for `key`:
+# non-NULL, non-empty and starting with '@type{key,'.
+entry_starts_with_key <- function(entry, key) {
+  if (is.null(entry) || !nzchar(entry) || !startsWith(entry, "@")) return(FALSE)
+  first <- sub("\n.*$", "", entry)                 # '@type{key,'
+  identical(sub("^@[A-Za-z]+\\{", "", first), paste0(key, ","))
+}
+
 bib_keys <- function(path) {
-  txt <- paste(readLines(path, encoding = "UTF-8", warn = FALSE), collapse = "\n")
-  m <- gregexpr("(?m)^@[A-Za-z]+\\{([^,\n]+),", txt, perl = TRUE)[[1L]]
-  if (m[1L] < 0L) return(character(0L))
-  starts <- attr(m, "capture.start")
-  lens   <- attr(m, "capture.length")
-  substring(txt, starts, starts + lens - 1L)
+  lines    <- readLines(path, encoding = "UTF-8", warn = FALSE)
+  at_lines <- lines[startsWith(lines, "@")]
+  if (!length(at_lines)) return(character(0L))
+  m      <- regexpr("^@[A-Za-z]+[{]([^,]+),", at_lines, perl = TRUE)
+  hit    <- which(m > 0L)
+  if (!length(hit)) return(character(0L))
+  starts <- attr(m, "capture.start")[hit, , drop = TRUE]
+  lens   <- attr(m, "capture.length")[hit, , drop = TRUE]
+  substring(at_lines[hit], starts, starts + lens - 1L)
 }
 
 test_that("get_citations() returns the bundled bib, the primary bib, or both", {
@@ -206,7 +232,7 @@ test_that("the primary CiteIDs of the CiteID map are in the primary bibliography
   keys <- cite$Bibcite[cite$bib_file == "PrimaryCitations"]
   expect_gt(length(keys), 0L)
   missing <- keys[vapply(keys, function(k) {
-    is.null(TaxonBodyMassML:::.extract_bib_entry(prim, k))
+    !entry_starts_with_key(TaxonBodyMassML:::.extract_bib_entry(prim, k), k)
   }, logical(1))]
   expect_length(missing, 0L)
 })
@@ -223,8 +249,8 @@ test_that("every accepted primary_bibcite has an entry in one of the two bibs", 
   prim <- paste(readLines(TaxonBodyMassML::get_citations("primary"), encoding = "UTF-8",
                           warn = FALSE), collapse = "\n")
   missing <- keys[vapply(keys, function(k) {
-    is.null(TaxonBodyMassML:::.extract_bib_entry(prim, k)) &&
-      is.null(TaxonBodyMassML:::.extract_bib_entry(src, k))
+    !entry_starts_with_key(TaxonBodyMassML:::.extract_bib_entry(prim, k), k) &&
+      !entry_starts_with_key(TaxonBodyMassML:::.extract_bib_entry(src, k), k)
   }, logical(1))]
   expect_length(missing, 0L)
 })
@@ -240,8 +266,9 @@ test_that("create_bib(level = 'primary') on the first accepted provenance row wr
   TaxonBodyMassML::create_bib(x, file = f, level = "primary")
   txt <- readLines(f, encoding = "UTF-8")
   expect_match(txt[1], "primary-reference citation\\(s\\) for 1 taxa$")
-  expect_true(row$primary_bibcite %in% bib_keys(f))
-  expect_false(row$source_bibcite %in% bib_keys(f))  # the compilation is not cited here
+  keys_found <- bib_keys(f)
+  expect_true(row$primary_bibcite %in% keys_found)
+  expect_false(row$source_bibcite %in% keys_found)  # the compilation is not cited here
 })
 
 test_that("create_bib(level = 'primary') on the first provenance row (unresolved) warns, writes nothing", {
