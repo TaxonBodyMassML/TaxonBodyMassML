@@ -1,122 +1,122 @@
 {
-  "model_sha256": "8d4364a5f6451ccc457392faa80e761ede0c6ab7f58fdd34b49cca6df30f5e23",
+  "model_sha256": "d6bdf11be39edd9c660674dbf61e218cf08d057ff0c5b8d84e494b99a0a1a2de",
   "cases": [
     {
       "label": "test_row_0",
       "kingdom": "Animalia",
       "phylum": "Chordata",
-      "class": "Reptilia",
-      "order": "Squamata",
-      "family": "Varanidae",
-      "genus": "Varanus",
-      "species": "Varanus nuchalis",
-      "log10_mass_g": 3.7345516681671143,
+      "class": "Mammalia",
+      "order": "Rodentia",
+      "family": "Echimyidae",
+      "genus": "Dactylomys",
+      "species": "Dactylomys boliviensis",
+      "log10_mass_g": 2.649650812149048,
       "expect_na": false,
-      "log10_mass_g_ee": 3.710383653640747
+      "log10_mass_g_ee": 2.7004308700561523
     },
     {
       "label": "test_row_1",
       "kingdom": "Animalia",
       "phylum": "Chordata",
-      "class": "Mammalia",
-      "order": "Primates",
-      "family": "Cercopithecidae",
-      "genus": "Chlorocebus",
-      "species": "Chlorocebus aethiops",
-      "log10_mass_g": 3.329547166824341,
+      "class": "Aves",
+      "order": "Passeriformes",
+      "family": "Thraupidae",
+      "genus": "Asemospiza",
+      "species": "Asemospiza obscura",
+      "log10_mass_g": 1.3401339054107666,
       "expect_na": false,
-      "log10_mass_g_ee": 3.8933722972869873
+      "log10_mass_g_ee": 1.133734941482544
     },
     {
       "label": "test_row_2",
       "kingdom": "Animalia",
-      "phylum": "Chordata",
-      "class": "Reptilia",
-      "order": "Squamata",
-      "family": "Colubridae",
-      "genus": "Hypsiglena",
-      "species": "Hypsiglena affinis",
-      "log10_mass_g": 1.9145628213882446,
+      "phylum": "Arthropoda",
+      "class": "Insecta",
+      "order": "Diptera",
+      "family": "Dolichopodidae",
+      "genus": "Argyra",
+      "species": "Argyra vestita",
+      "log10_mass_g": -2.8883535861968994,
       "expect_na": false,
-      "log10_mass_g_ee": 1.884655475616455
+      "log10_mass_g_ee": -2.8218491077423096
     },
     {
       "label": "test_row_3",
       "kingdom": "Animalia",
       "phylum": "Chordata",
-      "class": "Aves",
-      "order": "Pelecaniformes",
-      "family": "Ardeidae",
-      "genus": "Ardea",
-      "species": "Ardea cocoi",
-      "log10_mass_g": 0.5595190525054932,
+      "class": "Actinopterygii",
+      "order": "Cypriniformes",
+      "family": "Cobitidae",
+      "genus": "Leptobotia",
+      "species": "Leptobotia punctata",
+      "log10_mass_g": 1.953461766242981,
       "expect_na": false,
-      "log10_mass_g_ee": 2.4212207794189453
+      "log10_mass_g_ee": 1.9191704988479614
     },
     {
       "label": "test_row_4",
       "kingdom": "Animalia",
       "phylum": "Chordata",
       "class": "Mammalia",
-      "order": "Chiroptera",
-      "family": "Emballonuridae",
-      "genus": "Saccolaimus",
-      "species": "Saccolaimus saccolaimus",
-      "log10_mass_g": 0.7326449155807495,
+      "order": "Primates",
+      "family": "Cercopithecidae",
+      "genus": "Presbytis",
+      "species": "Presbytis chrysomelas",
+      "log10_mass_g": 3.7941157817840576,
       "expect_na": false,
-      "log10_mass_g_ee": 1.0558665990829468
+      "log10_mass_g_ee": 3.796471118927002
     },
     {
       "label": "genus_level",
       "kingdom": "Animalia",
       "phylum": "Chordata",
-      "class": "Reptilia",
-      "order": "Squamata",
-      "family": "Varanidae",
-      "genus": "Varanus",
+      "class": "Mammalia",
+      "order": "Rodentia",
+      "family": "Echimyidae",
+      "genus": "Dactylomys",
       "species": "UNK",
-      "log10_mass_g": 3.7345516681671143,
+      "log10_mass_g": 2.649650812149048,
       "expect_na": false,
-      "log10_mass_g_ee": 3.710383653640747
+      "log10_mass_g_ee": 2.7004308700561523
     },
     {
       "label": "family_level",
       "kingdom": "Animalia",
       "phylum": "Chordata",
-      "class": "Reptilia",
-      "order": "Squamata",
-      "family": "Varanidae",
+      "class": "Mammalia",
+      "order": "Rodentia",
+      "family": "Echimyidae",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": 1.6169648170471191,
+      "log10_mass_g": 2.2459969520568848,
       "expect_na": false,
-      "log10_mass_g_ee": 2.50549054145813
+      "log10_mass_g_ee": 2.523797035217285
     },
     {
       "label": "order_level",
       "kingdom": "Animalia",
       "phylum": "Chordata",
-      "class": "Reptilia",
-      "order": "Squamata",
+      "class": "Mammalia",
+      "order": "Rodentia",
       "family": "UNK",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": 1.048128604888916,
+      "log10_mass_g": 1.9827840328216553,
       "expect_na": false,
-      "log10_mass_g_ee": 1.7825430631637573
+      "log10_mass_g_ee": 2.499265432357788
     },
     {
       "label": "class_level",
       "kingdom": "Animalia",
       "phylum": "Chordata",
-      "class": "Reptilia",
+      "class": "Mammalia",
       "order": "UNK",
       "family": "UNK",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": 0.4399261474609375,
+      "log10_mass_g": 1.3863131999969482,
       "expect_na": false,
-      "log10_mass_g_ee": 1.986844539642334
+      "log10_mass_g_ee": 2.8774523735046387
     },
     {
       "label": "phylum_level",
@@ -127,9 +127,9 @@
       "family": "UNK",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": 0.07551976293325424,
+      "log10_mass_g": 0.7340565323829651,
       "expect_na": false,
-      "log10_mass_g_ee": 2.116185426712036
+      "log10_mass_g_ee": 1.7513481378555298
     },
     {
       "label": "kingdom_level",
@@ -140,9 +140,9 @@
       "family": "UNK",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": -0.5639955401420593,
+      "log10_mass_g": -1.0685243606567383,
       "expect_na": false,
-      "log10_mass_g_ee": -0.6821520924568176
+      "log10_mass_g_ee": -4.098170280456543
     },
     {
       "label": "all_unk",
@@ -153,22 +153,22 @@
       "family": "UNK",
       "genus": "UNK",
       "species": "UNK",
-      "log10_mass_g": -1.058009147644043,
+      "log10_mass_g": -1.745546817779541,
       "expect_na": true,
-      "log10_mass_g_ee": -0.6972442865371704
+      "log10_mass_g_ee": -8.074299812316895
     },
     {
       "label": "unseen_species_known_genus",
       "kingdom": "Animalia",
       "phylum": "Chordata",
-      "class": "Reptilia",
-      "order": "Squamata",
-      "family": "Varanidae",
-      "genus": "Varanus",
+      "class": "Mammalia",
+      "order": "Rodentia",
+      "family": "Echimyidae",
+      "genus": "Dactylomys",
       "species": "Zzzz notaspecies",
-      "log10_mass_g": 3.7345516681671143,
+      "log10_mass_g": 2.649650812149048,
       "expect_na": false,
-      "log10_mass_g_ee": 3.710383653640747
+      "log10_mass_g_ee": 2.7004308700561523
     },
     {
       "label": "unseen_everything",
@@ -179,9 +179,9 @@
       "family": "Zzfamily",
       "genus": "Zzgenus",
       "species": "Zzspecies",
-      "log10_mass_g": -1.058009147644043,
+      "log10_mass_g": -1.745546817779541,
       "expect_na": true,
-      "log10_mass_g_ee": -0.6972442865371704
+      "log10_mass_g_ee": -8.074299812316895
     }
   ]
 }
