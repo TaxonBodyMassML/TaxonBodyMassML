@@ -48,20 +48,24 @@ jobs:
       - name: Validate categories.json checksum
         shell: Rscript {0}
         run: |
-          lines   <- readLines("packages/r/R/model.R")
-          v_line  <- grep("\\.MODEL_ARTIFACT_VERSION", lines, value = TRUE)[1]
-          artifact_version <- regmatches(v_line, regexpr("[0-9]+\\.[0-9]+\\.[0-9]+", v_line))
-          line    <- grep("categories\\.json", lines, value = TRUE)
-          expected <- regmatches(line, regexpr("[0-9a-f]{64}", line))
+          manifest  <- jsonlite::fromJSON("packages/r/inst/extdata/manifest.json",
+                                          simplifyVector = FALSE)
+          release   <- manifest[["release"]]
+          revision  <- paste0("artifacts-", release)
+          ee_vers   <- manifest[["models"]][["EntityEmbeddings"]]
+          newest_v  <- max(as.integer(sub("^v", "", names(ee_vers))))
+          spec      <- ee_vers[[paste0("v", newest_v)]]
+          expected  <- spec[["files"]][["categories.json"]][["sha256"]]
           url <- paste0(
             "https://huggingface.co/marknovak/TaxonBodyMassML",
-            "/resolve/r-v", artifact_version, "/categories.json"
+            "/resolve/", revision, "/", spec[["path"]], "/categories.json"
           )
           tmp <- tempfile(fileext = ".json")
           utils::download.file(url, tmp, quiet = TRUE, mode = "wb")
           actual <- as.character(openssl::sha256(file(tmp, "rb")))
           if (!(actual == expected)) stop("SHA256 mismatch: got ", actual)
-          cat("categories.json checksum OK (r-v", artifact_version, ")\n", sep = "")
+          cat("categories.json checksum OK (", revision, ", EntityEmbeddings v", newest_v,
+              ")\n", sep = "")
 
   min-xgboost:
     # The oldest supported xgboost (3.1.2.1, first 3.x release on CRAN) must

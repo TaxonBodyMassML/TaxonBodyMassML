@@ -8,6 +8,7 @@ services:
       - "8000"
     environment:
       TBM_METHOD: EntityEmbeddings
+      TBM_METHOD_VERSION: newest
     restart: unless-stopped
 
   cloudflared:

@@ -41,13 +41,14 @@ FUNGUS = {
 
 @pytest.fixture(scope="session")
 def client():
-    from taxonbodymassml._model import _CACHE_DIR
+    from taxonbodymassml._model import _CACHE_DIR, resolve_model
 
-    needed = ["model_ee.ubj", "embeddings.json", "categories.json", "lookup.json"]
-    if os.environ.get("TBM_ALLOW_DOWNLOAD") != "1" and not all(
-        (_CACHE_DIR / f).exists() for f in needed
-    ):
-        pytest.skip("model artifacts not in the package cache (set TBM_ALLOW_DOWNLOAD=1)")
+    if os.environ.get("TBM_ALLOW_DOWNLOAD") != "1":
+        spec = resolve_model("EntityEmbeddings", "newest")
+        folder = _CACHE_DIR / spec.path
+        needed = list(spec.files.keys())
+        if not all((folder / f).exists() for f in needed):
+            pytest.skip("model artifacts not in the package cache (set TBM_ALLOW_DOWNLOAD=1)")
     import regressor
 
     return regressor.create_wsgi_app().test_client()
@@ -63,6 +64,8 @@ def test_health_reports_method_and_versions(client):
     body = resp.get_json()
     assert body["status"] == "ok"
     assert body["method"] == _state(client).method
+    assert isinstance(body["method_version"], int)
+    assert body["db_version"]
     assert body["package_version"] and body["model_artifact_version"]
 
 

@@ -48,19 +48,21 @@ jobs:
       - name: Validate categories.json checksum
         run: |
           python - <<'EOF'
-          import hashlib, sys, urllib.request
-          sys.path.insert(0, "taxonbodymassml")
-          from _checksums import CHECKSUMS, MODEL_ARTIFACT_VERSION
-          url = (
-              "https://huggingface.co/marknovak/TaxonBodyMassML"
-              f"/resolve/py-v{MODEL_ARTIFACT_VERSION}/categories.json"
-          )
+          import hashlib, json, urllib.request
+          manifest = json.loads(open("taxonbodymassml/data/manifest.json").read())
+          release = manifest["release"]
+          revision = f"artifacts-{release}"
+          ee_versions = manifest["models"]["EntityEmbeddings"]
+          newest_v = max(int(k.lstrip("v")) for k in ee_versions)
+          spec = ee_versions[f"v{newest_v}"]
+          expected = spec["files"]["categories.json"]["sha256"]
+          path = f"{spec['path']}/categories.json"
+          url = f"https://huggingface.co/marknovak/TaxonBodyMassML/resolve/{revision}/{path}"
           with urllib.request.urlopen(url) as r:
               data = r.read()
           actual = hashlib.sha256(data).hexdigest()
-          expected = CHECKSUMS["categories.json"]
           assert actual == expected, f"SHA256 mismatch: {actual}"
-          print(f"categories.json checksum OK (py-v{MODEL_ARTIFACT_VERSION})")
+          print(f"categories.json checksum OK ({revision}, EntityEmbeddings v{newest_v})")
           EOF
 
   min-deps:
