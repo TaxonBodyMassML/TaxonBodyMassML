@@ -1,9 +1,9 @@
 {
-  "r2": 0.4688012681643773,
-  "rmse": 1.0762767083552625,
-  "mae": 0.77506008450645,
-  "n_train": 390,
-  "n_test": 43,
+  "r2": 0.915035768836612,
+  "rmse": 0.6007627045180746,
+  "mae": 0.34766939378404443,
+  "n_train": 35898,
+  "n_test": 3989,
   "log10_space": true,
   "features": [
     "kingdom",
@@ -14,7 +14,7 @@
     "genus"
   ],
   "encoding": "native categorical (enable_categorical=True); vocab = UNK + sorted train values",
-  "q90": 1.3755742891395397,
+  "q90": 0.841675318613063,
   "hyperparameters": {
     "objective": "reg:absoluteerror",
     "enable_categorical": true,
@@ -27,12 +27,12 @@
     "gamma": 0.2004066218721704,
     "min_child_weight": 2
   },
-  "timestamp": "2026-10-20T13:45:02.418358+00:00",
+  "timestamp": "2026-10-21T01:34:38.254515+00:00",
   "filtered_gt0p1g": {
-    "r2": 0.22735455121686576,
-    "rmse": 1.0880177937936661,
-    "mae": 0.7863274195666541,
-    "n": 42,
+    "r2": 0.7568727622538455,
+    "rmse": 0.5369137517747972,
+    "mae": 0.31818195527686366,
+    "n": 3466,
     "filter": "mass_g > 0.1",
     "log10_space": true
   }
