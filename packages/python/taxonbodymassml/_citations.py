@@ -73,7 +73,9 @@ _PROVENANCE_COLS = [
 ]
 
 
-def get_citations(level: str = "source") -> Path | tuple[Path, Path]:
+def get_citations(
+    level: str = "source", db_version: str | None = None
+) -> "Path | tuple[Path, Path]":
     """Return the path(s) to the TaxonBodyMassML bibliographies.
 
     Parameters
@@ -88,6 +90,10 @@ def get_citations(level: str = "source") -> Path | tuple[Path, Path]:
         from Hugging Face on first use (like ``lookup.json``) and verified
         against a bundled checksum.  ``"all"``: both paths as a tuple
         ``(source, primary)``.
+    db_version : str or None
+        Which provenance snapshot to use for ``level="primary"`` or
+        ``level="all"``.  ``None`` uses the db_version of the default method's
+        newest version.
 
     Pass a path to ``bibtexparser.load()`` or open it in any reference manager
     (Zotero, BibDesk, JabRef, etc.).  See :func:`create_bib` to export only the
@@ -111,14 +117,15 @@ def get_citations(level: str = "source") -> Path | tuple[Path, Path]:
     if level == "source":
         return _DATA_DIR / "Citations_BodyMass.bib"
     if level == "primary":
-        return _primary_bib_path()
-    return (_DATA_DIR / "Citations_BodyMass.bib", _primary_bib_path())
+        return _primary_bib_path(db_version)
+    return (_DATA_DIR / "Citations_BodyMass.bib", _primary_bib_path(db_version))
 
 
 def create_bib(
     x: pd.DataFrame,
-    file: str | Path = "TaxonBodyMass_sources.bib",
+    file: "str | Path" = "TaxonBodyMass_sources.bib",
     level: str = "source",
+    db_version: "str | None" = None,
 ) -> Path:
     """Write a BibTeX file of the references behind a set of predictions.
 
@@ -202,16 +209,20 @@ def create_bib(
         )
     level = _check_level(level)
 
+    # Resolve db_version: explicit arg > attrs on the DataFrame > model default
+    if db_version is None:
+        db_version = getattr(x, "attrs", {}).get("tbm_model", {}).get("db_version")
+
     source_keys: list[str] = []
     primary_keys: list[str] = []
     if level in ("source", "all"):
         source_keys = _source_keys(x)
     if level in ("primary", "all"):
-        primary_keys = _primary_keys(x)
+        primary_keys = _primary_keys(x, db_version=db_version)
 
     source_bib = get_citations("source").read_text(encoding="utf-8")
     primary_bib = (
-        _primary_bib_path().read_text(encoding="utf-8") if level != "source" else ""
+        _primary_bib_path(db_version).read_text(encoding="utf-8") if level != "source" else ""
     )  # noqa: E501
 
     # Source entries come from the compilation bibliography; primary entries
@@ -341,13 +352,13 @@ def _dictionary_species(x: pd.DataFrame) -> list[str]:
     return out
 
 
-def _primary_keys(x: pd.DataFrame) -> list[str]:
+def _primary_keys(x: pd.DataFrame, db_version: "str | None" = None) -> list[str]:
     """BibTeX keys of the verified primary (and conversion) references of the
     dictionary species of ``x``, from the provenance table."""
     species = _dictionary_species(x)
     if not species:
         return []
-    prov = _read_provenance()
+    prov = _read_provenance(db_version=db_version)
     rows = prov[prov["species"].isin(species)]
 
     absent = sorted(set(species) - set(rows["species"]))
@@ -384,28 +395,28 @@ def _primary_keys(x: pd.DataFrame) -> list[str]:
     return cited["primary_bibcite"].tolist()
 
 
-def _primary_bib_path() -> Path:
+def _primary_bib_path(db_version: "str | None" = None) -> Path:
     """Path to the primary-source bibliography artifact (downloaded on first use)."""
     from ._model import provenance_path
 
-    return provenance_path(_PRIMARY_BIB_FILE)
+    return provenance_path(_PRIMARY_BIB_FILE, db_version=db_version)
 
 
-def _provenance_path() -> Path:
+def _provenance_path(db_version: "str | None" = None) -> Path:
     """Path to the provenance table artifact (downloaded on first use)."""
     from ._model import provenance_path
 
-    return provenance_path(_PROVENANCE_FILE)
+    return provenance_path(_PROVENANCE_FILE, db_version=db_version)
 
 
-def _read_provenance(path: Path | None = None) -> pd.DataFrame:
+def _read_provenance(path: "Path | None" = None, db_version: "str | None" = None) -> pd.DataFrame:
     """Read ``TaxonBodyMass_Provenance.csv.gz`` (TaxonBodyMass_DB pipeline step 7).
 
     One row per species x source label x reference.  All columns are read as
     strings (``NA`` -> missing) except ``hop`` and ``n_records`` (integers).
     """
     df = pd.read_csv(
-        path or _provenance_path(),
+        path or _provenance_path(db_version),
         dtype=str,
         keep_default_na=False,
         na_values=["NA"],

@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "release": 1,
+  "hub_repo": "marknovak/TaxonBodyMassML",
+  "models": {
+    "XGBoost": {
+      "v1": {
+        "path": "models/XGBoost/v1",
+        "db_version": "v6.0.0",
+        "trained": "2026-09-25T23:42:41Z",
+        "package_min": "0.14.0",
+        "files": {
+          "calibration.json": {
+            "sha256": "4903078978c6aa1432dfbddbf46fe67ef6839cca5baa6395f070bf4536c5e6bb",
+            "size": 0
+          },
+          "calibration_by_rank.json": {
+            "sha256": "ccd5d4f29606174038c1ac8d62d91395eb909257dfd1eb6478bb72926c6740e7",
+            "size": 0
+          },
+          "categories.json": {
+            "sha256": "6cd53c20b129ace0be8d3546487174caffc095242794d6f4452e3dd827e2708c",
+            "size": 0
+          },
+          "lookup.json": {
+            "sha256": "4a1c0b037556f499c4264bf8cd6d5005ef3bf1a96c4e859236afad7074970570",
+            "size": 0
+          },
+          "model.ubj": {
+            "sha256": "8d4364a5f6451ccc457392faa80e761ede0c6ab7f58fdd34b49cca6df30f5e23",
+            "size": 0
+          }
+        },
+        "metrics": {
+          "r2": 0.893633568175548,
+          "rmse": 0.6077654579375618,
+          "mae": 0.35347439929056507,
+          "n_train": 32916,
+          "n_test": 3657
+        },
+        "notes": "0.13.0 release artifacts (migrated to versioned layout)"
+      }
+    },
+    "EntityEmbeddings": {
+      "v1": {
+        "path": "models/EntityEmbeddings/v1",
+        "db_version": "v6.0.0",
+        "trained": "2026-09-26T22:53:07Z",
+        "package_min": "0.14.0",
+        "files": {
+          "calibration.json": {
+            "sha256": "2abbf251382e08e283f49aaf3a3681e03d554df82ecd576d36e264a831ff0bae",
+            "size": 0
+          },
+          "calibration_by_rank.json": {
+            "sha256": "43f21b33c208166afafd2a6c8d3d3ddc8b9dab1520231de6324d53ee9ca05e86",
+            "size": 0
+          },
+          "categories.json": {
+            "sha256": "6cd53c20b129ace0be8d3546487174caffc095242794d6f4452e3dd827e2708c",
+            "size": 0
+          },
+          "embeddings.json": {
+            "sha256": "b6c5bec4334653c247353054da1ad75592cf6bc6e146d07cb5a5f5cb575062cd",
+            "size": 0
+          },
+          "lookup.json": {
+            "sha256": "4a1c0b037556f499c4264bf8cd6d5005ef3bf1a96c4e859236afad7074970570",
+            "size": 0
+          },
+          "model.ubj": {
+            "sha256": "de95816c6184d2a7979136c700ce91bdaa41974fc6f8927bb294bcad9693452a",
+            "size": 0
+          }
+        },
+        "metrics": {
+          "r2": 0.9104013393686586,
+          "rmse": 0.557807664100326,
+          "mae": 0.32371610171958953,
+          "n_train": 32916,
+          "n_test": 3657
+        },
+        "notes": "0.13.0 release artifacts (migrated to versioned layout)"
+      }
+    }
+  },
+  "provenance": {}
+}

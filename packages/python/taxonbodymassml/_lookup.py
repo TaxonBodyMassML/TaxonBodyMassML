@@ -43,10 +43,26 @@ _DISK_CACHE_LOCK = threading.Lock()
 # ---------------------------------------------------------------------------
 # Options (set via tbm_options())
 # ---------------------------------------------------------------------------
+_VALID_METHOD_VERSIONS = {"newest", "cached"}
+
 _OPTIONS: dict = {
     "disk_cache": False,
+    "method_version": __import__("os").environ.get("TAXONBODYMASSML_METHOD_VERSION", "newest"),
     "progress": True,
 }
+
+
+def _validate_method_version(v) -> None:
+    import re
+
+    if isinstance(v, int) or (
+        isinstance(v, str) and (v in _VALID_METHOD_VERSIONS or re.fullmatch(r"v?\d+", v))
+    ):
+        return
+    raise ValueError(
+        f"Invalid method_version {v!r}. "
+        "Expected 'newest', 'cached', or an integer version (1, 2, 'v2', '2')."
+    )
 
 
 def tbm_options(**kwargs) -> dict:
@@ -58,6 +74,14 @@ def tbm_options(**kwargs) -> dict:
     ----------
     disk_cache : bool
         Persist resolved taxonomy to disk across Python sessions.
+    method_version : str or int
+        Default model version for :func:`predict_mass` and
+        :func:`download_model`.  ``"newest"`` (default) always uses the highest
+        version in the bundled manifest.  ``"cached"`` uses the highest
+        locally-cached version and never triggers a download unless nothing is
+        cached.  An integer or string like ``1``, ``"v2"`` selects an exact
+        version.  Also read from the environment variable
+        ``TAXONBODYMASSML_METHOD_VERSION`` at import time.
     progress : bool
         Show a tqdm progress bar when looking up more than 10 species.
 
@@ -71,12 +95,25 @@ def tbm_options(**kwargs) -> dict:
     for k, v in kwargs.items():
         if k not in _OPTIONS:
             raise ValueError(f"Unknown option: {k!r}")
+        if k == "method_version":
+            _validate_method_version(v)
         _OPTIONS[k] = v
     return dict(_OPTIONS)
 
 
-def tbm_clear_cache(disk: bool = True, session: bool = True) -> None:
-    """Clear the in-memory and/or on-disk taxonomy cache."""
+def tbm_clear_cache(disk: bool = True, session: bool = True, models: bool = False) -> None:
+    """Clear the in-memory and/or on-disk taxonomy cache.
+
+    Parameters
+    ----------
+    disk : bool
+        Clear the on-disk taxonomy lookup cache.
+    session : bool
+        Clear the in-memory taxonomy lookup cache for this session.
+    models : bool
+        Prune flat legacy model cache files left by package versions < 0.14.0.
+        Does not remove versioned model folders.
+    """
     global _SESSION_CACHE
     if session:
         _SESSION_CACHE = {}
@@ -84,6 +121,10 @@ def tbm_clear_cache(disk: bool = True, session: bool = True) -> None:
         with _DISK_CACHE_LOCK:
             with _open_disk_cache() as db:
                 db.clear()
+    if models:
+        from ._model import download_model
+
+        download_model(prune=True)
 
 
 # ---------------------------------------------------------------------------

@@ -19,7 +19,7 @@ except PackageNotFoundError:
 from ._citations import create_bib, get_citations
 from ._fuzzy import correct_species_names, fuzzy_lookup_taxonomy, fuzzy_predict_mass
 from ._lookup import lookup_taxonomy, tbm_clear_cache, tbm_options
-from ._model import download_model
+from ._model import download_model, list_models
 from ._predict import predict_mass
 
 __all__ = [
@@ -29,6 +29,7 @@ __all__ = [
     "fuzzy_lookup_taxonomy",
     "fuzzy_predict_mass",
     "download_model",
+    "list_models",
     "get_citations",
     "create_bib",
     "tbm_options",
