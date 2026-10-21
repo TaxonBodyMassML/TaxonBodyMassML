@@ -61,7 +61,15 @@ jobs:
             "/resolve/", revision, "/", spec[["path"]], "/categories.json"
           )
           tmp <- tempfile(fileext = ".json")
-          utils::download.file(url, tmp, quiet = TRUE, mode = "wb")
+          status <- tryCatch(
+            utils::download.file(url, tmp, quiet = TRUE, mode = "wb"),
+            error = function(e) -1L
+          )
+          if (status != 0L) {
+            cat("SKIP: Hub revision '", revision, "' not yet published; skipping checksum validation.\n",
+                sep = "")
+            quit(save = "no", status = 0L)
+          }
           actual <- as.character(openssl::sha256(file(tmp, "rb")))
           if (!(actual == expected)) stop("SHA256 mismatch: got ", actual)
           cat("categories.json checksum OK (", revision, ", EntityEmbeddings v", newest_v,

@@ -28,6 +28,9 @@
 #' can be read with `bibtex::read.bib()` (requires the `bibtex` package).
 #'
 #' @param level One of `"source"` (default), `"primary"` or `"all"`.
+#' @param db_version Character or `NULL`. The TaxonBodyMass_DB version whose
+#'   provenance artifacts to use (e.g. `"v7.0.0"`). `NULL` (default) resolves
+#'   to the `db_version` of the newest default model.
 #'
 #' @return Character. Absolute path to the requested bibliography; for
 #'   `level = "all"` a length-2 vector `c(source = ..., primary = ...)`.
@@ -104,6 +107,9 @@ get_citations <- function(level = c("source", "primary", "all"), db_version = NU
 #'   is overwritten.
 #' @param level One of `"source"` (default), `"primary"` or `"all"`; see
 #'   Details.
+#' @param db_version Character or `NULL`. Passed to the provenance-artifact
+#'   loader; `NULL` (default) resolves first from `attr(x, "tbm_model")` and
+#'   then from the newest default model.
 #'
 #' @return Invisibly, the normalised path to the written file.
 #'

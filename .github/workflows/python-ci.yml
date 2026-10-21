@@ -58,8 +58,14 @@ jobs:
           expected = spec["files"]["categories.json"]["sha256"]
           path = f"{spec['path']}/categories.json"
           url = f"https://huggingface.co/marknovak/TaxonBodyMassML/resolve/{revision}/{path}"
-          with urllib.request.urlopen(url) as r:
-              data = r.read()
+          try:
+              with urllib.request.urlopen(url) as r:
+                  data = r.read()
+          except urllib.error.HTTPError as e:
+              if e.code == 404:
+                  print(f"SKIP: Hub revision {revision!r} not yet published; skipping checksum validation.")
+                  raise SystemExit(0)
+              raise
           actual = hashlib.sha256(data).hexdigest()
           assert actual == expected, f"SHA256 mismatch: {actual}"
           print(f"categories.json checksum OK ({revision}, EntityEmbeddings v{newest_v})")
