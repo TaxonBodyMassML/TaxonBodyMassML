@@ -211,7 +211,11 @@ def main() -> None:
     print("  Upload complete.")
 
     # Delete legacy root files (by exact name to avoid wiping sub-folders)
-    files_on_hub = {f.rfilename for f in api.list_repo_tree(HF_REPO_ID, repo_type="model")}
+    files_on_hub = {
+        f.rfilename
+        for f in api.list_repo_tree(HF_REPO_ID, repo_type="model", recursive=True)
+        if hasattr(f, "rfilename")
+    }
     to_delete = [f for f in LEGACY_ROOT_FILES if f in files_on_hub]
     for pat in STALE_GLOB_PATTERNS:
         import fnmatch
