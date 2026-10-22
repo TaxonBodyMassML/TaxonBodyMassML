@@ -198,6 +198,7 @@
                                         interval_method = "pooled") {
   embs      <- .load_embeddings(spec)
   model_ee  <- .load_model(spec)
+  cats      <- .load_categories(spec)
   residuals <- if (!is.null(level)) .load_calibration(spec) else NULL
 
   n     <- nrow(taxonomy_df)
@@ -230,7 +231,7 @@
   by_rank   <- if (!is.null(level) && identical(interval_method, "stratified"))
                  .load_calibration_by_rank(spec) else NULL
   .assemble_output(log_preds, taxonomy_df, level, residuals,
-                   input_names, include_taxonomy, include_source,
+                   input_names, include_taxonomy, include_source, cats,
                    interval_method = interval_method,
                    by_rank_residuals = by_rank)
 }

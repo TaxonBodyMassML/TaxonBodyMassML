@@ -486,19 +486,37 @@ test_that("predict_mass() matches golden predictions for both methods", {
                       "predictive_models", "results", "golden_predictions.json")
   testthat::skip_if_not(file.exists(golden), "golden_predictions.json not in this checkout")
 
-  cases <- jsonlite::fromJSON(golden, simplifyDataFrame = TRUE)$cases
-  df <- cases[, c("kingdom", "phylum", "class", "order", "family", "genus", "species")]
-  names(df)[names(df) == "species"] <- "species_resolved"
-  expect_na <- if (is.null(cases$expect_na)) rep(FALSE, nrow(cases)) else
-    (!is.na(cases$expect_na) & cases$expect_na)
+  g     <- jsonlite::fromJSON(golden, simplifyDataFrame = TRUE)
+  schema <- if (is.null(g[["schema_version"]])) 1L else as.integer(g[["schema_version"]])
 
-  check <- function(method, expected) {
+  check_cases <- function(cases, method) {
+    cols <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
+    df   <- cases[, cols]
+    names(df)[names(df) == "species"] <- "species_resolved"
+    expect_na <- if (is.null(cases$expect_na)) rep(FALSE, nrow(cases)) else
+      (!is.na(cases$expect_na) & cases$expect_na)
+    expected <- cases$log10_mass_g
     out <- suppressWarnings(  # expect_na cases warn by design
       TaxonBodyMassML::predict_mass(df, method = method, lookup = FALSE))
     got <- log10(out$mass_g)
     expect_true(all(is.na(got[expect_na])))
     expect_lt(max(abs(got[!expect_na] - expected[!expect_na])), 1e-5)
   }
-  check("XGBoost", cases$log10_mass_g)
-  if (!is.null(cases$log10_mass_g_ee)) check("EntityEmbeddings", cases$log10_mass_g_ee)
+
+  if (schema == 1L) {
+    cases <- g$cases
+    check_cases(cases, "XGBoost")
+    if (!is.null(cases$log10_mass_g_ee)) {
+      cases_ee        <- cases
+      cases_ee$log10_mass_g <- cases_ee$log10_mass_g_ee
+      check_cases(cases_ee, "EntityEmbeddings")
+    }
+  } else {
+    for (method in c("XGBoost", "EntityEmbeddings")) {
+      versions <- g$models[[method]]
+      testthat::skip_if(is.null(versions), paste("golden file has no", method, "entries"))
+      v_key <- tail(sort(names(versions)), 1L)
+      check_cases(versions[[v_key]]$cases, method)
+    }
+  }
 })
