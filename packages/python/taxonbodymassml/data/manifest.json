@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release": 2,
+  "release": 3,
   "hub_repo": "marknovak/TaxonBodyMassML",
   "models": {
     "XGBoost": {
