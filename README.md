@@ -29,13 +29,26 @@ pip install "https://github.com/TaxonBodyMassML/TaxonBodyMassML/releases/latest/
 See the [Python package readme](packages/python/README.md) for the full API reference.
 
 ## Data Sources
-Training data sources are listed in [data/Citations_BodyMass.bib](data/Citations_BodyMass.bib), including the [FracFeed: Global database of the fraction of feeding predators](https://github.com/marknovak/FracFeed_DB), which motivated the compilation of the body mass data.
-Both packages bundle this bibliography (`get_citations()`) and, via `create_bib()`, can write a `.bib` file containing only the sources behind a given set of `predict_mass(..., include_source = TRUE)` results.
-Most sources are compilations that reproduce measurements published elsewhere. TaxonBodyMass_DB is attributing every record to the study that measured the animal ([TaxonBodyMass_DB#1](https://github.com/TaxonBodyMassML/TaxonBodyMass_DB/issues/1)); the verified primary references ship as model artifacts next to `lookup.json` ([data/PrimaryCitations_BodyMass.bib](data/PrimaryCitations_BodyMass.bib), [data/TaxonBodyMass_Provenance.csv.gz](data/TaxonBodyMass_Provenance.csv.gz)) and are returned by `get_citations(level = "primary")` and `create_bib(..., level = "primary")`. Coverage grows source by source; `create_bib()` reports the species whose primary references are not yet resolved, and the compilation remains the citation of record for them.
+
+The model was trained on [TaxonBodyMass_DB](https://github.com/TaxonBodyMassML/TaxonBodyMass_DB), a curated compilation of measured species body masses. Both packages bundle the full source bibliography and can generate a `.bib` file scoped to the sources behind your specific results:
+
+```r
+get_citations()                                    # full bibliography
+predict_mass(names, include_source = TRUE) |>
+  create_bib()                                     # sources for your results only
+```
+
+Each record is being traced back to the original measurement study; verified primary references are available alongside the compilation via `level = "primary"` in both functions. Where primary attribution is not yet resolved, `create_bib()` reports the affected species and falls back to the compilation citation.
+
+## Citation
+
+If you use this package or the pre-trained models, please cite:
+
+Pasquantonio GM, Prater H, Pendurti AC, Novak M (2026). TaxonBodyMassML: Taxonomy-informed prediction of body mass using gradient-boosted trees. *EcoEvoRxiv*. <https://doi.org/10.32942/X2BX01>
 
 ## Data licences
 
-The packages, the model weights and this repository are MIT-licensed ([LICENSE.md](LICENSE.md)). The training data, the species-to-mass lookup table (`lookup.json`) and the provenance artifacts (`PrimaryCitations_BodyMass.bib`, `TaxonBodyMass_Provenance.csv.gz`) aggregate values compiled by [TaxonBodyMass_DB](https://github.com/TaxonBodyMassML/TaxonBodyMass_DB), whose own outputs (the compiled tables, the two bibliographies and the provenance table) are published under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) (Creative Commons Attribution-NonCommercial 4.0 International; owner decision of 2026-10-06, replacing CC BY 4.0; earlier database releases keep the licence they carried). The data artifacts built from them, `lookup.json`, `TaxonBodyMass_Provenance.csv.gz`, `PrimaryCitations_BodyMass.bib`, `TaxonBodyMass_Citations.bib` and the training data, therefore carry the NonCommercial term: they may be shared and adapted with attribution for non-commercial purposes only, and a commercial use needs permission from the database owner. The code and the model weights are not affected and stay MIT. The sources behind the values keep their own terms, listed file by file in that repository's [`sources/LICENSES.md`](https://github.com/TaxonBodyMassML/TaxonBodyMass_DB/blob/main/sources/LICENSES.md) (TaxonBodyMass_DB issue #6). No raw source file ships with the packages or the artifacts: `scripts/fetch_source_data.py` copies only the compiled database, the citation map, the two bibliographies and the provenance table, and `lookup.json` holds one aggregated mass per species with the labels of the sources behind it. Most sources are CC0, CC BY or Ecological Archives data papers without copyright restrictions; several are published under terms that go beyond attribution, and values from them are in the lookup table and the training set: FishBase and SeaLifeBase (CC BY-NC 4.0; labels `fishbase`, `sealifebase`), Lane 2019 (CC BY-NC 4.0), Cai et al. 2025 and Hoehler et al. 2023 (CC BY-NC-ND 4.0), Animal Diversity Web through Quaardvark (CC BY-NC-SA 3.0; label `Quaardvark`), Pata & Hunt 2025 (CC BY-SA 4.0) and Hechinger et al. 2011 (non-commercial scientific use). The database treats individual body-mass values as facts and publishes the aggregated species means under CC BY-NC 4.0 as aggregated facts with attribution, which aligns the database with the non-commercial term of those sources; whether a downstream use is also bound by the share-alike (Pata & Hunt 2025) or no-derivatives (Cai et al. 2025, Hoehler et al. 2023) terms is for the user to decide. The `source` column of `predict_mass(..., include_source=True)` and the provenance artifact name the sources behind every dictionary value, so such values can be excluded; model predictions for species outside the dictionary are not traceable to a single source. The terms of a few sources are not yet stated on disk in the database and are listed there as "unknown; owner to check". None of this is legal advice.
+See [DATA_LICENSES.md](DATA_LICENSES.md).
 
 ---
 ---
