@@ -331,7 +331,7 @@ def render_model_card(manifest: dict[str, Any]) -> str:
     lines = [
         "---",
         "license: other",
-        'license_name: "MIT (model weights), CC BY-NC 4.0 (training data)"',
+        "license_name: mit-cc-by-nc-4.0",
         "license_link: https://github.com/TaxonBodyMassML/TaxonBodyMassML/blob/main/LICENSE",
         "---",
         "",
