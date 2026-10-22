@@ -283,7 +283,7 @@ test_that("predict_mass() preserves order with mixed dict/model/unresolved rows"
   testthat::skip_if_offline()
 
   sp <- c("Nucella ostrina",                    # dict hit
-          "Canis lupus",                         # model-inferred
+          "Canis lupaster",                      # model-inferred (genus known, species not in dict)
           "Xyzzy_definitely_not_a_species_12345") # unresolvable
   suppressWarnings(result <- TaxonBodyMassML::predict_mass(sp, include_source = TRUE))
   expect_equal(nrow(result), 3L)
