@@ -161,6 +161,9 @@ def sync_cache():
         for f in ARTIFACTS.glob("*"):
             if f.is_file() and f.name != "checksums.json":
                 shutil.copy2(f, target / f.name)
+            elif f.is_dir():
+                dest = target / f.name
+                shutil.copytree(f, dest, dirs_exist_ok=True)
         print(f"  synced artifacts → {target}")
 
 
@@ -174,23 +177,40 @@ def main():
     args = parser.parse_args()
 
     golden = json.loads(GOLDEN.read_text())
-    cases = golden["cases"]
-    n_na = sum(_expect_na(cases))
-    print(f"{len(cases)} golden cases from {GOLDEN.relative_to(REPO_ROOT)} ({n_na} expect NA)")
 
     if args.sync_cache:
         sync_cache()
 
-    by_method = {"XGBoost": [c["log10_mass_g"] for c in cases]}
-    if all("log10_mass_g_ee" in c for c in cases):
-        by_method["EntityEmbeddings"] = [c["log10_mass_g_ee"] for c in cases]
+    # schema_version 2: per-method, per-version cases
+    if golden.get("schema_version", 1) >= 2:
+        by_method: dict[str, tuple[list, list]] = {}  # method -> (cases, expected)
+        for method, versions in golden.get("models", {}).items():
+            last_ver = max(versions, key=lambda k: int(k[1:]))
+            cases = versions[last_ver]["cases"]
+            n_na = sum(_expect_na(cases))
+            print(
+                f"{len(cases)} golden cases ({method} {last_ver}) from "
+                f"{GOLDEN.relative_to(REPO_ROOT)} ({n_na} expect NA)"
+            )
+            by_method[method] = (cases, [c["log10_mass_g"] for c in cases])
+    else:
+        cases = golden["cases"]
+        n_na = sum(_expect_na(cases))
+        print(f"{len(cases)} golden cases from {GOLDEN.relative_to(REPO_ROOT)} ({n_na} expect NA)")
+        xgb_exp = [c["log10_mass_g"] for c in cases]
+        by_method = {"XGBoost": (cases, xgb_exp)}
+        if all("log10_mass_g_ee" in c for c in cases):
+            by_method["EntityEmbeddings"] = (cases, [c["log10_mass_g_ee"] for c in cases])
+
     results = []
-    for method, exp in by_method.items():
+    for method, (cases, exp) in by_method.items():
         results.append(check_python(cases, exp, method))
         if not args.no_r:
             results.append(check_r(cases, exp, method))
     if not args.no_service:
-        results.append(check_service(cases, by_method))
+        service_exp = {m: v[1] for m, v in by_method.items()}
+        service_cases = next(iter(by_method.values()))[0]
+        results.append(check_service(service_cases, service_exp))
     if all(results):
         print("PARITY OK")
     else:

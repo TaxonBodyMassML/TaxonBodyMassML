@@ -75,6 +75,42 @@
           "n_test": 3989
         },
         "notes": "0.14.0 retrain on DB v7.0.0 (35,898-row whitelist split)"
+      },
+      "v3": {
+        "path": "models/XGBoost/v3",
+        "db_version": "v8.0.0",
+        "trained": "2026-10-21T01:34:38.254515+00:00",
+        "package_min": "0.14.0",
+        "files": {
+          "calibration.json": {
+            "sha256": "db1910a0c494fbee79427be205a30b1369a0594598c57fcc853d71106a5fac1d",
+            "size": 148334
+          },
+          "calibration_by_rank.json": {
+            "sha256": "fdb373b3efa75a0b809370e551bf218e892768e333011c36552a02c92e277a47",
+            "size": 868545
+          },
+          "categories.json": {
+            "sha256": "39cf2745b3d96453770b536116d8bcb3cbca73fa95ac56b2a70da700a68ea90a",
+            "size": 240661
+          },
+          "lookup.json": {
+            "sha256": "0f375d6f6ab2d2c879103249e43cfc72dc5ab68c1143b72d843844f8bbf09497",
+            "size": 4159139
+          },
+          "model.ubj": {
+            "sha256": "c758865dce9521e2d0cc2ec0fa19805b8b6c85918925ef742a276c00a1112591",
+            "size": 291202664
+          }
+        },
+        "metrics": {
+          "r2": 0.915036,
+          "rmse": 0.600763,
+          "mae": 0.347669,
+          "n_train": 35898,
+          "n_test": 3989
+        },
+        "notes": "v8.0.0 DB: CiteID column in lookup.json"
       }
     },
     "EntityEmbeddings": {
@@ -157,6 +193,46 @@
           "n_test": 3989
         },
         "notes": "0.14.0 retrain on DB v7.0.0 (35,898-row whitelist split)"
+      },
+      "v3": {
+        "path": "models/EntityEmbeddings/v3",
+        "db_version": "v8.0.0",
+        "trained": "2026-10-21T01:44:18.877293+00:00",
+        "package_min": "0.14.0",
+        "files": {
+          "calibration.json": {
+            "sha256": "0a0e92c8ccef39fdfad07613dff5e39745ff307a3e4bcb707f85b5d93defb6ac",
+            "size": 148533
+          },
+          "calibration_by_rank.json": {
+            "sha256": "723be598d80bb62033f4b26e219006cc72ea8ab3af8d38b7810901381471d3d5",
+            "size": 865106
+          },
+          "categories.json": {
+            "sha256": "39cf2745b3d96453770b536116d8bcb3cbca73fa95ac56b2a70da700a68ea90a",
+            "size": 240661
+          },
+          "embeddings.json": {
+            "sha256": "a378cb233b103d950c4e91c0b408810ceb31a188372679d768dd7c71bbe5fa42",
+            "size": 7922912
+          },
+          "lookup.json": {
+            "sha256": "0f375d6f6ab2d2c879103249e43cfc72dc5ab68c1143b72d843844f8bbf09497",
+            "size": 4159139
+          },
+          "model.ubj": {
+            "sha256": "57f062da07887446d026ca357e2fcafcb0c2d3ab4c3bc34f9a1642f3f9e5acb7",
+            "size": 181151334
+          }
+        },
+        "metrics": {
+          "r2": 0.927348,
+          "rmse": 0.555531,
+          "mae": 0.324338,
+          "n_train": 35898,
+          "n_test": 3989
+        },
+        "notes": "v8.0.0 DB: CiteID column in lookup.json"
       }
     }
   },
