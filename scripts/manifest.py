@@ -329,6 +329,12 @@ def validate(manifest: dict[str, Any]) -> None:
 def render_model_card(manifest: dict[str, Any]) -> str:
     """Render a Markdown model card suitable for the Hugging Face README."""
     lines = [
+        "---",
+        "license: other",
+        'license_name: "MIT (model weights), CC BY-NC 4.0 (training data)"',
+        "license_link: https://github.com/TaxonBodyMassML/TaxonBodyMassML/blob/main/LICENSE",
+        "---",
+        "",
         "# TaxonBodyMassML — Pre-trained body-mass prediction models",
         "",
         "Pre-trained models for predicting the body mass of animal taxa from "
