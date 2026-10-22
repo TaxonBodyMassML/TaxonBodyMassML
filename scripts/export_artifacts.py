@@ -133,13 +133,16 @@ def _load_vocab_from_train() -> dict:
 
 def _load_lookup_from_csv() -> dict:
     """Build the species -> {mass_g, source} dictionary from data/TaxonBodyMass.csv."""
-    raw = pd.read_csv(RAW_CSV, usecols=["species", "mass_g", "CiteID"])
+    cols = pd.read_csv(RAW_CSV, nrows=0).columns.tolist()
+    source_col = "CiteID" if "CiteID" in cols else "source_mass"
+    raw = pd.read_csv(RAW_CSV, usecols=["species", "mass_g", source_col])
     lookup = {}
     for row in raw.itertuples(index=False):
         if row.species and str(row.species).strip():
+            val = getattr(row, source_col)
             lookup[str(row.species)] = {
                 "mass_g": float(row.mass_g),
-                "source": str(row.CiteID) if not pd.isna(row.CiteID) else "",
+                "source": str(val) if not pd.isna(val) else "",
             }
     return lookup
 
