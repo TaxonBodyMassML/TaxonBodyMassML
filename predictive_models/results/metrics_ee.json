@@ -1,8 +1,8 @@
 {
   "method": "EntityEmbeddings",
-  "r2": 0.9273481501700753,
-  "rmse": 0.5555309199836709,
-  "mae": 0.32433830301596583,
+  "r2": 0.9280524319292547,
+  "rmse": 0.5528317243927952,
+  "mae": 0.32377458353228755,
   "stage1_mae": 0.33384685466143155,
   "n_train": 35898,
   "n_test": 3989,
@@ -22,11 +22,11 @@
   "stage2_params": {
     "objective": "reg:absoluteerror",
     "random_state": 42,
-    "n_estimators": 1150,
-    "max_depth": 24,
-    "learning_rate": 0.01818931240858905,
-    "subsample": 0.6761406992727917,
-    "colsample_bytree": 0.5687938464989282,
+    "n_estimators": 1350,
+    "max_depth": 19,
+    "learning_rate": 0.01846771023679469,
+    "subsample": 0.8054077081614749,
+    "colsample_bytree": 0.9533746331097579,
     "min_child_weight": 1
   },
   "vocab_sizes": {
@@ -37,5 +37,5 @@
     "family": 2208,
     "genus": 10303
   },
-  "timestamp": "2026-10-21T01:44:18.877293+00:00"
+  "timestamp": "2026-11-03T04:26:30.179438+00:00"
 }
