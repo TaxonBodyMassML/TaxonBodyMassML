@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release": 3,
+  "release": 4,
   "hub_repo": "marknovak/TaxonBodyMassML",
   "models": {
     "XGBoost": {
@@ -111,6 +111,42 @@
           "n_test": 3989
         },
         "notes": "v8.0.0 DB: CiteID column in lookup.json"
+      },
+      "v4": {
+        "path": "models/XGBoost/v4",
+        "db_version": "v8.0.0",
+        "trained": "2026-11-03T04:16:55.216200+00:00",
+        "package_min": "0.15.0",
+        "files": {
+          "calibration.json": {
+            "sha256": "20558c5dbf0d7ee051edf9081ef460d54d36171248f663a4d9fc306ad370b26a",
+            "size": 148328
+          },
+          "calibration_by_rank.json": {
+            "sha256": "5d636f38df315f5e60fc66bf66955df157ab7d66eaa07c8a7acad71d00371fc7",
+            "size": 869286
+          },
+          "categories.json": {
+            "sha256": "39cf2745b3d96453770b536116d8bcb3cbca73fa95ac56b2a70da700a68ea90a",
+            "size": 240661
+          },
+          "lookup.json": {
+            "sha256": "0f375d6f6ab2d2c879103249e43cfc72dc5ab68c1143b72d843844f8bbf09497",
+            "size": 4159139
+          },
+          "model.ubj": {
+            "sha256": "e52ce7da3a6f50db86942e4e3ca10bcee6774221dd8c91b03e7bcff1ee921ae0",
+            "size": 1026853822
+          }
+        },
+        "metrics": {
+          "r2": 0.914281,
+          "rmse": 0.603425,
+          "mae": 0.346416,
+          "n_train": 35898,
+          "n_test": 3989
+        },
+        "notes": "Full retrain on DB v8.0.0 (39,887 spp); fresh hyperparameter tuning from clean state"
       }
     },
     "EntityEmbeddings": {
@@ -233,8 +269,62 @@
           "n_test": 3989
         },
         "notes": "v8.0.0 DB: CiteID column in lookup.json"
+      },
+      "v4": {
+        "path": "models/EntityEmbeddings/v4",
+        "db_version": "v8.0.0",
+        "trained": "2026-11-03T04:26:30.179438+00:00",
+        "package_min": "0.15.0",
+        "files": {
+          "calibration.json": {
+            "sha256": "ccf14e48ee8f8c6171376c509bad360b75141531c5e07eff80fe903970806890",
+            "size": 148564
+          },
+          "calibration_by_rank.json": {
+            "sha256": "2b3ba7f5b13ba1f47adc20cf74c4b9d1678828fc398b7b0c708a91cd4a7be867",
+            "size": 863708
+          },
+          "categories.json": {
+            "sha256": "39cf2745b3d96453770b536116d8bcb3cbca73fa95ac56b2a70da700a68ea90a",
+            "size": 240661
+          },
+          "embeddings.json": {
+            "sha256": "a378cb233b103d950c4e91c0b408810ceb31a188372679d768dd7c71bbe5fa42",
+            "size": 7922912
+          },
+          "lookup.json": {
+            "sha256": "0f375d6f6ab2d2c879103249e43cfc72dc5ab68c1143b72d843844f8bbf09497",
+            "size": 4159139
+          },
+          "model.ubj": {
+            "sha256": "2a88eadd371c8d1be712e0670bd64ca5823a0e7d90f10ded932f85539ee32876",
+            "size": 142667280
+          }
+        },
+        "metrics": {
+          "r2": 0.928052,
+          "rmse": 0.552832,
+          "mae": 0.323775,
+          "n_train": 35898,
+          "n_test": 3989
+        },
+        "notes": "Full retrain on DB v8.0.0 (39,887 spp); fresh hyperparameter tuning from clean state"
       }
     }
   },
-  "provenance": {}
+  "provenance": {
+    "v8.0.0": {
+      "path": "provenance/v8.0.0",
+      "files": {
+        "PrimaryCitations_BodyMass.bib": {
+          "sha256": "56ca584ad06f675f194022c0794bd47812e71f391cba6af4981b8d06d2dca9c3",
+          "size": 4282167
+        },
+        "TaxonBodyMass_Provenance.csv.gz": {
+          "sha256": "16cb921eeeebc654836ac3ca833cd7b509a1dc80a016db72d9e11340a328dc82",
+          "size": 3132210
+        }
+      }
+    }
+  }
 }
