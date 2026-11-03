@@ -1,75 +1,81 @@
 {
-  "n_db": 36573,
-  "n_used": 36573,
+  "n_db": 39887,
+  "n_used": 39887,
   "n_dropped_missing_rank": 0,
-  "n_source_records": 454263,
-  "n_sources_distinct": 349,
-  "n_sources_contributing": 345,
+  "n_source_records": 534482,
+  "n_independent_values": 76536,
+  "n_primary_refs": 12446,
+  "pct_records_hop_resolved": 91.81974406972105,
+  "pct_records_primary": 91.98319469255429,
+  "n_provenance_rows": 254590,
+  "n_provenance_species": 39887,
+  "n_sources_distinct": 395,
+  "n_sources_contributing": 391,
   "top_single_source_contributors": [
     [
       "Feldman_etal_2016",
-      2561
+      2500
     ],
     [
       "Cai_etal_2025",
-      1782
-    ],
-    [
-      "Brose_etal_2018",
-      1768
+      1709
     ],
     [
       "fishbase",
-      1473
+      1449
     ],
     [
-      "Wilman_etal_2014",
-      852
+      "Brocher_etal_2025",
+      1156
     ],
     [
-      "Faurby_etal_2018",
-      741
+      "Brose_etal_2018",
+      1016
+    ],
+    [
+      "Tobias_2022",
+      737
     ]
   ],
-  "n_lookup_species": 36573,
+  "n_lookup_species": 39887,
   "kingdoms": {
-    "Animalia": 36273,
-    "Chromista": 135,
-    "Bacteria": 125,
-    "Protozoa": 39,
-    "Archaea": 1
+    "Animalia": 39532,
+    "Chromista": 171,
+    "Bacteria": 134,
+    "Protozoa": 46,
+    "Archaea": 4
   },
-  "pct_animalia": 99.17972274628825,
+  "pct_animalia": 99.1099857096297,
   "top_classes": [
     [
       "Aves",
-      10403
+      10501
     ],
     [
       "Reptilia",
-      9955
+      10198
     ],
     [
       "Mammalia",
-      5764
+      5712
     ],
     [
       "Actinopterygii",
-      4942
+      5288
     ],
     [
       "Insecta",
-      1002
+      2696
     ],
     [
       "Amphibia",
-      924
+      974
     ]
   ],
-  "n_classes": 121,
-  "n_orders": 467,
-  "n_families": 2228,
-  "n_genera": 9997,
+  "n_classes": 127,
+  "n_orders": 469,
+  "n_families": 2290,
+  "n_genera": 10874,
   "mass_min": {
     "species": "Francisella tularensis",
     "mass_g": 1e-14,
@@ -82,6 +88,6 @@
     "kingdom": "Animalia",
     "class": "Mammalia"
   },
-  "mass_median_g": 25.3,
+  "mass_median_g": 21.0,
   "orders_of_magnitude": 21.942008053022313
 }

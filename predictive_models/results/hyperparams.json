@@ -1,15 +1,15 @@
 {
   "XGBoost": {
     "best_params": {
-      "n_estimators": 350,
-      "max_depth": 32,
-      "learning_rate": 0.08800831415930338,
-      "subsample": 0.5782264852857015,
-      "colsample_bytree": 0.7948392179208831,
-      "gamma": 0.2004066218721704,
+      "n_estimators": 550,
+      "max_depth": 44,
+      "learning_rate": 0.10262523980364108,
+      "subsample": 0.8301983911875196,
+      "colsample_bytree": 0.6667298482331353,
+      "gamma": 0.0002484908889287922,
       "min_child_weight": 2
     },
-    "best_cv_mae": 0.34756300780164123,
+    "best_cv_mae": 0.34408767690272224,
     "n_trials": 100,
     "n_folds": 5,
     "at_bound": {},
@@ -54,18 +54,18 @@
   },
   "EntityEmbeddings": {
     "best_params": {
-      "n_estimators": 1500,
-      "max_depth": 17,
-      "learning_rate": 0.015341610757169695,
-      "subsample": 0.6695248229522285,
-      "colsample_bytree": 0.522523983282118,
-      "min_child_weight": 2
+      "n_estimators": 1350,
+      "max_depth": 19,
+      "learning_rate": 0.01846771023679469,
+      "subsample": 0.8054077081614749,
+      "colsample_bytree": 0.9533746331097579,
+      "min_child_weight": 1
     },
-    "best_cv_mae": 0.3347619572624085,
+    "best_cv_mae": 0.3274989206860545,
     "n_trials": 100,
     "n_folds": 5,
     "at_bound": {
-      "n_estimators": "upper"
+      "min_child_weight": "lower"
     },
     "search_space": {
       "n_estimators": [
@@ -113,7 +113,7 @@
       "epochs": 100,
       "batch": 256,
       "lr": 0.001,
-      "mae": 0.39158577745403855
+      "mae": 0.33384685466143155
     }
   }
 }
