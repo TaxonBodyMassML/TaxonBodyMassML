@@ -15,7 +15,7 @@ Description: Predicts body mass for species from taxonomic identity (kingdom
     (~0.4 GB) are downloaded from Hugging Face Hub on first use and cached
     locally. Internet access is required on first use for artifact download and
     for taxonomy lookups.
-License: MIT + file LICENSE
+License: CC BY-NC 4.0
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.1)
