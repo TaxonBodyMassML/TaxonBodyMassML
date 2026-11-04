@@ -8,7 +8,7 @@ version = "0.15.0"
 description = "Predict species body mass using the TaxonBodyMassML XGBoost model"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "CC-BY-NC-4.0" }
 authors = [
   { name = "Grant Pasquantonio" },
   { name = "Anish Chowdary Pendurti" },
@@ -18,7 +18,7 @@ authors = [
 keywords = ["ecology", "body mass", "machine learning", "taxonomy", "XGBoost"]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: MIT License",
+  "License :: Free for non-commercial use",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
   "Intended Audience :: Science/Research",
 ]
