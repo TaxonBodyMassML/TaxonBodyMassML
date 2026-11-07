@@ -106,6 +106,54 @@ the training data exclude). Predicting the latter would mean extrapolating
 from entirely unknown features, so no prediction is made and, with
 `include_source = TRUE`, the `source` column reads `"tbmML_UNK"`.
 
+## Model Versions
+
+Each time the training database is substantially updated and the models are
+retrained, a new numbered version is published to Hugging Face. By default,
+`predict_mass()` loads the newest version present in the downloaded artifacts.
+
+**Check which version was actually used** by inspecting the `tbm_model`
+attribute on any result:
+
+```{r model-version-check}
+result <- TaxonBodyMassML::predict_mass("Homo sapiens")
+attr(result, "tbm_model")
+#> $method
+#> [1] "EntityEmbeddings"
+#>
+#> $version
+#> [1] 4
+#>
+#> $db_version
+#> [1] "v8.0.0"
+```
+
+`version` is the integer model version number; `db_version` is the version of
+the training database on which it was trained.
+
+**List all available versions** and see which are cached locally:
+
+```{r list-models}
+TaxonBodyMassML::list_models()
+```
+
+**Pin to a specific version** for reproducibility, either per-call or as a
+session default:
+
+```{r model-version-pin}
+# Single call pinned to version 3
+TaxonBodyMassML::predict_mass("Homo sapiens", method_version = 3)
+
+# Set the session default (all subsequent calls use version 3)
+TaxonBodyMassML::tbm_options(method_version = 3)
+
+# Restore the session default to the newest available version
+TaxonBodyMassML::tbm_options(method_version = "newest")
+```
+
+`method_version` also accepts `"cached"` (use the highest version already
+downloaded, without checking for a newer one).
+
 ## Source Attribution
 
 Use `include_source = TRUE` to append a `source` column that records the
@@ -227,6 +275,9 @@ TaxonBodyMassML::tbm_options()
 #>
 #> $progress
 #> [1] TRUE
+#>
+#> $method_version
+#> [1] "newest"
 
 # Set multiple options at once
 TaxonBodyMassML::tbm_options(disk_cache = TRUE, progress = FALSE)
@@ -238,6 +289,7 @@ Available options:
 |---|---|---|---|
 | `disk_cache` | logical | `FALSE` | Cache taxonomy on disk across sessions |
 | `progress` | logical | `TRUE` | Show progress bar for >10 species (requires `cli`) |
+| `method_version` | integer or `"newest"` / `"cached"` | `"newest"` | Model version to load; see Model Versions above |
 
 ## API Compliance
 
