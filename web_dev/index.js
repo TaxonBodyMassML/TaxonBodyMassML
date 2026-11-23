@@ -253,7 +253,7 @@ if (rawTaxonomy.species === "UNK") {
 
     console.log("Sending taxonomy:", taxonomy)
 
-    const predictionURL = "https://purse-region-fresh-capabilities.trycloudflare.com/xgb_pred_single"
+    const predictionURL = "https://statewide-changelog-staying-hon.trycloudflare.com/xgb_pred_single"
 
     const predictionResponse = await fetch(predictionURL, {
       method: "POST",
@@ -351,7 +351,7 @@ if (rawTaxonomy.species === "UNK") {
       }
     }
     const response = await fetch(
-      "https://purse-region-fresh-capabilities.trycloudflare.com/xgb_pred_multi",
+      "https://statewide-changelog-staying-hon.trycloudflare.com/xgb_pred_multi",
       {
         method: "POST",
         headers: {
