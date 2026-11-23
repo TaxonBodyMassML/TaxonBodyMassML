@@ -45,10 +45,11 @@ if (sessionStorage.getItem('introSeen') === 'true') {
 // The prediction service returns null (with a `warning`) when no rank of the
 // taxonomy occurs in the training data.  Never call toFixed on those.
 const NOT_PREDICTABLE = 'Not predictable: no rank of this taxonomy occurs in the training data'
+const fmtSigFigs = (value) => parseFloat(value.toPrecision(4)).toString()
 const fmtGrams = (value) =>
-  (value === null || value === undefined || Number.isNaN(value)) ? 'NA' : `${value.toFixed(2)} g`
+  (value === null || value === undefined || Number.isNaN(value)) ? 'NA' : `${fmtSigFigs(value)} g`
 const fmtCsv = (value) =>
-  (value === null || value === undefined || Number.isNaN(value)) ? 'NA' : value.toFixed(2)
+  (value === null || value === undefined || Number.isNaN(value)) ? 'NA' : fmtSigFigs(value)
 
 // makes output box visible and generates output based on input
 const handleGoClick = async (event) => {
