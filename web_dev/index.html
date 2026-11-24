@@ -32,11 +32,14 @@
     <!-- Pop-up modal to introduce users to page, can be closed with the "X" button -->
     <div id="intro-box" class="overlay">
       <p style= "text-align: center;">
-      Welcome to the TaxonBodyMassML Website! </p><p style= "text-align: center;">To predict a species mass, input the
-        name and press go! For additional help, access the 'Help' page from the
-        upper righthand corner.
+      Welcome to the TaxonBodyMassML Website! </p><p style= "text-align: center;">To predict a taxon's body mass, input its scientific name and press go. </p>
+      <p style= "text-align: center;">
+        If you need help, you can find more information on the 'Help' page.
       </p>
       <img id="taxon-graphic" src="TaxonBodyMassML.png" alt= "animal silhouettes graphic"></img>
+      <p id="first-request-note" style="text-align: center; font-size: 0.85em;">
+        Note: your first query of a session may take longer than usual while the prediction model loads.
+      </p>
       <button id="close-intro">Get Started!</button>
     </div>
 

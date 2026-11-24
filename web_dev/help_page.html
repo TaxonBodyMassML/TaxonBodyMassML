@@ -61,8 +61,12 @@
     <p>Q: Why is my first result slow to appear?
     <br>A: The very first prediction request after the service starts up may take a little while to complete as the system initializes. Subsequent requests will be significantly faster.</p>
 
-    <p>Q: What do the lower and upper bounds mean?
-    <br>A: For model-predicted masses they are a 90% conformal prediction interval: across taxa queried at the same level of taxonomic resolution (e.g. genus known, species not), about 90% of true body masses fall inside the interval. The interval is calibrated separately for each level of taxonomic resolution, so it widens when only the family or order of a name can be resolved. For species whose measured mass is held in the database, the measured value is returned and no interval is shown. The R and Python packages let you choose other coverage levels.</p>
+    <p>Q: What does the 90% prediction interval mean?
+    <br>A: For model-predicted masses they are a 90% conformal prediction interval: across taxa queried at the same level of taxonomic resolution (e.g. genus known, species not), about 90% of true body masses fall inside the interval. The interval is calibrated separately for each level of taxonomic resolution, so it widens when only the family or order of a name can be resolved. The R and Python packages let you choose other coverage levels.</p>
+
+   <p>Q: Why are the lower and upper bounds of the prediction interval sometimes the same?
+    <br>A: For species whose measured mass is held in the database, (the geometric mean of) the measured value(s) is returned.</p>
+ 
 
 <!-- example user paths -->
 
